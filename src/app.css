@@ -1,0 +1,84 @@
+@import 'tailwindcss';
+
+@theme {
+	--color-close-red: #c42b1c;
+	--color-primary: #1e1e1e;
+	--color-secondary: #282b30;
+}
+
+body {
+	overflow: overlay;
+}
+
+::-webkit-scrollbar {
+	width: 4px;
+	height: 4px;
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+	background-color: var(--color-zinc-500);
+	border-radius: 2px;
+	border: none;
+}
+
+::-webkit-scrollbar-corner {
+	background: transparent;
+}
+
+#app {
+	display: contents;
+	position: relative;
+}
+
+img,
+svg {
+	user-select: none;
+	pointer-events: none;
+}
+
+label,
+span {
+	user-select: none;
+}
+
+button,
+input,
+textarea,
+select {
+	outline: none;
+	border: none;
+}
+
+.input-flex:has(input:disabled) {
+	opacity: 0.5;
+}
+
+button {
+	cursor: pointer;
+	user-select: none;
+
+	&:disabled {
+		cursor: default;
+		opacity: 0.5;
+	}
+}
+
+/* hljs xml highlighting */
+.language-xml {
+	color: var(--color-orange-300);
+	* {
+		user-select: unset !important;
+	}
+}
+
+.hljs-tag {
+	color: var(--color-zinc-500);
+}
+
+.hljs-name {
+	color: var(--color-slate-300);
+}

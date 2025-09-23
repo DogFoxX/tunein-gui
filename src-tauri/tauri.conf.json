@@ -1,0 +1,70 @@
+{
+	"$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+	"productName": "tunein-gui",
+	"mainBinaryName": "tunein-gui",
+	"version": "0.1.0",
+	"identifier": "com.tunein.gui",
+	"build": {
+		"frontendDist": "../dist",
+		"devUrl": "http://localhost:5173",
+		"beforeDevCommand": "npm run dev",
+		"beforeBuildCommand": "npm run build"
+	},
+	"app": {
+		"windows": [
+			{
+				"label": "main",
+				"title": "Tunein GUI",
+				"width": 1242,
+				"minWidth": 922,
+				"height": 768,
+				"minHeight": 609,
+				"resizable": true,
+				"fullscreen": false,
+				"backgroundColor": "#1E1E1E",
+				"decorations": false,
+				"dragDropEnabled": true,
+				"devtools": true,
+				"visible": false
+			}
+		],
+		"security": {
+			"csp": "default-src 'self' ipc: http://ipc.localhost; img-src 'self' asset: http://asset.localhost",
+			"assetProtocol": {
+				"enable": true,
+				"scope": ["*/**"]
+			}
+		}
+	},
+	"bundle": {
+		"active": true,
+		"windows": {
+			"allowDowngrades": false,
+			"certificateThumbprint": null,
+			"digestAlgorithm": null,
+			"nsis": null,
+			"signCommand": null,
+			"timestampUrl": null,
+			"tsp": false,
+			"webviewInstallMode": {
+				"silent": true,
+				"type": "downloadBootstrapper"
+			},
+			"wix": null
+		},
+		"linux": {
+			"appimage": {
+				"bundleMediaFramework": false,
+				"files": {}
+			}
+		},
+		"targets": ["app", "appimage", "msi"],
+		"icon": [
+			"icons/32x32.png",
+			"icons/128x128.png",
+			"icons/128x128@2x.png",
+			"icons/icon.png",
+			"icons/icon.ico"
+		]
+	}
+}
