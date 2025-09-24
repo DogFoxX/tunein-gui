@@ -1,13 +1,26 @@
-type XmlPrimitive = string | any;
-
-type XmlValue = XmlPrimitive | XmlObject | XmlValue[];
-
-interface XmlObject {
-	[key: string]: XmlValue;
-}
+import type { XmlValue, XmlObject } from './types';
+import { sanitizeXml, unicodeToXmlRefs } from './sanitize-xml';
 
 export function obj2Xml(obj: any, indent = ''): string {
 	let xml = '';
+
+	// Sanitize Symbols &, <, >, ", '
+	obj = Object.fromEntries(
+		Object.entries(obj).map(([key, value]) => [
+			key,
+			typeof value === 'string' ? sanitizeXml(value) : value
+		])
+	);
+
+	// Sanitize unicide chars
+
+	obj = Object.fromEntries(
+		Object.entries(obj).map(([key, value]) => [
+			key,
+			typeof value === 'string' ? unicodeToXmlRefs(value) : value
+		])
+	);
+
 	for (const key in obj) {
 		const value = obj[key];
 

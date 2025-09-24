@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
 	import { openDirDiag, saveXML } from '$lib/utils/dialog';
-	import { obj2Xml } from '$lib/utils/xml-convert';
+	import { obj2Xml } from '$lib/utils/xml-convert/index';
 	import type { DialogFilter } from '@tauri-apps/plugin-dialog';
 	import { xmlView, xmlValues } from '$lib/stores/global';
 

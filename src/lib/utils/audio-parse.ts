@@ -14,8 +14,12 @@ function getFileNameText(path: string) {
 	return base.replace(/\.[^/.]+$/, '');
 }
 
-function getFileName(path: string) {
-	return path.split(/[/\\]/).pop();
+function normalizeYear(year: string | number | undefined): string {
+	if (!year) return ''; // no year info
+
+	const str = String(year); // convert numbers to string
+	const match = str.match(/\d{4}/); // extract first 4-digit sequence
+	return match ? match[0] : '';
 }
 
 async function parseAudio(paths: string[]): Promise<MetadataResult[]> {
@@ -38,7 +42,7 @@ async function parseAudio(paths: string[]): Promise<MetadataResult[]> {
 					text,
 					name: meta.common.title ?? '',
 					artist: meta.common.artist ?? '',
-					year: meta.common.year ?? null,
+					year: normalizeYear(meta.common.year) ?? null,
 					length: formatDuration(meta.format.duration)
 				};
 			} catch (err: any) {

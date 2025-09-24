@@ -2,7 +2,7 @@
 	import { fade } from 'svelte/transition';
 	import hljs from 'highlight.js/lib/core';
 	import xml from 'highlight.js/lib/languages/xml';
-	import { obj2Xml } from '../../utils/xml-convert';
+	import { obj2Xml } from '$lib/utils/xml-convert/index';
 	import { xmlView, xmlValues, tracks } from '$lib/stores/global';
 
 	// Icons

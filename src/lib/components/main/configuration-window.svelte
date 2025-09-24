@@ -140,8 +140,6 @@
 			.then(() => (logoSrc = convertFileSrc(logoPath)))
 			.catch(() => (logoSrc = ''));
 	});
-
-	$inspect(selected);
 </script>
 
 <div class="flex max-h-full min-w-max flex-col gap-4">

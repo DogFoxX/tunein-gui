@@ -7,7 +7,7 @@ interface MetadataResult {
 	text?: string | null;
 	name?: string | null;
 	artist?: string | null;
-	year?: number | null;
+	year?: string | null;
 	length?: string | null;
 	error?: string | null;
 }

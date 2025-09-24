@@ -30,7 +30,6 @@ function toTrack(meta: MetadataResult): Track {
 
 tracks.subscribe((newTracks) => {
 	xmlValues.update((state) => {
-		// Only replace songs, keep id/name/logo untouched
 		return {
 			...state,
 			project: {
