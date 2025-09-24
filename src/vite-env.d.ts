@@ -1,27 +1,16 @@
 /// <reference types="svelte" />
 /// <reference types="vite/client" />
 
-interface MetadataResult {
-	id?: number | null;
-	file?: string | null;
-	text?: string | null;
-	name?: string | null;
-	artist?: string | null;
-	year?: string | null;
-	length?: string | null;
-	error?: string | null;
-}
-
-interface Track {
+interface TrackData {
 	file: string;
 	name: string;
 	artist: string;
 	year: string;
 	length: string;
-	force?: string | null;
+	force?: string;
 }
 
-interface XmlObj {
+interface XmlData {
 	project: {
 		fmod: string;
 		radio: {
@@ -29,7 +18,7 @@ interface XmlObj {
 			name: string;
 			logo: string;
 			songs?: {
-				song: Track;
+				song: TrackData;
 			}[];
 		};
 	};

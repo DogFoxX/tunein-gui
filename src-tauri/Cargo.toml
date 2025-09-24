@@ -1,6 +1,6 @@
 [package]
 name = "tunein-gui"
-version = "0.1.0"
+version = "0.0.2"
 description = "An unofficial GUI for TuneinCrew by FTIW"
 authors = ["DogFoxX"]
 license = "MIT"

@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
-	import { openDirDiag, saveXML } from '$lib/utils/dialog';
-	import { obj2Xml } from '$lib/utils/xml-convert/index';
+	import { saveXML, openXML } from '$lib/utils/dialog';
+	import { obj2xml, xml2obj } from '$lib/utils/xml-convert/index';
 	import type { DialogFilter } from '@tauri-apps/plugin-dialog';
-	import { xmlView, xmlValues } from '$lib/stores/global';
+	import { xmlView } from '$lib/stores/global';
+	import { xmlData, tracks } from '$lib/stores/xml-obj.store';
 
 	// Icons
 	import SolarAltArrowDownLinear from '~icons/solar/alt-arrow-down-linear';
@@ -18,7 +19,7 @@
 	let workingDir = $state<string | null>();
 </script>
 
-<div class="flex items-center gap-2 py-4">
+<div class="flex items-center gap-2">
 	<div class="relative">
 		<button
 			onclick={() => (profileOpen = !profileOpen)}
@@ -40,6 +41,9 @@
 		{/if}
 	</div>
 	<button
+		onclick={async () => {
+			await openXML();
+		}}
 		class="rounded-md bg-slate-700 px-4 py-1 text-white transition-colors hover:bg-slate-500"
 		title="Import XML (Ctrl + I)"
 	>
@@ -47,7 +51,7 @@
 	</button>
 	<button
 		onclick={async () => {
-			await saveXML(obj2Xml($xmlValues));
+			await saveXML(obj2xml($xmlData));
 		}}
 		class="rounded-md bg-slate-700 px-4 py-1 text-white transition-colors hover:bg-slate-500"
 		title="Export XML (Ctrl + E)"

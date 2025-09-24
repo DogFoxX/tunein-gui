@@ -21,8 +21,8 @@ const invalidSymbols = [
 	}
 ];
 
-export function sanitizeXml(input: string): string {
-	let result = input;
+export function sanitizeXml(value: string): string {
+	let result = value;
 	for (const { symbol, valid } of invalidSymbols) {
 		result = result.split(symbol).join(valid);
 	}

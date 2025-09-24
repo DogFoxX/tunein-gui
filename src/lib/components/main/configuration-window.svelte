@@ -7,7 +7,7 @@
 	import ddsToDataUrl from '$lib/utils/dds-parse';
 	import { onMount } from 'svelte';
 	import parseAudio from '$lib/utils/audio-parse';
-	import { xmlValues, tracks, forceValue } from '$lib/stores/global';
+	import { xmlData, tracks, updateTrack } from '$lib/stores/xml-obj.store';
 
 	// Icons
 	import SolarRestartSquareBold from '~icons/solar/restart-square-bold';
@@ -15,6 +15,7 @@
 	import SolarQuestionCircleBold from '~icons/solar/question-circle-bold';
 	import SolarAddSquareBold from '~icons/solar/add-square-bold';
 	import SolarTrashBinTrashBold from '~icons/solar/trash-bin-trash-bold';
+	import { fade } from 'svelte/transition';
 
 	// Dialog Filters
 	const audioFilter: DialogFilter[] = [
@@ -38,7 +39,10 @@
 	let logoSrc = $state('');
 	let force = $state('0');
 	let trackPaths = $state<string[]>([]);
-	let selected = $state<MetadataResult[]>([]);
+	let selected = $state([]);
+
+	let redioId = $derived($xmlData.project.radio.id);
+	let radioName = $derived($xmlData.project.radio.name);
 
 	onMount(() => {
 		listen<DragDropEventPayload>('tauri://drag-drop', (event) => {
@@ -70,7 +74,7 @@
 		const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 		const array = new Uint32Array(4);
 		crypto.getRandomValues(array);
-		$xmlValues.project.radio.id = Array.from(array, (x) => chars[x % chars.length]).join('');
+		$xmlData.project.radio.id = Array.from(array, (x) => chars[x % chars.length]).join('');
 	}
 
 	function removeTrack() {
@@ -78,9 +82,7 @@
 
 		tracks.update((arr) => {
 			// filter out selected ids
-			const filtered = arr.filter(
-				(track) => !selected.includes((track.id as MetadataResult) ?? -1)
-			);
+			const filtered = arr.filter((track, i) => !selected.includes(track[i] ?? -1));
 
 			// reassign ids so they match new index
 			return filtered.map((t, i) => ({ ...t, id: i }));
@@ -90,39 +92,9 @@
 		selected = [];
 	}
 
-	function setForce() {
-		xmlValues.update((obj) => ({
-			...obj,
-			project: {
-				...obj.project,
-				radio: {
-					...obj.project.radio,
-					songs: (obj.project.radio.songs ?? []).map((s) => ({
-						song: { ...s.song, force: $forceValue }
-					}))
-				}
-			}
-		}));
-	}
-
-	function unsetForce() {
-		xmlValues.update((obj) => ({
-			...obj,
-			project: {
-				...obj.project,
-				radio: {
-					...obj.project.radio,
-					songs: (obj.project.radio.songs ?? []).map((s) => ({
-						song: (({ force, ...rest }) => rest)(s.song)
-					}))
-				}
-			}
-		}));
-	}
-
-	tracks.subscribe(() => {
-		if (force == '1') setForce();
-	});
+	// tracks.subscribe(() => {
+	// 	if (force == '1') setForce();
+	// });
 
 	$effect(() => {
 		if (trackPaths) {
@@ -165,7 +137,8 @@
 					<label for="" class="text-xs text-white">ID (Unique)</label>
 					<div class="flex items-center gap-2 rounded-md bg-zinc-700 px-2 py-1">
 						<input
-							bind:value={$xmlValues.project.radio.id}
+							value={redioId}
+							oninput={(e) => ($xmlData.project.radio.id = e.currentTarget.value)}
 							class="w-[8ch] text-sm text-white"
 							type="text"
 							maxlength="4"
@@ -180,7 +153,8 @@
 					<label for="" class="text-xs text-white">Radio Station Name</label>
 					<div class="flex rounded-md bg-zinc-700 px-2 py-1">
 						<input
-							bind:value={$xmlValues.project.radio.name}
+							value={radioName}
+							oninput={(e) => ($xmlData.project.radio.name = e.currentTarget.value)}
 							class="w-[35ch] text-sm text-white"
 							type="text"
 							spellcheck="false"
@@ -226,33 +200,15 @@
 			</div>
 			<div class="flex gap-4" role="radiogroup">
 				<div class="flex gap-2">
-					<input
-						bind:group={force}
-						onchange={unsetForce}
-						type="radio"
-						id="default"
-						value="0"
-					/>
+					<input bind:group={force} type="radio" id="default" value="0" />
 					<label for="default" class="text-sm text-white">Global Default</label>
 				</div>
 				<div class="flex gap-2">
-					<input
-						bind:group={force}
-						onchange={setForce}
-						type="radio"
-						id="global"
-						value="1"
-					/>
+					<input bind:group={force} type="radio" id="global" value="1" />
 					<label for="global" class="text-sm text-white">Global Value</label>
 				</div>
 				<div class="flex gap-2">
-					<input
-						bind:group={force}
-						onchange={unsetForce}
-						type="radio"
-						id="per-track"
-						value="2"
-					/>
+					<input bind:group={force} type="radio" id="per-track" value="2" />
 					<label for="per-track" class="text-sm text-white">Per Track Force</label>
 				</div>
 			</div>
@@ -260,14 +216,6 @@
 				<label for="" class="text-xs text-white">Global Value</label>
 				<div class="input-flex flex rounded-md bg-zinc-700 px-2 py-1">
 					<input
-						bind:value={$forceValue}
-						oninput={(e) => {
-							const target = e.target as HTMLInputElement;
-							$forceValue = target.value
-								.replace(/[^0-9]/g, '')
-								.replace(/^0+(?=\d)/, '');
-							if ($forceValue == '') $forceValue = '0';
-						}}
 						disabled={force !== '1'}
 						class="w-full text-sm text-white"
 						type="text"
@@ -286,25 +234,34 @@
 			<div
 				class="relative flex h-full w-100 flex-col overflow-hidden rounded-md border-2 border-zinc-700 pb-11"
 			>
-				<div bind:this={audioDropArea} class="h-full w-full overflow-hidden" role="group">
+				<div
+					bind:this={audioDropArea}
+					class="relative h-full w-full overflow-hidden"
+					role="group"
+				>
 					{#if $tracks.length > 0}
-						<select
-							multiple
-							bind:value={selected}
-							class="h-full w-full overflow-x-hidden overflow-y-auto text-sm text-white"
-						>
-							{#each $tracks as track}
-								<option
-									class="w-full truncate bg-gradient-to-r from-100% px-2 py-1 checked:from-zinc-700"
-									value={track.id}
-									title={track.text}
-								>
-									{track.text}
-								</option>
-							{/each}
-						</select>
+						<div transition:fade={{ duration: 180 }} class="absolute inset-0">
+							<select
+								multiple
+								bind:value={selected}
+								class="h-full w-full overflow-x-hidden overflow-y-auto text-sm text-white"
+							>
+								{#each $tracks as track, i}
+									<option
+										class="w-full truncate bg-gradient-to-r from-100% px-2 py-1 checked:from-zinc-700"
+										value={i}
+										title={track.name}
+									>
+										{track.name}
+									</option>
+								{/each}
+							</select>
+						</div>
 					{:else}
-						<div class="flex h-full w-full flex-col items-center justify-center">
+						<div
+							transition:fade={{ duration: 180 }}
+							class="absolute inset-0 flex flex-col items-center justify-center"
+						>
 							<span class="font-semibold text-zinc-500">Drop audio file(s) here</span>
 							<span class="text-sm text-zinc-500"
 								>...or click "Add File(s)" to browse</span
@@ -345,19 +302,31 @@
 		</div>
 		<div class="flex grow flex-col gap-2">
 			<label for="" class="text-sm text-white">Track Info</label>
-			<div class="flex grow flex-col rounded-md border-2 border-zinc-700 p-4">
+			<div class="relative flex grow flex-col rounded-md border-2 border-zinc-700">
 				{#if !selected.length || selected.length > 1}
-					<div class="flex h-full w-full flex-col items-center justify-center">
+					<div
+						transition:fade={{ duration: 180 }}
+						class="absolute inset-0 flex flex-col items-center justify-center"
+					>
 						<span class="font-semibold text-zinc-500">No track selected</span>
 					</div>
 				{:else}
-					<div class="flex flex-col gap-4">
-						<div class="flex min-w-0 gap-4">
-							<div class="flex flex-1 flex-col gap-2">
+					<div
+						transition:fade={{ duration: 180 }}
+						class="absolute inset-2 flex flex-col gap-4"
+					>
+						<div class="flex flex-col gap-4">
+							<div class="flex flex-col gap-2">
 								<label for="" class="text-xs text-white">Artist</label>
 								<div class="flex rounded-md bg-zinc-700 px-2 py-1">
 									<input
-										bind:value={$tracks[selected as any].artist}
+										value={$tracks[selected as any].artist}
+										oninput={(e) =>
+											updateTrack(
+												selected as any,
+												'artist',
+												e.currentTarget.value
+											)}
 										class="w-full text-sm text-white"
 										type="text"
 										spellcheck="false"
@@ -365,11 +334,17 @@
 									/>
 								</div>
 							</div>
-							<div class="flex min-w-0 flex-1 flex-col gap-2">
+							<div class="flex flex-col gap-2">
 								<label for="" class="text-xs text-white">Name</label>
 								<div class="flex rounded-md bg-zinc-700 px-2 py-1">
 									<input
 										bind:value={$tracks[selected as any].name}
+										oninput={(e) =>
+											updateTrack(
+												selected as any,
+												'name',
+												e.currentTarget.value
+											)}
 										class="w-full text-sm text-white"
 										type="text"
 										spellcheck="false"
@@ -378,12 +353,18 @@
 								</div>
 							</div>
 						</div>
-						<div class="flex min-w-0 gap-4">
-							<div class="flex min-w-0 flex-1 flex-col gap-2">
+						<div class="flex gap-4">
+							<div class="flex flex-1 flex-col gap-2">
 								<label for="" class="text-xs text-white">Year</label>
 								<div class="flex rounded-md bg-zinc-700 px-2 py-1">
 									<input
 										bind:value={$tracks[selected as any].year}
+										oninput={(e) =>
+											updateTrack(
+												selected as any,
+												'year',
+												e.currentTarget.value
+											)}
 										class="w-full text-sm text-white"
 										type="text"
 										spellcheck="false"
@@ -391,11 +372,17 @@
 									/>
 								</div>
 							</div>
-							<div class="flex min-w-0 flex-1 flex-col gap-2">
+							<div class="flex flex-1 flex-col gap-2">
 								<label for="" class="text-xs text-white">Length</label>
 								<div class="flex rounded-md bg-zinc-700 px-2 py-1">
 									<input
 										bind:value={$tracks[selected as any].length}
+										oninput={(e) =>
+											updateTrack(
+												selected as any,
+												'length',
+												e.currentTarget.value
+											)}
 										class="w-full text-sm text-white"
 										type="text"
 										spellcheck="false"
@@ -403,31 +390,12 @@
 									/>
 								</div>
 							</div>
-							<div class="flex-col gap-2">
+							<div class="flex-1 flex-col gap-2">
 								<label for="" class="text-xs text-white">Force</label>
 								<div class="input-flex flex rounded-md bg-zinc-700 px-2 py-1">
 									<input
-										bind:value={
-											$xmlValues.project.radio.songs[selected as any].song
-												.force
-										}
-										oninput={(e) => {
-											const target = e.target as HTMLInputElement;
-											$xmlValues.project.radio.songs[
-												selected as any
-											].song.force = target.value
-												.replace(/[^0-9]/g, '')
-												.replace(/^0+(?=\d)/, '');
-											if (
-												$xmlValues.project.radio.songs[selected as any].song
-													.force == ''
-											)
-												$xmlValues.project.radio.songs[
-													selected as any
-												].song.force = '0';
-										}}
 										disabled={force !== '2'}
-										class="text-sm text-white"
+										class="w-full text-sm text-white"
 										type="text"
 										maxlength="3"
 										spellcheck="false"
