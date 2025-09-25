@@ -1,7 +1,7 @@
 [package]
 name = "tunein-gui"
-version = "0.0.2"
-description = "An unofficial GUI for TuneinCrew by FTIW"
+version = "0.0.3"
+description = "Unofficial GUI for TuneinCrew - Create custom radio stations for The Crew 2014"
 authors = ["DogFoxX"]
 license = "MIT"
 repository = ""

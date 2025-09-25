@@ -65,6 +65,10 @@ button {
 		cursor: default;
 		opacity: 0.5;
 	}
+
+	&:focus-visible {
+		outline: 1px solid;
+	}
 }
 
 /* hljs xml highlighting */

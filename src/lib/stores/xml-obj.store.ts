@@ -37,3 +37,17 @@ export function updateTrack(index: number, field: keyof TrackData, value: string
 	newTracks[index] = { ...newTracks[index], [field]: value };
 	updateTracks(newTracks);
 }
+
+export function resetForce() {
+	xmlData.update((data) => {
+		if (!data?.project?.radio.songs) return data;
+
+		const newTracks = data.project.radio.songs.map((item) => {
+			const { force, ...rest } = item.song;
+			return rest;
+		});
+
+		updateTracks(newTracks);
+		return data;
+	});
+}

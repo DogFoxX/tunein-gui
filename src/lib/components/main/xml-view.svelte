@@ -14,7 +14,9 @@
 	let xmlString = $derived(obj2xml($xmlData));
 	let highlightedCode = $derived(hljs.highlight(xmlString, { language: 'xml' }).value);
 
+	let codeEl = $state<HTMLElement>();
 	let hasValues = $state(false);
+	let showCopy = $state(false);
 
 	$effect(() => {
 		const radio = $xmlData.project.radio;
@@ -36,24 +38,34 @@
 
 {#if $xmlView}
 	<div transition:fade={{ duration: 180 }} class="flex h-full w-full min-w-80 flex-col gap-2">
-		<label for="" class="text-xs text-white">XML Preview</label>
-		<div
-			class="relative flex h-full min-w-full grow overflow-hidden rounded-md outline-2 outline-zinc-700"
-		>
+		<span class="text-xs text-white">XML Preview</span>
+		<div class="relative flex grow overflow-hidden rounded-md border-2 border-zinc-700">
 			{#if hasValues}
-				<div transition:fade={{ duration: 180 }} class="absolute inset-2 overflow-auto">
+				{#if showCopy}
 					<button
-						class="absolute top-0 right-2 rounded-md bg-zinc-700 p-2 text-white"
+						transition:fade={{ duration: 80 }}
+						onclick={() => navigator.clipboard.writeText(codeEl?.textContent as string)}
+						class="absolute right-6 bottom-6 z-10 rounded-md bg-zinc-700 p-2 text-white"
 						title="Copy XML"
 					>
 						<SolarCopyBoldDuotone width="24" height="24" />
 					</button>
-					<pre><code class="language-xml text-sm">{@html highlightedCode}</code></pre>
+				{/if}
+				<div
+					transition:fade={{ duration: 180 }}
+					onmouseenter={() => (showCopy = true)}
+					onmouseleave={() => (showCopy = false)}
+					class="absolute inset-2 overflow-auto"
+					role="none"
+				>
+					<pre><code bind:this={codeEl} class="language-xml text-sm"
+							>{@html highlightedCode}</code
+						></pre>
 				</div>
 			{:else}
 				<div
 					transition:fade={{ duration: 180 }}
-					class="absolute inset-0 flex flex-col items-center justify-center gap-2"
+					class="absolute inset-2 flex flex-col items-center justify-center gap-2"
 				>
 					<span class="text-center font-semibold text-zinc-500">XML Preview Panel</span>
 					<span class="text-center text-sm text-zinc-500">

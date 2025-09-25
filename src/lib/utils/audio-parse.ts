@@ -1,7 +1,7 @@
 import { readFile } from '@tauri-apps/plugin-fs';
 import { parseBlob } from 'music-metadata';
 
-function formatDuration(seconds?: number | null): string | null {
+function formatDuration(seconds?: number | undefined): string | null {
 	if (seconds == null) return null;
 	const h = Math.floor(seconds / 3600);
 	const m = Math.floor((seconds % 3600) / 60);
@@ -14,7 +14,7 @@ function getFileNameText(path: string) {
 	return base.replace(/\.[^/.]+$/, '');
 }
 
-function normalizeYear(year: string | number | undefined): string {
+function normalizeYear(year: number | undefined): string {
 	if (!year) return ''; // no year info
 
 	const str = String(year); // convert numbers to string
@@ -22,7 +22,7 @@ function normalizeYear(year: string | number | undefined): string {
 	return match ? match[0] : '';
 }
 
-async function parseAudio(paths: string[]): Promise<MetadataResult[]> {
+async function parseAudio(paths: string[]): Promise<TrackData[]> {
 	let text: string;
 
 	const results = await Promise.all(
@@ -38,10 +38,9 @@ async function parseAudio(paths: string[]): Promise<MetadataResult[]> {
 
 				return {
 					file: p,
-					text,
-					name: meta.common.title ?? '',
+					name: meta.common.title ?? getFileNameText(p),
 					artist: meta.common.artist ?? '',
-					year: normalizeYear(meta.common.year) ?? null,
+					year: normalizeYear(meta.common.year) ?? '',
 					length: formatDuration(meta.format.duration)
 				};
 			} catch (err: any) {

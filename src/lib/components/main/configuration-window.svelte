@@ -7,7 +7,13 @@
 	import ddsToDataUrl from '$lib/utils/dds-parse';
 	import { onMount } from 'svelte';
 	import parseAudio from '$lib/utils/audio-parse';
-	import { xmlData, tracks, updateTrack, updateTracks } from '$lib/stores/xml-obj.store';
+	import {
+		xmlData,
+		tracks,
+		updateTrack,
+		updateTracks,
+		resetForce
+	} from '$lib/stores/xml-obj.store';
 
 	// Icons
 	import SolarRestartSquareBold from '~icons/solar/restart-square-bold';
@@ -35,11 +41,15 @@
 	let logoDropArea = $state<HTMLElement>();
 	let audioDropArea = $state<HTMLElement>();
 
+	// Track List SelectEl
+	let trackList = $state<HTMLElement>();
+	let selected = $state([]);
+
 	let logoPath = $state('');
 	let logoSrc = $state('');
 	let force = $state('0');
+	let forceGlobVal = $state('0');
 	let trackPaths = $state<string[]>([]);
-	let selected = $state([]);
 
 	let redioId = $derived($xmlData.project.radio.id);
 	let radioName = $derived($xmlData.project.radio.name);
@@ -84,14 +94,10 @@
 	}
 
 	$effect(() => {
-		if (trackPaths) {
+		if (trackPaths.length) {
 			parseAudio(trackPaths).then((newTracks) => {
-				tracks.update((arr) => {
-					const startIndex = arr.length; // current length of tracks store
-					// Assign IDs based on their final position in tracks
-					const tracksWithIds = newTracks.map((t, i) => ({ ...t, id: startIndex + i }));
-					return [...arr, ...tracksWithIds];
-				});
+				let added = [...$tracks, ...newTracks];
+				updateTracks(added);
 			});
 		}
 
@@ -108,10 +114,20 @@
 			class="flex h-28 w-28 items-center justify-center rounded-md border-2 border-zinc-700 p-2"
 		>
 			{#if !logoSrc}
-				<div class="flex h-full w-full flex-col items-center justify-center">
+				<div
+					ondblclick={async () => {
+						logoPath = await openFileDiag({
+							title: 'Choose a logo',
+							filters: imageFilter,
+							multiple: false
+						});
+					}}
+					class="flex h-full w-full flex-col items-center justify-center gap-2"
+					role="img"
+				>
 					<span class="text-sm font-semibold text-zinc-500">Logo Preview</span>
 					<span class="text-center text-xs text-zinc-500"
-						>Drop bmp, jpg, jpeg, png here</span
+						>Drop dds, bmp, jpg, jpeg, png here</span
 					>
 				</div>
 			{:else}
@@ -131,8 +147,13 @@
 							type="text"
 							maxlength="4"
 							spellcheck="false"
+							autocomplete="off"
 						/>
-						<button onclick={generateId} class="text-white" title="Generate Random ID">
+						<button
+							onclick={generateId}
+							class="rounded-md text-white"
+							title="Generate Random ID"
+						>
 							<SolarRestartSquareBold width="20" height="20" />
 						</button>
 					</div>
@@ -148,6 +169,7 @@
 							type="text"
 							spellcheck="false"
 							placeholder="eg. My Custom Radio"
+							autocomplete="off"
 						/>
 					</div>
 				</div>
@@ -162,6 +184,7 @@
 						type="text"
 						spellcheck="false"
 						placeholder="Click browse to choose a logo file..."
+						autocomplete="off"
 					/>
 					<button
 						onclick={async () => {
@@ -171,7 +194,7 @@
 								multiple: false
 							});
 						}}
-						class="text-white"
+						class="rounded-md text-white"
 					>
 						<SolarFolderOpenBoldDuotone width="20" height="20" />
 					</button>
@@ -183,6 +206,7 @@
 				<sapn class="text-xs text-white">Force</sapn>
 				<button
 					class="text-white"
+					tabindex="-1"
 					title="This sets when the highpass cutoff filter disappears completely. Set to 0 to disable the effect, keep at global default, or enable per track force."
 				>
 					<SolarQuestionCircleBold width="16" height="16" />
@@ -190,30 +214,56 @@
 			</div>
 			<div class="flex gap-4" role="radiogroup">
 				<div class="flex gap-2">
-					<input bind:group={force} type="radio" id="default" value="0" />
+					<input
+						bind:group={force}
+						onchange={resetForce}
+						type="radio"
+						id="default"
+						value="0"
+					/>
 					<label for="default" class="text-sm text-white">Global Default</label>
 				</div>
 				<div class="flex gap-2">
-					<input bind:group={force} type="radio" id="global" value="1" />
+					<input
+						bind:group={force}
+						onchange={() => {
+							$tracks.forEach((_, i) => {
+								updateTrack(i, 'force', forceGlobVal);
+							});
+						}}
+						type="radio"
+						id="global"
+						value="1"
+					/>
 					<label for="global" class="text-sm text-white">Global Value</label>
 				</div>
 				<div class="flex gap-2">
 					<input bind:group={force} type="radio" id="per-track" value="2" />
-					<label for="per-track" class="text-sm text-white">Per Track Force</label>
+					<label for="per-track" class="text-sm text-white">Per Track Value</label>
 				</div>
 			</div>
 			<div class="flex flex-col gap-2">
 				<label for="force-val" class="text-xs text-white">Global Value</label>
 				<div class="input-flex flex rounded-md bg-zinc-700 px-2 py-1">
 					<input
+						bind:value={forceGlobVal}
+						oninput={(e) => {
+							forceGlobVal = forceGlobVal.replace(/\D/g, '');
+							forceGlobVal = forceGlobVal.replace(/^0+/, '');
+							if (forceGlobVal === '') forceGlobVal = '0';
+
+							$tracks.forEach((_, i) => {
+								updateTrack(i, 'force', forceGlobVal);
+							});
+						}}
 						id="force-val"
 						class="w-full text-sm text-white"
 						type="text"
-						inputmode="numeric"
 						maxlength="3"
 						spellcheck="false"
 						placeholder="eg. 200"
 						disabled={force !== '1'}
+						autocomplete="off"
 					/>
 				</div>
 			</div>
@@ -233,9 +283,18 @@
 					{#if $tracks.length > 0}
 						<div transition:fade={{ duration: 180 }} class="absolute inset-0">
 							<select
-								multiple
+								bind:this={trackList}
 								bind:value={selected}
+								onkeydown={(e) => {
+									if (e.key === 'Escape') selected = [];
+									if (
+										(e.key === 'Delete' || e.key === 'Backspace') &&
+										selected.length
+									)
+										removeTrack();
+								}}
 								class="h-full w-full overflow-x-hidden overflow-y-auto text-sm text-white"
+								multiple
 							>
 								{#each $tracks as track, i}
 									<option
@@ -243,14 +302,14 @@
 										value={i}
 										title={track.name}
 									>
-										{track.name}
+										{i + 1}. {track.artist} - {track.name}
 									</option>
 								{/each}
 							</select>
 						</div>
 					{:else}
 						<div
-							transition:fade={{ duration: 180 }}
+							transition:fade={{ duration: 80 }}
 							class="absolute inset-0 flex flex-col items-center justify-center"
 						>
 							<span class="font-semibold text-zinc-500">Drop audio file(s) here</span>
@@ -296,14 +355,14 @@
 			<div class="relative flex grow flex-col rounded-md border-2 border-zinc-700">
 				{#if !selected.length || selected.length > 1}
 					<div
-						transition:fade={{ duration: 180 }}
+						transition:fade={{ duration: 80 }}
 						class="absolute inset-0 flex flex-col items-center justify-center"
 					>
 						<span class="font-semibold text-zinc-500">No track selected</span>
 					</div>
 				{:else}
 					<div
-						transition:fade={{ duration: 180 }}
+						transition:fade={{ duration: 80 }}
 						class="absolute inset-2 flex flex-col gap-4"
 					>
 						<div class="flex flex-col gap-4">
@@ -323,6 +382,7 @@
 										type="text"
 										spellcheck="false"
 										placeholder="Artist"
+										autocomplete="off"
 									/>
 								</div>
 							</div>
@@ -342,6 +402,7 @@
 										type="text"
 										spellcheck="false"
 										placeholder="Track Title"
+										autocomplete="off"
 									/>
 								</div>
 							</div>
@@ -352,22 +413,28 @@
 								<div class="flex rounded-md bg-zinc-700 px-2 py-1">
 									<input
 										bind:value={$tracks[selected as any].year}
-										oninput={(e) =>
-											updateTrack(
-												selected as any,
-												'year',
-												e.currentTarget.value
-											)}
+										oninput={(e) => {
+											let year = e.currentTarget.value;
+											year = year.replace(/\D/g, '');
+											year = year.replace(/^0+/, '');
+											if (year === '') year = '0';
+
+											updateTrack(selected[0], 'year', year);
+										}}
 										id="track-year"
 										class="w-full text-sm text-white"
 										type="text"
+										maxlength="4"
 										spellcheck="false"
 										placeholder="eg. 1969"
+										autocomplete="off"
 									/>
 								</div>
 							</div>
 							<div class="flex flex-1 flex-col gap-2">
-								<label for="track-length" class="text-xs text-white">Length</label>
+								<label for="track-length" class="text-xs text-white"
+									>Length (hh:mm:ss)</label
+								>
 								<div class="flex rounded-md bg-zinc-700 px-2 py-1">
 									<input
 										bind:value={$tracks[selected as any].length}
@@ -382,6 +449,7 @@
 										type="text"
 										spellcheck="false"
 										placeholder="eg. 4:20"
+										autocomplete="off"
 									/>
 								</div>
 							</div>
@@ -390,18 +458,21 @@
 								<div class="input-flex flex rounded-md bg-zinc-700 px-2 py-1">
 									<input
 										value={$tracks[selected[0]].force}
-										oninput={(e) =>
-											updateTrack(
-												selected[0],
-												'force',
-												e.currentTarget.value
-											)}
+										oninput={(e) => {
+											let forceVal = e.currentTarget.value;
+											forceVal = forceVal.replace(/\D/g, '');
+											forceVal = forceVal.replace(/^0+/, '');
+											if (forceVal === '') forceVal = '0';
+
+											updateTrack(selected[0], 'force', forceVal);
+										}}
 										id="track-force"
 										class="w-full text-sm text-white"
 										type="text"
 										maxlength="3"
 										spellcheck="false"
 										placeholder="Default 80"
+										autocomplete="off"
 										disabled={force !== '2'}
 									/>
 								</div>

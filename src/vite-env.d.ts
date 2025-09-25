@@ -2,11 +2,11 @@
 /// <reference types="vite/client" />
 
 interface TrackData {
-	file: string;
-	name: string;
-	artist: string;
-	year: string;
-	length: string;
+	file?: string;
+	name?: string;
+	artist?: string;
+	year?: string;
+	length?: string;
 	force?: string;
 }
 
