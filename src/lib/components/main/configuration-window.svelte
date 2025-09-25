@@ -7,7 +7,7 @@
 	import ddsToDataUrl from '$lib/utils/dds-parse';
 	import { onMount } from 'svelte';
 	import parseAudio from '$lib/utils/audio-parse';
-	import { xmlData, tracks, updateTrack } from '$lib/stores/xml-obj.store';
+	import { xmlData, tracks, updateTrack, updateTracks } from '$lib/stores/xml-obj.store';
 
 	// Icons
 	import SolarRestartSquareBold from '~icons/solar/restart-square-bold';
@@ -78,23 +78,10 @@
 	}
 
 	function removeTrack() {
-		if (!selected.length) return;
+		updateTracks($tracks.filter((_, i) => !selected.some((n) => i == n)));
 
-		tracks.update((arr) => {
-			// filter out selected ids
-			const filtered = arr.filter((track, i) => !selected.includes(track[i] ?? -1));
-
-			// reassign ids so they match new index
-			return filtered.map((t, i) => ({ ...t, id: i }));
-		});
-
-		// Clear selection
 		selected = [];
 	}
-
-	// tracks.subscribe(() => {
-	// 	if (force == '1') setForce();
-	// });
 
 	$effect(() => {
 		if (trackPaths) {
@@ -134,11 +121,12 @@
 		<div class="flex flex-col gap-2">
 			<div class="flex gap-2 overflow-hidden">
 				<div class="flex flex-col gap-2">
-					<label for="" class="text-xs text-white">ID (Unique)</label>
+					<label for="radio-id" class="text-xs text-white">ID (Unique)</label>
 					<div class="flex items-center gap-2 rounded-md bg-zinc-700 px-2 py-1">
 						<input
 							value={redioId}
 							oninput={(e) => ($xmlData.project.radio.id = e.currentTarget.value)}
+							id="radio-id"
 							class="w-[8ch] text-sm text-white"
 							type="text"
 							maxlength="4"
@@ -150,11 +138,12 @@
 					</div>
 				</div>
 				<div class="flex flex-col gap-2">
-					<label for="" class="text-xs text-white">Radio Station Name</label>
+					<label for="radio-name" class="text-xs text-white">Radio Station Name</label>
 					<div class="flex rounded-md bg-zinc-700 px-2 py-1">
 						<input
 							value={radioName}
 							oninput={(e) => ($xmlData.project.radio.name = e.currentTarget.value)}
+							id="radio-name"
 							class="w-[35ch] text-sm text-white"
 							type="text"
 							spellcheck="false"
@@ -164,10 +153,11 @@
 				</div>
 			</div>
 			<div class="flex flex-col gap-2">
-				<label for="" class="text-xs text-white">Logo</label>
+				<label for="logo-src" class="text-xs text-white">Logo</label>
 				<div class="flex items-center gap-2 rounded-md bg-zinc-700 px-2 py-1">
 					<input
 						bind:value={logoPath}
+						id="logo-src"
 						class="w-full text-sm text-white"
 						type="text"
 						spellcheck="false"
@@ -190,7 +180,7 @@
 		</div>
 		<div class="flex flex-col gap-3">
 			<div class="flex items-center gap-2">
-				<label for="" class="text-xs text-white">Force</label>
+				<sapn class="text-xs text-white">Force</sapn>
 				<button
 					class="text-white"
 					title="This sets when the highpass cutoff filter disappears completely. Set to 0 to disable the effect, keep at global default, or enable per track force."
@@ -213,16 +203,17 @@
 				</div>
 			</div>
 			<div class="flex flex-col gap-2">
-				<label for="" class="text-xs text-white">Global Value</label>
+				<label for="force-val" class="text-xs text-white">Global Value</label>
 				<div class="input-flex flex rounded-md bg-zinc-700 px-2 py-1">
 					<input
-						disabled={force !== '1'}
+						id="force-val"
 						class="w-full text-sm text-white"
 						type="text"
 						inputmode="numeric"
 						maxlength="3"
 						spellcheck="false"
 						placeholder="eg. 200"
+						disabled={force !== '1'}
 					/>
 				</div>
 			</div>
@@ -230,7 +221,7 @@
 	</div>
 	<div class="flex grow gap-2">
 		<div class="flex flex-col gap-2">
-			<label for="" class="text-sm text-white">Tracks</label>
+			<span class="text-sm text-white">Tracks</span>
 			<div
 				class="relative flex h-full w-100 flex-col overflow-hidden rounded-md border-2 border-zinc-700 pb-11"
 			>
@@ -301,7 +292,7 @@
 			</div>
 		</div>
 		<div class="flex grow flex-col gap-2">
-			<label for="" class="text-sm text-white">Track Info</label>
+			<span class="text-sm text-white">Track Info</span>
 			<div class="relative flex grow flex-col rounded-md border-2 border-zinc-700">
 				{#if !selected.length || selected.length > 1}
 					<div
@@ -317,7 +308,7 @@
 					>
 						<div class="flex flex-col gap-4">
 							<div class="flex flex-col gap-2">
-								<label for="" class="text-xs text-white">Artist</label>
+								<label for="track-artist" class="text-xs text-white">Artist</label>
 								<div class="flex rounded-md bg-zinc-700 px-2 py-1">
 									<input
 										value={$tracks[selected as any].artist}
@@ -327,6 +318,7 @@
 												'artist',
 												e.currentTarget.value
 											)}
+										id="track-artist"
 										class="w-full text-sm text-white"
 										type="text"
 										spellcheck="false"
@@ -335,7 +327,7 @@
 								</div>
 							</div>
 							<div class="flex flex-col gap-2">
-								<label for="" class="text-xs text-white">Name</label>
+								<label for="track-name" class="text-xs text-white">Name</label>
 								<div class="flex rounded-md bg-zinc-700 px-2 py-1">
 									<input
 										bind:value={$tracks[selected as any].name}
@@ -345,6 +337,7 @@
 												'name',
 												e.currentTarget.value
 											)}
+										id="track-name"
 										class="w-full text-sm text-white"
 										type="text"
 										spellcheck="false"
@@ -355,7 +348,7 @@
 						</div>
 						<div class="flex gap-4">
 							<div class="flex flex-1 flex-col gap-2">
-								<label for="" class="text-xs text-white">Year</label>
+								<label for="track-year" class="text-xs text-white">Year</label>
 								<div class="flex rounded-md bg-zinc-700 px-2 py-1">
 									<input
 										bind:value={$tracks[selected as any].year}
@@ -365,6 +358,7 @@
 												'year',
 												e.currentTarget.value
 											)}
+										id="track-year"
 										class="w-full text-sm text-white"
 										type="text"
 										spellcheck="false"
@@ -373,7 +367,7 @@
 								</div>
 							</div>
 							<div class="flex flex-1 flex-col gap-2">
-								<label for="" class="text-xs text-white">Length</label>
+								<label for="track-length" class="text-xs text-white">Length</label>
 								<div class="flex rounded-md bg-zinc-700 px-2 py-1">
 									<input
 										bind:value={$tracks[selected as any].length}
@@ -383,6 +377,7 @@
 												'length',
 												e.currentTarget.value
 											)}
+										id="track-length"
 										class="w-full text-sm text-white"
 										type="text"
 										spellcheck="false"
@@ -391,15 +386,23 @@
 								</div>
 							</div>
 							<div class="flex-1 flex-col gap-2">
-								<label for="" class="text-xs text-white">Force</label>
+								<label for="track-force" class="text-xs text-white">Force</label>
 								<div class="input-flex flex rounded-md bg-zinc-700 px-2 py-1">
 									<input
-										disabled={force !== '2'}
+										value={$tracks[selected[0]].force}
+										oninput={(e) =>
+											updateTrack(
+												selected[0],
+												'force',
+												e.currentTarget.value
+											)}
+										id="track-force"
 										class="w-full text-sm text-white"
 										type="text"
 										maxlength="3"
 										spellcheck="false"
 										placeholder="Default 80"
+										disabled={force !== '2'}
 									/>
 								</div>
 							</div>

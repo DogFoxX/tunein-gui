@@ -7,13 +7,13 @@
 	import { xmlData, tracks } from '$lib/stores/xml-obj.store';
 
 	// Icons
-	import SolarAltArrowDownLinear from '~icons/solar/alt-arrow-down-linear';
-	import SolarArchiveDownMinimlisticLineDuotone from '~icons/solar/archive-down-minimlistic-line-duotone';
-	import SolarArchiveUpMinimlisticLineDuotone from '~icons/solar/archive-up-minimlistic-line-duotone';
-	import SolarBoltBoldDuotone from '~icons/solar/bolt-bold-duotone';
-	import SolarFolderOpenBoldDuotone from '~icons/solar/folder-open-bold-duotone';
-	import SolarCodeBoldDuotone from '~icons/solar/code-bold-duotone';
-	import SolarSettingsLinear from '~icons/solar/settings-linear';
+	import CaretDown from '~icons/solar/alt-arrow-down-linear';
+	import SaveIcon from '~icons/solar/file-bold-duotone';
+	import ImportIcon from '~icons/solar/archive-down-minimlistic-line-duotone';
+	import ExportIcon from '~icons/solar/archive-up-minimlistic-line-duotone';
+	import CreateIcon from '~icons/solar/bolt-bold-duotone';
+	import CodeIcon from '~icons/solar/code-bold-duotone';
+	import SettingsIcon from '~icons/solar/settings-linear';
 
 	let profileOpen = $state(false);
 	let workingDir = $state<string | null>();
@@ -27,7 +27,7 @@
 			class:!bg-slate-500={profileOpen == true}
 		>
 			<span>Select a Profile</span>
-			<SolarAltArrowDownLinear width="16" height="16" class="absolute right-2" />
+			<CaretDown width="16" height="16" class="absolute right-2" />
 		</button>
 		{#if profileOpen}
 			<!-- <div
@@ -41,13 +41,25 @@
 		{/if}
 	</div>
 	<button
+		class="rounded-md bg-slate-700 px-4 py-1 text-white transition-colors hover:bg-slate-500"
+		title="Save (Ctrl + S)"
+	>
+		<SaveIcon width="20" height="20" />
+	</button>
+	<button
+		class="rounded-md bg-slate-700 px-4 py-1 text-white transition-colors hover:bg-slate-500"
+		title="Create Radio Station"
+	>
+		<CreateIcon width="20" height="20" />
+	</button>
+	<button
 		onclick={async () => {
 			await openXML();
 		}}
 		class="rounded-md bg-slate-700 px-4 py-1 text-white transition-colors hover:bg-slate-500"
 		title="Import XML (Ctrl + I)"
 	>
-		<SolarArchiveDownMinimlisticLineDuotone width="20" height="20" />
+		<ImportIcon width="20" height="20" />
 	</button>
 	<button
 		onclick={async () => {
@@ -56,29 +68,21 @@
 		class="rounded-md bg-slate-700 px-4 py-1 text-white transition-colors hover:bg-slate-500"
 		title="Export XML (Ctrl + E)"
 	>
-		<SolarArchiveUpMinimlisticLineDuotone width="20" height="20" />
+		<ExportIcon width="20" height="20" />
 	</button>
-
-	<button
-		class="rounded-md bg-slate-700 px-4 py-1 text-white transition-colors hover:bg-slate-500"
-		title="Create Radio Station"
-	>
-		<SolarBoltBoldDuotone width="20" height="20" />
-	</button>
-
 	<div class="absolute right-2 flex gap-2">
 		<button
 			onclick={() => xmlView.set(!$xmlView)}
 			class="rounded-md bg-slate-700 px-4 py-1 text-white transition-colors hover:bg-slate-500"
 			title="{!$xmlView ? 'Show' : 'Hide'} XML Preview"
 		>
-			<SolarCodeBoldDuotone width="20" height="20" />
+			<CodeIcon width="20" height="20" />
 		</button>
 		<button
 			class="rounded-md bg-slate-700 px-4 py-1 text-white transition-colors hover:bg-slate-500"
 			title="Settings"
 		>
-			<SolarSettingsLinear width="20" height="20" />
+			<SettingsIcon width="20" height="20" />
 		</button>
 	</div>
 </div>

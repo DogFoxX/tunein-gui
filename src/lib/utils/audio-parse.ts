@@ -37,7 +37,6 @@ async function parseAudio(paths: string[]): Promise<MetadataResult[]> {
 				} else text = `${meta.common.artist} - ${meta.common.title}`;
 
 				return {
-					id: i,
 					file: p,
 					text,
 					name: meta.common.title ?? '',
