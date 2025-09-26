@@ -1,11 +1,10 @@
 <script lang="ts">
 	import { listen } from '@tauri-apps/api/event';
 	import { convertFileSrc } from '@tauri-apps/api/core';
-	import { appDataDir } from '@tauri-apps/api/path';
 	import { exists } from '@tauri-apps/plugin-fs';
 	import { openFileDiag } from '$lib/utils/dialog';
 	import type { DialogFilter } from '@tauri-apps/plugin-dialog';
-	import { showDDSImage, convertToDds, convertImageToDds } from '$lib/utils/dds-parse';
+	import { showDDSImage, convertImageToDds } from '$lib/utils/dds-parse';
 	import { onMount } from 'svelte';
 	import parseAudio from '$lib/utils/audio-parse';
 	import {

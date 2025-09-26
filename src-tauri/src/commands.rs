@@ -2,18 +2,17 @@ use std::fs::File;
 use std::io::Cursor;
 use std::path::Path;
 
-use tauri::command;
+use base64::{Engine as _, engine::general_purpose};
+use ddsfile::Dds;
 use image::{DynamicImage, ImageFormat};
 use image_dds::{dds_from_image, image_from_dds};
-use ddsfile::Dds;
-use base64::{engine::general_purpose, Engine as _};
+use tauri::command;
 
 /// Convert PNG/JPG/BMP → DXT5 DDS
 #[command]
 pub fn convert_to_dds(input_path: String, output_dir: String) -> Result<(), String> {
     // Load input image
-    let img = image::open(&input_path)
-        .map_err(|e| format!("Failed to open image: {}", e))?;
+    let img = image::open(&input_path).map_err(|e| format!("Failed to open image: {}", e))?;
 
     // Convert DynamicImage → RGBA8 buffer
     let rgba = img.to_rgba8();
@@ -30,8 +29,8 @@ pub fn convert_to_dds(input_path: String, output_dir: String) -> Result<(), Stri
     // Always save as "<directory>/thumb.dds"
     let output_path = Path::new(&output_dir).join("thumb.dds");
 
-    let mut file = File::create(&output_path)
-        .map_err(|e| format!("Failed to create DDS file: {}", e))?;
+    let mut file =
+        File::create(&output_path).map_err(|e| format!("Failed to create DDS file: {}", e))?;
     dds.write(&mut file)
         .map_err(|e| format!("Failed to write DDS file: {}", e))?;
 
@@ -42,14 +41,12 @@ pub fn convert_to_dds(input_path: String, output_dir: String) -> Result<(), Stri
 #[command]
 pub fn dds_to_png_base64(input_path: String) -> Result<String, String> {
     // Read DDS from disk
-    let mut file = File::open(&input_path)
-        .map_err(|e| format!("Failed to open DDS file: {}", e))?;
-    let dds = Dds::read(&mut file)
-        .map_err(|e| format!("Failed to parse DDS: {:?}", e))?;
+    let mut file =
+        File::open(&input_path).map_err(|e| format!("Failed to open DDS file: {}", e))?;
+    let dds = Dds::read(&mut file).map_err(|e| format!("Failed to parse DDS: {:?}", e))?;
 
     // Decode DDS (take mipmap level 0, full resolution)
-    let rgba = image_from_dds(&dds, 0)
-        .map_err(|e| format!("Failed to decode DDS: {:?}", e))?;
+    let rgba = image_from_dds(&dds, 0).map_err(|e| format!("Failed to decode DDS: {:?}", e))?;
 
     // Wrap into DynamicImage so we can re-encode as PNG
     let img = DynamicImage::ImageRgba8(rgba);

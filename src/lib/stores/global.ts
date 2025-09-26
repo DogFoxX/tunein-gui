@@ -1,9 +1,9 @@
 import { writable } from 'svelte/store';
 
 export const settings = writable<GuiSettings>({
-	workingDir: null,
-	tuneinCrewDir: '',
-	fmodDir: '',
+	cwd: null,
+	tuneinCrewDir: null,
+	fmodDir: 'C:/Program Files (x86)/FMOD SoundSystem/FMOD Designer/fmod_designercl.exe',
 	autoUpdate: {
 		tuneInGui: true,
 		tuneInCrew: true

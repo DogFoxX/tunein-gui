@@ -36,14 +36,14 @@
 		"@tauri-apps/api": "^2.8.0",
 		"@tauri-apps/plugin-dialog": "^2.4.0",
 		"@tauri-apps/plugin-fs": "^2.4.2",
+		"@tauri-apps/plugin-http": "^2.5.2",
 		"@tauri-apps/plugin-opener": "^2.5.0",
+		"@tauri-apps/plugin-store": "^2.4.0",
 		"@tauri-apps/plugin-window-state": "^2.4.0",
+		"axios": "^1.12.2",
 		"decode-dxt": "^1.0.1",
-		"dxt-js": "^0.0.3",
+		"fflate": "^0.8.2",
 		"highlight.js": "^11.11.1",
-		"music-metadata": "^11.9.0",
-		"parse-dds": "^1.2.1",
-		"pngjs": "^7.0.0",
-		"xml-js": "^1.6.11"
+		"music-metadata": "^11.9.0"
 	}
 }

@@ -28,13 +28,3 @@ export function sanitizeXml(value: string): string {
 	}
 	return result;
 }
-
-export function unicodeToXmlRefs(str: string): string {
-	return Array.from(str)
-		.map((char) => {
-			const code = char.codePointAt(0)!;
-			// Convert only if non-ASCII (code > 127)
-			return code > 127 ? `&#x${code.toString(16).toUpperCase()};` : char;
-		})
-		.join('');
-}

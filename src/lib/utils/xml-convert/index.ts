@@ -1,5 +1,4 @@
-import type { XmlValue, XmlObject } from './types';
-import { sanitizeXml, unicodeToXmlRefs } from './sanitize-xml';
+import { sanitizeXml } from './sanitize-xml';
 
 export function obj2xml<T extends XmlData>(obj: T, indent = ''): string {
 	let xml = '';

@@ -15,9 +15,33 @@
     "opener:default",
     "dialog:default",
     "fs:default",
-    "fs:allow-write-text-file",
-    "fs:allow-app-write",
     "fs:allow-read-file",
-    "fs:allow-write-file"
+    "fs:allow-write-file",
+    "fs:allow-temp-read",
+    "fs:allow-temp-write",
+    "fs:allow-app-write",
+    "fs:allow-app-read",
+    "fs:allow-app-write-recursive",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        {
+          "path": "$APPDATA"
+        },
+        {
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$APPDATA/*"
+        },
+        {
+          "path": "$APPDATA/"
+        }
+      ]
+    },
+    {
+      "identifier": "http:default",
+      "allow": [{ "url": "https://*" }]
+    }
   ]
 }

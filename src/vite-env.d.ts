@@ -2,8 +2,8 @@
 /// <reference types="vite/client" />
 
 interface GuiSettings {
-	workingDir: string | null;
-	tuneinCrewDir: string;
+	cwd: string | null;
+	tuneinCrewDir: string | null;
 	fmodDir: string;
 	autoUpdate: {
 		tuneInGui: boolean;

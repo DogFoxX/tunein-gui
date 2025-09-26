@@ -23,7 +23,6 @@
 				"fullscreen": false,
 				"backgroundColor": "#1E1E1E",
 				"dragDropEnabled": true,
-				"devtools": true,
 				"visible": false
 			}
 		],
