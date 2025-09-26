@@ -1,7 +1,11 @@
 import parse from 'parse-dds';
 import decodeDXT from 'decode-dxt';
+import { invoke } from '@tauri-apps/api/core';
+import { get } from 'svelte/store';
+import { settings } from '$lib/stores/global';
+import { appDataDir } from '@tauri-apps/api/path';
 
-async function ddsToDataUrl(path: string): Promise<string> {
+export async function ddsToDataUrl(path: string): Promise<string> {
 	// Fetch the DDS file (works for local/public assets or remote URLs)
 	const res = await fetch(path);
 
@@ -9,11 +13,12 @@ async function ddsToDataUrl(path: string): Promise<string> {
 
 	// Parse DDS header + mipmaps
 	const dds = parse(buf);
+	console.log(buf);
 	const image = dds.images[0];
 	const { offset, length, shape } = image;
 
 	// Decode DXT5 compressed data → raw RGBA
-	const rgba = decodeDXT(new DataView(buf, offset, length), shape[0], shape[1], 'dxt5');
+	const rgba = decodeDXT(new DataView(buf, offset, length), shape[0], shape[1]);
 
 	// Paint to canvas
 	const canvas = document.createElement('canvas');
@@ -28,4 +33,23 @@ async function ddsToDataUrl(path: string): Promise<string> {
 	return canvas.toDataURL('image/png');
 }
 
-export default ddsToDataUrl;
+export async function convertToDds(inputFile: string, outputDir: string) {
+	const saved = await invoke<string>('convert_to_dds', {
+		inputPath: inputFile,
+		outputDir
+	});
+	console.log('DDS saved at:', saved);
+}
+
+export async function showDDSImage(inputPath: string): Promise<string> {
+	return await invoke('dds_to_png_base64', {
+		inputPath
+	});
+}
+
+export async function convertImageToDds(inputPath: string) {
+	await invoke('convert_to_dds', {
+		inputPath,
+		outputDir: get(settings).workingDir ?? (await appDataDir())
+	});
+}

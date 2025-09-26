@@ -39,6 +39,7 @@
 		"@tauri-apps/plugin-opener": "^2.5.0",
 		"@tauri-apps/plugin-window-state": "^2.4.0",
 		"decode-dxt": "^1.0.1",
+		"dxt-js": "^0.0.3",
 		"highlight.js": "^11.11.1",
 		"music-metadata": "^11.9.0",
 		"parse-dds": "^1.2.1",

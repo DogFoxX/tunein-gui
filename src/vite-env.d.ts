@@ -1,6 +1,16 @@
 /// <reference types="svelte" />
 /// <reference types="vite/client" />
 
+interface GuiSettings {
+	workingDir: string | null;
+	tuneinCrewDir: string;
+	fmodDir: string;
+	autoUpdate: {
+		tuneInGui: boolean;
+		tuneInCrew: boolean;
+	};
+}
+
 interface TrackData {
 	file?: string;
 	name?: string;

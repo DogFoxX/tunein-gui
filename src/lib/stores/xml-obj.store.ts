@@ -1,5 +1,7 @@
 import { writable, get } from 'svelte/store';
 
+export const xmlView = writable(true);
+
 export const xmlData = writable<XmlData>({
 	project: {
 		fmod: '',

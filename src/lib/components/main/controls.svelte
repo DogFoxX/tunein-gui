@@ -2,8 +2,7 @@
 	import { fly } from 'svelte/transition';
 	import { saveXML, openXML } from '$lib/utils/dialog';
 	import { obj2xml, xml2obj } from '$lib/utils/xml-convert/index';
-	import type { DialogFilter } from '@tauri-apps/plugin-dialog';
-	import { xmlView } from '$lib/stores/global';
+	import { xmlView } from '$lib/stores/xml-obj.store';
 	import { xmlData, tracks } from '$lib/stores/xml-obj.store';
 
 	// Icons

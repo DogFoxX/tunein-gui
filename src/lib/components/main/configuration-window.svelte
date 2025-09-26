@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { listen } from '@tauri-apps/api/event';
 	import { convertFileSrc } from '@tauri-apps/api/core';
+	import { appDataDir } from '@tauri-apps/api/path';
 	import { exists } from '@tauri-apps/plugin-fs';
 	import { openFileDiag } from '$lib/utils/dialog';
 	import type { DialogFilter } from '@tauri-apps/plugin-dialog';
-	import ddsToDataUrl from '$lib/utils/dds-parse';
+	import { showDDSImage, convertToDds, convertImageToDds } from '$lib/utils/dds-parse';
 	import { onMount } from 'svelte';
 	import parseAudio from '$lib/utils/audio-parse';
 	import {
@@ -33,7 +34,7 @@
 
 	const imageFilter: DialogFilter[] = [
 		{
-			extensions: ['bmp', 'jpg', 'jpeg', 'png'],
+			extensions: ['dds', 'bmp', 'jpg', 'jpeg', 'png'],
 			name: 'Image Files'
 		}
 	];
@@ -51,7 +52,7 @@
 	let forceGlobVal = $state('0');
 	let trackPaths = $state<string[]>([]);
 
-	let redioId = $derived($xmlData.project.radio.id);
+	let radioId = $derived($xmlData.project.radio.id);
 	let radioName = $derived($xmlData.project.radio.name);
 
 	onMount(() => {
@@ -70,7 +71,7 @@
 			}
 
 			if (el && logoDropArea?.contains(el)) {
-				const allowedExt = ['bmp', 'jpg', 'jpeg', 'png'];
+				const allowedExt = ['dds', 'bmp', 'jpg', 'jpeg', 'png'];
 				let files = event.payload.paths;
 
 				logoPath = files.filter((file) =>
@@ -100,10 +101,24 @@
 				updateTracks(added);
 			});
 		}
+	});
 
-		exists(logoPath)
-			.then(() => (logoSrc = convertFileSrc(logoPath)))
-			.catch(() => (logoSrc = ''));
+	$effect(() => {
+		if (logoPath) {
+			exists(logoPath)
+				.then(async () => {
+					let imageExts = ['bmp', 'jpeg', 'jpg', 'png'];
+
+					let ext = logoPath.split('.').pop()?.toLowerCase();
+
+					if (imageExts.includes(ext ?? '')) {
+						convertImageToDds(logoPath);
+						return (logoSrc = convertFileSrc(logoPath));
+					}
+					logoSrc = await showDDSImage(logoPath);
+				})
+				.catch(() => (logoSrc = ''));
+		}
 	});
 </script>
 
@@ -111,10 +126,11 @@
 	<div class="flex gap-4">
 		<div
 			bind:this={logoDropArea}
-			class="flex h-28 w-28 items-center justify-center rounded-md border-2 border-zinc-700 p-2"
+			class="relative flex h-28 w-28 items-center justify-center rounded-md border-2 border-zinc-700 p-2"
 		>
 			{#if !logoSrc}
 				<div
+					transition:fade={{ duration: 120 }}
 					ondblclick={async () => {
 						logoPath = await openFileDiag({
 							title: 'Choose a logo',
@@ -122,7 +138,7 @@
 							multiple: false
 						});
 					}}
-					class="flex h-full w-full flex-col items-center justify-center gap-2"
+					class="absolute inset-2 flex flex-col items-center justify-center gap-2"
 					role="img"
 				>
 					<span class="text-sm font-semibold text-zinc-500">Logo Preview</span>
@@ -131,7 +147,13 @@
 					>
 				</div>
 			{:else}
-				<img src={logoSrc} alt="" width="512" height="512" />
+				<img
+					transition:fade={{ duration: 120 }}
+					src={logoSrc}
+					alt=""
+					width="512"
+					height="512"
+				/>
 			{/if}
 		</div>
 		<div class="flex flex-col gap-2">
@@ -140,7 +162,7 @@
 					<label for="radio-id" class="text-xs text-white">ID (Unique)</label>
 					<div class="flex items-center gap-2 rounded-md bg-zinc-700 px-2 py-1">
 						<input
-							value={redioId}
+							value={radioId}
 							oninput={(e) => ($xmlData.project.radio.id = e.currentTarget.value)}
 							id="radio-id"
 							class="w-[8ch] text-sm text-white"
@@ -432,9 +454,7 @@
 								</div>
 							</div>
 							<div class="flex flex-1 flex-col gap-2">
-								<label for="track-length" class="text-xs text-white"
-									>Length (hh:mm:ss)</label
-								>
+								<label for="track-length" class="text-xs text-white">Length</label>
 								<div class="flex rounded-md bg-zinc-700 px-2 py-1">
 									<input
 										bind:value={$tracks[selected as any].length}
@@ -457,7 +477,7 @@
 								<label for="track-force" class="text-xs text-white">Force</label>
 								<div class="input-flex flex rounded-md bg-zinc-700 px-2 py-1">
 									<input
-										value={$tracks[selected[0]].force}
+										bind:value={$tracks[selected[0]].force}
 										oninput={(e) => {
 											let forceVal = e.currentTarget.value;
 											forceVal = forceVal.replace(/\D/g, '');

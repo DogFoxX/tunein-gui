@@ -23,29 +23,19 @@ function normalizeYear(year: number | undefined): string {
 }
 
 async function parseAudio(paths: string[]): Promise<TrackData[]> {
-	let text: string;
-
 	const results = await Promise.all(
 		paths.map(async (p, i) => {
-			try {
-				const bytes = await readFile(p);
-				const blob = new Blob([bytes.buffer]);
-				const meta = await parseBlob(blob);
+			const bytes = await readFile(p);
+			const blob = new Blob([bytes.buffer]);
+			const meta = await parseBlob(blob);
 
-				if (!meta.common.artist && !meta.common.title) {
-					text = getFileNameText(p);
-				} else text = `${meta.common.artist} - ${meta.common.title}`;
-
-				return {
-					file: p,
-					name: meta.common.title ?? getFileNameText(p),
-					artist: meta.common.artist ?? '',
-					year: normalizeYear(meta.common.year) ?? '',
-					length: formatDuration(meta.format.duration)
-				};
-			} catch (err: any) {
-				return { error: err.message };
-			}
+			return {
+				file: p,
+				name: meta.common.title ?? getFileNameText(p),
+				artist: meta.common.artist ?? '',
+				year: normalizeYear(meta.common.year) ?? '',
+				length: formatDuration(meta.format.duration)
+			};
 		})
 	);
 
