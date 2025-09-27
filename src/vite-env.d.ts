@@ -2,22 +2,25 @@
 /// <reference types="vite/client" />
 
 interface GuiSettings {
-	cwd: string | null;
-	tuneinCrewDir: string | null;
+	cwd: string;
+	tuneinCrew: {
+		version: number | null;
+		dir: string;
+	};
 	fmodDir: string;
 	autoUpdate: {
-		tuneInGui: boolean;
-		tuneInCrew: boolean;
+		gui: boolean;
+		tuneinCrew: boolean;
 	};
 }
 
 interface TrackData {
-	file?: string;
-	name?: string;
-	artist?: string;
-	year?: string;
-	length?: string;
-	force?: string;
+	file?: string | null;
+	name?: string | null;
+	artist?: string | null;
+	year?: string | null;
+	length?: string | null;
+	force?: string | null;
 }
 
 interface XmlData {

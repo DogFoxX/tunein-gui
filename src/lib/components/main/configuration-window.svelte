@@ -224,7 +224,7 @@
 		</div>
 		<div class="flex flex-col gap-3">
 			<div class="flex items-center gap-2">
-				<sapn class="text-xs text-white">Force</sapn>
+				<span class="text-xs text-white">Force</span>
 				<button
 					class="text-white"
 					tabindex="-1"

@@ -39,7 +39,12 @@
 {#if $xmlView}
 	<div transition:fade={{ duration: 180 }} class="flex h-full w-full min-w-80 flex-col gap-2">
 		<span class="text-xs text-white">XML Preview</span>
-		<div class="relative flex grow overflow-hidden rounded-md border-2 border-zinc-700">
+		<div
+			onmouseenter={() => (showCopy = true)}
+			onmouseleave={() => (showCopy = false)}
+			role="none"
+			class="relative flex grow overflow-hidden rounded-md border-2 border-zinc-700"
+		>
 			{#if hasValues}
 				{#if showCopy}
 					<button
@@ -51,13 +56,7 @@
 						<SolarCopyBoldDuotone width="24" height="24" />
 					</button>
 				{/if}
-				<div
-					transition:fade={{ duration: 180 }}
-					onmouseenter={() => (showCopy = true)}
-					onmouseleave={() => (showCopy = false)}
-					class="absolute inset-2 overflow-auto"
-					role="none"
-				>
+				<div class="absolute inset-2 overflow-auto">
 					<pre><code bind:this={codeEl} class="language-xml text-sm"
 							>{@html highlightedCode}</code
 						></pre>

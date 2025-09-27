@@ -24,7 +24,7 @@ function normalizeYear(year: number | undefined): string {
 
 async function parseAudio(paths: string[]): Promise<TrackData[]> {
 	const results = await Promise.all(
-		paths.map(async (p, i) => {
+		paths.map(async (p) => {
 			const bytes = await readFile(p);
 			const blob = new Blob([bytes.buffer]);
 			const meta = await parseBlob(blob);

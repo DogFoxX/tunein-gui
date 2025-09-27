@@ -60,10 +60,12 @@ select {
 button {
 	cursor: pointer;
 	user-select: none;
+	transition: 80ms ease-in-out;
 
 	&:disabled {
 		cursor: default;
 		opacity: 0.5;
+		pointer-events: none;
 	}
 
 	&:focus-visible {

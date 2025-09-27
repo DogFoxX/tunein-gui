@@ -1,8 +1,10 @@
+import { get } from 'svelte/store';
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 import axios from 'axios';
 import { writeFile, remove, mkdir } from '@tauri-apps/plugin-fs';
 import { tempDir, join, dirname } from '@tauri-apps/api/path';
 import { unzipSync } from 'fflate';
+import { settings } from '$lib/stores/settings.store';
 
 const axiosInstance = axios.create({
 	adapter: 'fetch',
@@ -12,7 +14,7 @@ const axiosInstance = axios.create({
 	}
 });
 
-async function getLatest(targetDir: string) {
+async function getLatest() {
 	const metaRes = await axiosInstance.get(
 		`https://api.github.com/repos/Telonof/TuneinCrew/releases/latest`,
 		{ headers: { 'User-Agent': 'MyApp' } }
@@ -45,6 +47,7 @@ async function getLatest(targetDir: string) {
 		const relativePath = path.replace(rootFolder, '');
 		if (!relativePath) continue;
 
+		const targetDir = get(settings).tuneinCrew.dir;
 		const outPath = await join(targetDir, relativePath);
 		const parentDir = await dirname(outPath);
 		await mkdir(parentDir, { recursive: true });
@@ -56,7 +59,7 @@ async function getLatest(targetDir: string) {
 
 	await remove(zipPath);
 
-	return targetDir;
+	return release;
 }
 
 export default getLatest;

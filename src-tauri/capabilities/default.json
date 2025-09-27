@@ -22,6 +22,7 @@
     "fs:allow-app-write",
     "fs:allow-app-read",
     "fs:allow-app-write-recursive",
+    "fs:allow-watch",
     {
       "identifier": "fs:scope",
       "allow": [
@@ -42,6 +43,14 @@
     {
       "identifier": "http:default",
       "allow": [{ "url": "https://*" }]
+    },
+    {
+      "identifier": "shell:allow-spawn",
+      "allow": [{
+        "name": "exec",
+        "cmd": "powershell.exe",
+        "args": true
+      }]
     }
   ]
 }

@@ -1,8 +1,9 @@
 use tauri::Manager;
-mod commands;
+mod dds_convert;
 
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
@@ -26,8 +27,8 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            commands::convert_to_dds,
-            commands::dds_to_png_base64
+            dds_convert::convert_to_dds,
+            dds_convert::dds_to_png_base64
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

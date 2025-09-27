@@ -7,10 +7,11 @@ export async function openFileDiag(args: {
 	title: string;
 	filters: DialogFilter[];
 	multiple: boolean;
+	defaultPath?: string;
 }): Promise<object[] | any> {
-	const { title, filters, multiple } = args;
+	const { title, filters, multiple, defaultPath } = args;
 
-	return open({ title, filters, multiple });
+	return open({ title, filters, multiple, directory: false, defaultPath });
 }
 
 export async function openDirDiag(args: { title: string }): Promise<string[] | any> {
