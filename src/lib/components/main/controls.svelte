@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
-	import { readTextFile, watchImmediate } from '@tauri-apps/plugin-fs';
+	import { readTextFile, readTextFileLines, watchImmediate } from '@tauri-apps/plugin-fs';
 	import { invoke } from '@tauri-apps/api/core';
 	import { listen } from '@tauri-apps/api/event';
 	import { Command } from '@tauri-apps/plugin-shell';
@@ -28,30 +28,6 @@
 		const minutes = String(now.getMinutes()).padStart(2, '0');
 		const seconds = String(now.getSeconds()).padStart(2, '0');
 
-		const logFile = await join(await dirname($settings.tuneinCrew.dir));
-
-		const unwatch = await watchImmediate(logFile, ({ paths }) => {
-			paths.forEach(async (path) => {
-				if (path.includes('fmod_designer.log')) {
-					try {
-						const contents = await readTextFile(paths[0]);
-						const lines = contents.split(/\r?\n/).filter((line) => line.trim() !== '');
-						const currentLastLine = lines[lines.length - 1];
-
-						stdOut.update((arr) => {
-							const newarr = [
-								...arr,
-								`[${hours}:${minutes}:${seconds}] ${currentLastLine}`
-							];
-							return Array.from(new Set(newarr));
-						});
-					} catch (e) {
-						console.error('Failed to read log file:', e);
-					}
-				}
-			});
-		});
-
 		const command = Command.create('exec', [
 			$settings.tuneinCrew.dir,
 			`"D:\\Games\\The Crew Unlimited\\TuneinCrew\\Stations\\NFSU2\\station.xml"`
@@ -63,13 +39,7 @@
 				return Array.from(new Set(newarr));
 			})
 		);
-		command.on('close', () => {
-			unwatch();
-			stdOut.update((arr) => {
-				const newarr = [...arr, `[${hours}:${minutes}:${seconds}] TuneinCrew finished`];
-				return Array.from(new Set(newarr));
-			});
-		});
+		command.on('close', () => {});
 
 		command.spawn();
 	}
