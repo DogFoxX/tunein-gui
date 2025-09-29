@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { stdOut } from '$lib/stores/global';
 	import { openPath } from '@tauri-apps/plugin-opener';
-	import { dirname } from '@tauri-apps/api/path';
 
 	let console = $state<HTMLElement>();
 	const dirRegex = /(?:[A-Z]:\\(?:[^\\:\n]+\\)*[^\\:\n]+|\/(?:[^\/:\n]+\/)*[^\/:\n]+)(?<!\.\w+)$/;

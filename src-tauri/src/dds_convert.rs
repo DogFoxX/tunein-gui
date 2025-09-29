@@ -14,6 +14,7 @@ pub fn convert_to_dds(input_path: String, output_dir: String) -> Result<(), Stri
     // Load input image
     let img = image::open(&input_path).map_err(|e| format!("Failed to open image: {}", e))?;
 
+    // Resize to 512x512
     let resized = img.resize_exact(512, 512, FilterType::Lanczos3);
 
     // Convert DynamicImage → RGBA8 buffer

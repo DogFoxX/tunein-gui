@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { fade } from 'svelte/transition';
 	import { listen } from '@tauri-apps/api/event';
 	import { convertFileSrc } from '@tauri-apps/api/core';
 	import { exists } from '@tauri-apps/plugin-fs';
@@ -22,7 +23,6 @@
 	import SolarQuestionCircleBold from '~icons/solar/question-circle-bold';
 	import SolarAddSquareBold from '~icons/solar/add-square-bold';
 	import SolarTrashBinTrashBold from '~icons/solar/trash-bin-trash-bold';
-	import { fade } from 'svelte/transition';
 
 	// Dialog Filters
 	const audioFilter: DialogFilter[] = [
@@ -118,21 +118,22 @@
 		});
 	}
 
-	$effect(() => {
-		if ($logoPath) {
-			exists($logoPath)
-				.then(async () => {
-					let imageExts = ['bmp', 'jpeg', 'jpg', 'png'];
+	logoPath.subscribe(async (logoPath) => {
+		if (logoPath) {
+			const exist = await exists(logoPath);
+			let imageExts = ['bmp', 'jpeg', 'jpg', 'png'];
 
-					let ext = $logoPath.split('.').pop()?.toLowerCase();
+			if (exist) {
+				let ext = logoPath.split('.').pop()?.toLowerCase();
 
-					if (imageExts.includes(ext ?? '')) {
-						$xmlData.project.radio.logo = 'thumb.dds';
-						return (logoSrc = convertFileSrc($logoPath));
-					}
-					logoSrc = await showDDSImage($logoPath);
-				})
-				.catch(() => (logoSrc = ''));
+				if (imageExts.includes(ext ?? '')) {
+					$xmlData.project.radio.logo = 'thumb.dds';
+					return (logoSrc = convertFileSrc(logoPath));
+				}
+				return (logoSrc = await showDDSImage(logoPath));
+			}
+
+			logoSrc = '';
 		}
 	});
 </script>
@@ -215,7 +216,10 @@
 				<label for="logo-src" class="text-xs text-white">Logo</label>
 				<div class="flex items-center gap-2 rounded-md bg-zinc-700 px-2 py-1">
 					<input
-						bind:value={$logoPath}
+						value={$logoPath}
+						oninput={(e) => {
+							logoPath.set(e.currentTarget.value);
+						}}
 						id="logo-src"
 						class="w-full text-sm text-white"
 						type="text"

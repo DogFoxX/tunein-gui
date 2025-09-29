@@ -15,6 +15,7 @@
     "opener:default",
     "dialog:default",
     "fs:default",
+    "fs:allow-copy-file",
     "fs:allow-read-file",
     "fs:allow-write-file",
     "fs:allow-temp-read",
