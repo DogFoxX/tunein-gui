@@ -22,7 +22,13 @@ function normalizeYear(year: number | undefined): string {
 	return match ? match[0] : '';
 }
 
-async function parseAudio(paths: string[]): Promise<TrackData[]> {
+async function parseAudio(
+	paths: string[],
+	callback: (isLoading: boolean) => void,
+	forceOpts?: { setForce: boolean; forceGlobVal: string }
+): Promise<TrackData[]> {
+	callback(true);
+
 	const results = await Promise.all(
 		paths.map(async (p) => {
 			const bytes = await readFile(p);
@@ -34,10 +40,13 @@ async function parseAudio(paths: string[]): Promise<TrackData[]> {
 				name: meta.common.title ?? getFileNameText(p),
 				artist: meta.common.artist ?? '',
 				year: normalizeYear(meta.common.year) ?? '',
-				length: formatDuration(meta.format.duration)
+				length: formatDuration(meta.format.duration),
+				...(forceOpts?.setForce ? { force: forceOpts.forceGlobVal } : {})
 			};
 		})
 	);
+
+	callback(false);
 
 	return results;
 }

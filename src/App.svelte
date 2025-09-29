@@ -8,20 +8,23 @@
 	import Settings from '$lib/components/settings.svelte';
 
 	onMount(async () => {
-		$store = await initSettings();
-		settings.set((await $store.get('settings')) as GuiSettings);
+		store.set(await initSettings());
+		const storeSett = (await $store.get('settings')) as GuiSettings;
+		settings.set(storeSett);
 
-		let tuneinCrewDir = $settings.tuneinCrew.dir;
+		const tuneinExist = await exists($settings.tuneinCrew.dir);
 
-		const found = await exists(tuneinCrewDir);
-
-		if (!found) {
+		if (!tuneinExist) {
 			const release = await getLatest();
 			$settings.tuneinCrew = {
 				...$settings.tuneinCrew,
 				version: release.tag_name
 			};
 			await $store.set('settings', $settings);
+		}
+
+		if (!$settings.fmodDir) {
+			$settingsOpen = true;
 		}
 	});
 </script>

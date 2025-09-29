@@ -1,15 +1,14 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
-	import { readTextFile, readTextFileLines, watchImmediate } from '@tauri-apps/plugin-fs';
-	import { invoke } from '@tauri-apps/api/core';
-	import { listen } from '@tauri-apps/api/event';
 	import { Command } from '@tauri-apps/plugin-shell';
-	import { dirname, join } from '@tauri-apps/api/path';
+	import { exists, mkdir } from '@tauri-apps/plugin-fs';
+	import { join } from '@tauri-apps/api/path';
 	import { saveXML, openXML } from '$lib/utils/dialog';
 	import { obj2xml } from '$lib/utils/xml-convert/index';
 	import { xmlView, xmlData } from '$lib/stores/xml-obj.store';
 	import { settingsOpen, settings } from '$lib/stores/settings.store';
 	import { stdOut } from '$lib/stores/global';
+	import formatCurrentTime from '$lib/utils/format-time';
 
 	// Icons
 	import CaretDown from '~icons/solar/alt-arrow-down-linear';
@@ -23,15 +22,30 @@
 	let profileOpen = $state(false);
 
 	async function create() {
-		const now = new Date();
-		const hours = String(now.getHours()).padStart(2, '0');
-		const minutes = String(now.getMinutes()).padStart(2, '0');
-		const seconds = String(now.getSeconds()).padStart(2, '0');
+		const stationPath = await join($settings.cwd, $xmlData.project.radio.name);
 
-		const command = Command.create('exec', [
-			$settings.tuneinCrew.dir,
-			`"D:\\Games\\The Crew Unlimited\\TuneinCrew\\Stations\\NFSU2\\station.xml"`
-		]);
+		const stationExist = await exists(stationPath);
+
+		if (!stationExist) await mkdir(stationPath, { recursive: true });
+
+		const xmlPath = await join(stationPath, 'data.xml');
+
+		stdOut.update((arr) => {
+			const newarr = [
+				...arr,
+				`${formatCurrentTime()} INFO: Exporting XML and saving logo file...`
+			];
+			return Array.from(new Set(newarr));
+		});
+
+		await saveXML(obj2xml($xmlData), xmlPath);
+
+		stdOut.update((arr) => {
+			const newarr = [...arr, `${formatCurrentTime()} INFO: Starting TuneinCrew.`];
+			return Array.from(new Set(newarr));
+		});
+
+		const command = Command.create('exec', [$settings.tuneinCrew.dir, `"${xmlPath}"`]);
 
 		command.stdout.on('data', (msg) =>
 			stdOut.update((arr) => {
@@ -39,24 +53,38 @@
 				return Array.from(new Set(newarr));
 			})
 		);
-		command.on('close', () => {});
+
+		command.on('close', () => {
+			stdOut.update((arr) => {
+				const newarr = [
+					...arr,
+					`${formatCurrentTime()} INFO: Saved Radio: [ID: ${$xmlData.project.radio.id} | Name: ${$xmlData.project.radio.name}] in ${stationPath}`
+				];
+				return Array.from(new Set(newarr));
+			});
+		});
 
 		command.spawn();
 	}
 </script>
 
-<div class="flex items-center gap-2">
-	<div class="relative">
-		<button
-			onclick={() => (profileOpen = !profileOpen)}
-			class="relative flex w-40 max-w-40 items-center rounded-md bg-slate-700 py-1 pr-8 pl-2 text-right text-sm text-white hover:bg-slate-500"
-			class:!bg-slate-500={profileOpen == true}
-		>
-			<span>Select a Profile</span>
-			<CaretDown width="16" height="16" class="absolute right-2" />
-		</button>
-		{#if profileOpen}
-			<!-- <div
+<div class="relative flex w-full items-center gap-6">
+	<div class="absolute inset-0 -z-10 flex justify-center gap-1">
+		<span class="text-sm text-orange-300">Radio - Untitled</span>
+		<span class="text-sm text-white">*</span>
+	</div>
+	<div class="flex gap-2">
+		<div class="relative">
+			<button
+				onclick={() => (profileOpen = !profileOpen)}
+				class="relative flex w-40 max-w-40 items-center rounded-md bg-slate-700 py-1 pr-8 pl-2 text-right text-sm text-white hover:bg-slate-500"
+				class:!bg-slate-500={profileOpen == true}
+			>
+				<span>Select a Profile</span>
+				<CaretDown width="16" height="16" class="absolute right-2" />
+			</button>
+			{#if profileOpen}
+				<!-- <div
 				transition:fly={{ y: 10, duration: 180 }}
 				class="absolute top-8 right-0 left-0 overflow-hidden rounded-md bg-zinc-700 shadow-lg shadow-neutral-900"
 			>
@@ -64,38 +92,24 @@
 					NFSU2
 				</button>
 			</div> -->
-		{/if}
+			{/if}
+		</div>
+		<button
+			onclick={async () => {
+				await openXML();
+			}}
+			class="rounded-md bg-slate-700 px-4 py-1 text-white hover:bg-slate-500"
+			title="Import XML (Ctrl + I)"
+		>
+			<ImportIcon width="20" height="20" />
+		</button>
 	</div>
 	<button
-		class="rounded-md bg-slate-700 px-4 py-1 text-white hover:bg-slate-500"
-		title="Save (Ctrl + S)"
-	>
-		<SaveIcon width="20" height="20" />
-	</button>
-	<button
 		onclick={create}
-		class="rounded-md bg-slate-700 px-4 py-1 text-white hover:bg-slate-500"
+		class="rounded-md bg-orange-600 px-6 py-1 text-white hover:bg-orange-400"
 		title="Create Radio Station"
 	>
 		<CreateIcon width="20" height="20" />
-	</button>
-	<button
-		onclick={async () => {
-			await openXML();
-		}}
-		class="rounded-md bg-slate-700 px-4 py-1 text-white hover:bg-slate-500"
-		title="Import XML (Ctrl + I)"
-	>
-		<ImportIcon width="20" height="20" />
-	</button>
-	<button
-		onclick={async () => {
-			await saveXML(obj2xml($xmlData));
-		}}
-		class="rounded-md bg-slate-700 px-4 py-1 text-white hover:bg-slate-500"
-		title="Export XML (Ctrl + E)"
-	>
-		<ExportIcon width="20" height="20" />
 	</button>
 	<div class="absolute right-2 flex gap-2">
 		<button

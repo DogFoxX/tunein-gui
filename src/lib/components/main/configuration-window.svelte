@@ -7,6 +7,7 @@
 	import { showDDSImage, convertImageToDds } from '$lib/utils/dds-parse';
 	import { onMount } from 'svelte';
 	import parseAudio from '$lib/utils/audio-parse';
+	import { unsaved, logoPath } from '$lib/stores/global';
 	import {
 		xmlData,
 		tracks,
@@ -42,10 +43,10 @@
 	let audioDropArea = $state<HTMLElement>();
 
 	// Track List SelectEl
+	let loadingTracks = $state<boolean>();
 	let trackList = $state<HTMLElement>();
 	let selected = $state([]);
 
-	let logoPath = $state('');
 	let logoSrc = $state('');
 	let force = $state('0');
 	let forceGlobVal = $state('0');
@@ -67,13 +68,15 @@
 				trackPaths = files.filter((file) =>
 					allowedExt.some((ext) => file.toLocaleLowerCase().endsWith(ext))
 				);
+
+				loadTracks();
 			}
 
 			if (el && logoDropArea?.contains(el)) {
 				const allowedExt = ['dds', 'bmp', 'jpg', 'jpeg', 'png'];
 				let files = event.payload.paths;
 
-				logoPath = files.filter((file) =>
+				$logoPath = files.filter((file) =>
 					allowedExt.some((ext) => file.toLocaleLowerCase().endsWith(ext))
 				)[0];
 			}
@@ -93,52 +96,65 @@
 		selected = [];
 	}
 
-	$effect(() => {
-		if (trackPaths.length) {
-			parseAudio(trackPaths).then((newTracks) => {
-				let added = [...$tracks, ...newTracks];
-				updateTracks(added);
-			});
+	async function addTracks() {
+		trackPaths = await openFileDiag({
+			title: 'Choose audio file(s)',
+			filters: audioFilter,
+			multiple: true
+		});
+
+		if (trackPaths.length > 0) {
+			loadTracks();
 		}
-	});
+	}
+
+	function loadTracks() {
+		parseAudio(trackPaths, (isLoading) => (loadingTracks = isLoading), {
+			setForce: force === '1',
+			forceGlobVal
+		}).then((newTracks) => {
+			let added = [...$tracks, ...newTracks];
+			updateTracks(added);
+		});
+	}
 
 	$effect(() => {
-		if (logoPath) {
-			exists(logoPath)
+		if ($logoPath) {
+			exists($logoPath)
 				.then(async () => {
 					let imageExts = ['bmp', 'jpeg', 'jpg', 'png'];
 
-					let ext = logoPath.split('.').pop()?.toLowerCase();
+					let ext = $logoPath.split('.').pop()?.toLowerCase();
 
 					if (imageExts.includes(ext ?? '')) {
-						convertImageToDds(logoPath);
-						return (logoSrc = convertFileSrc(logoPath));
+						$xmlData.project.radio.logo = 'thumb.dds';
+						return (logoSrc = convertFileSrc($logoPath));
 					}
-					logoSrc = await showDDSImage(logoPath);
+					logoSrc = await showDDSImage($logoPath);
 				})
 				.catch(() => (logoSrc = ''));
 		}
 	});
 </script>
 
-<div class="flex max-h-full min-w-max flex-col gap-4">
+<div class="relative flex max-h-full min-w-max flex-col gap-4">
 	<div class="flex gap-4">
 		<div
 			bind:this={logoDropArea}
-			class="relative flex h-28 w-28 items-center justify-center rounded-md border-2 border-zinc-700 p-2"
+			ondblclick={async () => {
+				$logoPath = await openFileDiag({
+					title: 'Choose a logo',
+					filters: imageFilter,
+					multiple: false
+				});
+			}}
+			class="relative flex h-28 w-28 items-center justify-center rounded-md border-2 border-dotted border-zinc-700 p-2"
+			role="img"
 		>
 			{#if !logoSrc}
 				<div
 					transition:fade={{ duration: 120 }}
-					ondblclick={async () => {
-						logoPath = await openFileDiag({
-							title: 'Choose a logo',
-							filters: imageFilter,
-							multiple: false
-						});
-					}}
 					class="absolute inset-2 flex flex-col items-center justify-center gap-2"
-					role="img"
 				>
 					<span class="text-sm font-semibold text-zinc-500">Logo Preview</span>
 					<span class="text-center text-xs text-zinc-500"
@@ -199,7 +215,7 @@
 				<label for="logo-src" class="text-xs text-white">Logo</label>
 				<div class="flex items-center gap-2 rounded-md bg-zinc-700 px-2 py-1">
 					<input
-						bind:value={logoPath}
+						bind:value={$logoPath}
 						id="logo-src"
 						class="w-full text-sm text-white"
 						type="text"
@@ -209,7 +225,7 @@
 					/>
 					<button
 						onclick={async () => {
-							logoPath = await openFileDiag({
+							$logoPath = await openFileDiag({
 								title: 'Choose a logo',
 								filters: imageFilter,
 								multiple: false
@@ -294,8 +310,22 @@
 		<div class="flex flex-col gap-2">
 			<span class="text-sm text-white">Tracks</span>
 			<div
-				class="relative flex h-full w-100 flex-col overflow-hidden rounded-md border-2 border-zinc-700 pb-11"
+				class="relative flex h-full w-100 flex-col overflow-hidden rounded-md border-2 border-dotted border-zinc-700 pb-11"
 			>
+				{#if loadingTracks}
+					<div
+						in:fade={{ duration: 180 }}
+						class="absolute inset-0 z-10 flex items-center justify-center backdrop-blur-xs"
+					>
+						<div class="bg-primary absolute inset-0 -z-10 opacity-70"></div>
+						<div class="flex w-full flex-col items-center gap-2">
+							<span class="text-sm text-white">Loading Tracks...</span>
+							<div
+								class="loading relative h-1 w-1/2 overflow-hidden rounded-full bg-zinc-500"
+							></div>
+						</div>
+					</div>
+				{/if}
 				<div
 					bind:this={audioDropArea}
 					class="relative h-full w-full overflow-hidden"
@@ -345,12 +375,7 @@
 				</div>
 				<div class="absolute right-0 bottom-0 left-0 flex items-center gap-2 px-2 py-2">
 					<button
-						onclick={async () =>
-							(trackPaths = await openFileDiag({
-								title: 'Choose audio file(s)',
-								filters: audioFilter,
-								multiple: true
-							}))}
+						onclick={addTracks}
 						class="flex gap-2 rounded-md bg-zinc-700 px-2 py-1 text-sm text-white"
 					>
 						<SolarAddSquareBold width="20" height="20" />
@@ -503,3 +528,27 @@
 		</div>
 	</div>
 </div>
+
+<style>
+	.loading::after {
+		position: absolute;
+		content: '';
+		height: 100%;
+		width: 33.3333%;
+		background-color: white;
+		border-radius: calc(infinity * 1px);
+		-webkit-animation: slide-right 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite both;
+		animation: slide-right 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite both;
+	}
+
+	@keyframes slide-right {
+		0% {
+			-webkit-transform: translateX(-100%);
+			transform: translateX(-100%);
+		}
+		100% {
+			-webkit-transform: translateX(calc(3 * 100%));
+			transform: translateX(calc(3 * 100%));
+		}
+	}
+</style>

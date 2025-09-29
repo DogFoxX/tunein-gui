@@ -1,4 +1,5 @@
 import { writable, get } from 'svelte/store';
+import { settings } from './settings.store';
 
 export const xmlView = writable(true);
 

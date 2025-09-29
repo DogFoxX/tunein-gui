@@ -24,19 +24,16 @@
     "fs:allow-app-write-recursive",
     "fs:allow-watch",
     {
+      "identifier": "opener:allow-open-path",
+      "allow": [{
+        "path": "*/**"
+      }]
+    },
+    {
       "identifier": "fs:scope",
       "allow": [
         {
-          "path": "$APPDATA"
-        },
-        {
-          "path": "$APPDATA/**"
-        },
-        {
-          "path": "$APPDATA/*"
-        },
-        {
-          "path": "$APPDATA/"
+          "path": "*/**"
         }
       ]
     },

@@ -4,7 +4,7 @@ use std::path::Path;
 
 use base64::{Engine as _, engine::general_purpose};
 use ddsfile::Dds;
-use image::{DynamicImage, ImageFormat};
+use image::{DynamicImage, ImageFormat, imageops::FilterType};
 use image_dds::{dds_from_image, image_from_dds};
 use tauri::command;
 
@@ -14,8 +14,10 @@ pub fn convert_to_dds(input_path: String, output_dir: String) -> Result<(), Stri
     // Load input image
     let img = image::open(&input_path).map_err(|e| format!("Failed to open image: {}", e))?;
 
+    let resized = img.resize_exact(512, 512, FilterType::Lanczos3);
+
     // Convert DynamicImage → RGBA8 buffer
-    let rgba = img.to_rgba8();
+    let rgba = resized.to_rgba8();
 
     // Encode to DDS (BC3 = DXT5)
     let dds = dds_from_image(

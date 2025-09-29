@@ -6,7 +6,7 @@ async function initSettings() {
 
 	const appData = await appDataDir();
 
-	return await load('settings.json', {
+	const store = await load('settings.json', {
 		defaults: {
 			settings: {
 				cwd: await join(exePath, 'stations'),
@@ -14,8 +14,7 @@ async function initSettings() {
 					version: null,
 					dir: await join(appData, 'TuneinCrew\\TuneinCrew.exe')
 				},
-				fmodDir:
-					'C:\\Program Files (x86)\\FMOD SoundSystem\\FMOD Designer\\fmod_designercl.exe',
+				fmodDir: '',
 				autoUpdate: {
 					gui: true,
 					tuneinCrew: true
@@ -23,6 +22,10 @@ async function initSettings() {
 			}
 		}
 	});
+
+	await store.save();
+
+	return store;
 }
 
 export default initSettings;

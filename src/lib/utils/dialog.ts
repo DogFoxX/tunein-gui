@@ -1,7 +1,11 @@
-import { open, save, type DialogFilter } from '@tauri-apps/plugin-dialog';
-import { writeTextFile, readTextFile } from '@tauri-apps/plugin-fs';
+import { open, type DialogFilter } from '@tauri-apps/plugin-dialog';
+import { writeTextFile, readTextFile, exists, copyFile } from '@tauri-apps/plugin-fs';
+import { dirname, isAbsolute, join } from '@tauri-apps/api/path';
 import { xml2obj } from './xml-convert';
 import { tracks, xmlData } from '$lib/stores/xml-obj.store';
+import { logoPath } from '$lib/stores/global';
+import { convertImageToDds } from './dds-parse';
+import { get } from 'svelte/store';
 
 export async function openFileDiag(args: {
 	title: string;
@@ -21,7 +25,7 @@ export async function openDirDiag(args: { title: string }): Promise<string[] | a
 }
 
 export async function openXML(): Promise<void> {
-	const path = await open({
+	const file = await open({
 		title: 'Import XML',
 		defaultPath: 'station.xml',
 		multiple: false,
@@ -29,9 +33,11 @@ export async function openXML(): Promise<void> {
 		filters: [{ extensions: ['xml'], name: 'XML Files' }]
 	});
 
-	if (!path || typeof path !== 'string') return;
+	if (!file || typeof file !== 'string') return;
 
-	const xmlString = await readTextFile(path);
+	const path = await dirname(file);
+
+	const xmlString = await readTextFile(file);
 	const parsed: XmlData = xml2obj(xmlString) as XmlData;
 
 	// Ensure structure exists
@@ -43,21 +49,46 @@ export async function openXML(): Promise<void> {
 		? parsed.project.radio.songs
 		: [];
 
+	if (parsed.project.radio.logo) {
+		const absolute = await isAbsolute(parsed.project.radio.logo);
+		if (!absolute) {
+			logoPath.set(await join(path, parsed.project.radio.logo));
+		} else {
+			logoPath.set(parsed.project.radio.logo);
+		}
+	}
+
+	if (parsed.project.radio.songs.length) {
+		for (const { song } of parsed.project.radio.songs) {
+			const absolute = await isAbsolute(song.file as string);
+
+			if (!absolute) {
+				song.file = await join(path, song.file as string);
+			}
+		}
+	}
+
 	xmlData.set(parsed);
 
 	const songs: TrackData[] = parsed.project.radio.songs.map((s) => s.song);
 	tracks.set(songs);
 }
 
-export async function saveXML(xml: string) {
-	const path = await save({
-		title: 'Export XML',
-		defaultPath: 'station.xml',
-		canCreateDirectories: true,
-		filters: [{ extensions: ['xml'], name: 'XML Files' }]
-	});
+export async function saveXML(xml: string, path: string) {
+	const logo = get(logoPath);
+	const imageExts = ['bmp', 'jpeg', 'jpg', 'png'];
+	const dir = await dirname(path);
 
-	if (!path) return;
+	const ext = logo.split('.').pop()?.toLowerCase();
+	if (imageExts.includes(ext ?? '')) {
+		exists(path)
+			.then(async () => {
+				await convertImageToDds(logo, dir);
+			})
+			.catch((err) => alert(err));
+	} else if (ext === 'dds') {
+		await copyFile(logo, await join(dir, 'thumb.dds'));
+	}
 
 	return await writeTextFile(path, xml);
 }

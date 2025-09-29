@@ -3,8 +3,8 @@
 	import hljs from 'highlight.js/lib/core';
 	import xml from 'highlight.js/lib/languages/xml';
 	import { obj2xml } from '$lib/utils/xml-convert/index';
-	import { xmlView } from '$lib/stores/xml-obj.store';
-	import { xmlData } from '$lib/stores/xml-obj.store';
+	import { xmlView, xmlData } from '$lib/stores/xml-obj.store';
+	import { settings } from '$lib/stores/settings.store';
 
 	// Icons
 	import SolarCopyBoldDuotone from '~icons/solar/copy-bold-duotone';
