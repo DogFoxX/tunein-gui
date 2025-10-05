@@ -68,7 +68,7 @@
 	}
 </script>
 
-<div class="relative flex w-full items-center gap-6">
+<div id="controls" class="relative flex w-full items-center gap-6">
 	<div class="absolute inset-0 -z-10 flex justify-center gap-1">
 		<span class="text-sm text-orange-300">Radio - Untitled</span>
 		<span class="text-sm text-white">*</span>
@@ -77,8 +77,7 @@
 		<div class="relative">
 			<button
 				onclick={() => (profileOpen = !profileOpen)}
-				class="relative flex w-40 max-w-40 items-center rounded-md bg-slate-700 py-1 pr-8 pl-2 text-right text-sm text-white hover:bg-slate-500"
-				class:!bg-slate-500={profileOpen == true}
+				class="relative flex w-40 max-w-40 items-center rounded-md py-1 pr-8 pl-2 text-right text-sm bg-slate-700 hover:bg-slate-500 text-white"
 			>
 				<span>Select a Profile</span>
 				<CaretDown width="16" height="16" class="absolute right-2" />
@@ -98,7 +97,8 @@
 			onclick={async () => {
 				await openXML();
 			}}
-			class="rounded-md bg-slate-700 px-4 py-1 text-white hover:bg-slate-500"
+			class="rounded-md px-4 py-1 bg-slate-700 hover:bg-slate-500 text-white"
+			data-type="controls"
 			title="Import XML (Ctrl + I)"
 		>
 			<ImportIcon width="20" height="20" />
@@ -106,7 +106,8 @@
 	</div>
 	<button
 		onclick={create}
-		class="rounded-md bg-orange-600 px-6 py-1 text-white hover:bg-orange-400"
+		class="rounded-md px-6 py-1 bg-orange-600 text-white"
+		data-type="create"
 		title="Create Radio Station"
 	>
 		<CreateIcon width="20" height="20" />
@@ -114,14 +115,16 @@
 	<div class="absolute right-2 flex gap-2">
 		<button
 			onclick={() => xmlView.set(!$xmlView)}
-			class="rounded-md bg-slate-700 px-4 py-1 text-white hover:bg-slate-500"
+			class="rounded-md px-4 py-1 bg-slate-700 hover:bg-slate-500 text-white"
+			data-type="controls"
 			title="{!$xmlView ? 'Show' : 'Hide'} XML Preview"
 		>
 			<CodeIcon width="20" height="20" />
 		</button>
 		<button
 			onclick={() => settingsOpen.set(true)}
-			class="rounded-md bg-slate-700 px-4 py-1 text-white hover:bg-slate-500"
+			class="rounded-md px-4 py-1 bg-slate-700 hover:bg-slate-500 text-white"
+			data-type="controls"
 			title="Settings"
 		>
 			<SettingsIcon width="20" height="20" />

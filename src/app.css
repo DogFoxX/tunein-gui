@@ -1,12 +1,9 @@
-@import 'tailwindcss';
-
-@theme {
-	--color-primary: #1e1e1e;
-	--color-secondary: #282b30;
-}
+/* --color-primary: #1e1e1e;
+	--color-secondary: #282b30; */
 
 body {
 	overflow: overlay;
+	background-color: var(--color-primary);
 }
 
 ::-webkit-scrollbar {

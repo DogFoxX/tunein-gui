@@ -4,10 +4,15 @@
 	import initSettings from '$lib/utils/settings/init';
 	import { getLatest } from '$lib/utils/tuneincrew';
 	import { exists } from '@tauri-apps/plugin-fs';
+	import { getCurrentWindow, type Theme } from '@tauri-apps/api/window';
 	import Main from '$lib/components/main';
 	import Settings from '$lib/components/settings.svelte';
 
+	let theme = $state<Theme | null>();
+
 	onMount(async () => {
+		await getCurrentWindow().setTheme(null);
+
 		store.set(await initSettings());
 		const storeSett = (await $store.get('settings')) as GuiSettings;
 		settings.set(storeSett);
