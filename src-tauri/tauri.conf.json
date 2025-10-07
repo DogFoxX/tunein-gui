@@ -37,6 +37,7 @@
 	},
 	"bundle": {
 		"active": true,
+		"createUpdaterArtifacts": true,
 		"windows": {
 			"allowDowngrades": false,
 			"certificateThumbprint": null,
@@ -65,5 +66,13 @@
 			"icons/icon.png",
 			"icons/icon.ico"
 		]
+	},
+	"plugins": {
+		"updater": {
+			"pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDlEN0Q4RDA0ODFCMkY1ODYKUldTRzliS0JCSTE5blNmQ1JyWGlZMTBCcWFyWjdxdmFqYllUOWcyd0tibUF4dnR4VnhyZklDUTkK",
+			"endpoints": [
+				"https://github.com/DogFoxX/tunein-gui/releases/latest/download/latest.json"
+			]
+		}
 	}
 }

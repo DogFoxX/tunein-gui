@@ -5,8 +5,8 @@
 	import { join } from '@tauri-apps/api/path';
 	import { saveXML, openXML } from '$lib/utils/dialog';
 	import { obj2xml } from '$lib/utils/xml-convert/index';
-	import { xmlView, xmlData } from '$lib/stores/xml-obj.store';
-	import { settingsOpen, settings } from '$lib/stores/settings.store';
+	import { xmlData } from '$lib/stores/xml-obj.store';
+	import { settings } from '$lib/stores/settings.store';
 	import { stdOut } from '$lib/stores/global';
 	import formatCurrentTime from '$lib/utils/format-time';
 
@@ -15,6 +15,7 @@
 	import SaveIcon from '~icons/solar/file-bold-duotone';
 	import ImportIcon from '~icons/solar/archive-down-minimlistic-line-duotone';
 	import CreateIcon from '~icons/solar/bolt-bold-duotone';
+	import { onMount } from 'svelte';
 
 	let profileOpen = $state(false);
 
