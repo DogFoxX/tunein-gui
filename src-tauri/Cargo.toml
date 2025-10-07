@@ -3,8 +3,8 @@ name = "tunein-gui"
 version = "0.1.2"
 description = "Unofficial GUI for TuneinCrew - Create custom radio stations for The Crew 2014"
 authors = ["DogFoxX"]
-license = "MIT"
-repository = ""
+license = "GPL-3.0"
+repository = "https://github.com/DogFoxX/tunein-gui/"
 edition = "2024"
 rust-version = "1.90.0"
 
