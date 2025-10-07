@@ -23,9 +23,9 @@ jobs:
 
         runs-on: ${{ matrix.platform }}
         steps:
-            - uses: actions/checkout@v5
+            - uses: nschloe/action-cached-lfs-checkout@v1.2.3
             - name: setup node
-              uses: actions/setup-node@v5
+              uses: actions/setup-node@v4
               with:
                   node-version: lts/*
             - name: install Rust stable
