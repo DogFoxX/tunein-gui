@@ -30,22 +30,17 @@ jobs:
                   node-version: lts/*
             - name: install Rust stable
               uses: dtolnay/rust-toolchain@stable
-            - name: install Linux dependencies
-              if: matrix.platform == 'ubuntu-24.04'
+            - name: install dependencies (ubuntu only)
+              if: matrix.platform == 'ubuntu-24.04' # This must match the platform value defined above.
               run: |
                   sudo apt-get update
                   sudo apt-get install -y \
-                    build-essential \
-                    clang++ \
-                    curl \
-                    libssl-dev \
-                    pkg-config \
-                    libwebkit2gtk-4.1-dev \
-                    libwebkit2gtk-4.1-0 \
-                    libjavascriptcoregtk-4.1-dev \
-                    libjavascriptcoregtk-4.1-0 \
-                    gir1.2-javascriptcoregtk-4.1 \
-                    gir1.2-webkit2-4.1 \
+                    libwebkit2gtk-4.1-0=2.44.0-2 \
+                    libwebkit2gtk-4.1-dev=2.44.0-2 \
+                    libjavascriptcoregtk-4.1-0=2.44.0-2 \
+                    libjavascriptcoregtk-4.1-dev=2.44.0-2 \
+                    gir1.2-javascriptcoregtk-4.1=2.44.0-2 \
+                    gir1.2-webkit2-4.1=2.44.0-2 \
                     libappindicator3-dev \
                     librsvg2-dev \
                     patchelf
