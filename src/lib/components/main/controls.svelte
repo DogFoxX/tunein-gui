@@ -14,10 +14,7 @@
 	import CaretDown from '~icons/solar/alt-arrow-down-linear';
 	import SaveIcon from '~icons/solar/file-bold-duotone';
 	import ImportIcon from '~icons/solar/archive-down-minimlistic-line-duotone';
-	import ExportIcon from '~icons/solar/archive-up-minimlistic-line-duotone';
 	import CreateIcon from '~icons/solar/bolt-bold-duotone';
-	import CodeIcon from '~icons/solar/code-bold-duotone';
-	import SettingsIcon from '~icons/solar/settings-linear';
 
 	let profileOpen = $state(false);
 
@@ -68,29 +65,25 @@
 	}
 </script>
 
-<div id="controls" class="relative flex w-full items-center gap-6">
-	<div class="absolute inset-0 -z-10 flex justify-center gap-1">
-		<span class="text-sm text-orange-300">Radio - Untitled</span>
-		<span class="text-sm text-white">*</span>
-	</div>
+<div id="controls" class="flex w-full items-center gap-6 h-7">
 	<div class="flex gap-2">
-		<div class="relative">
+		<div class="relative max-h-full">
 			<button
 				onclick={() => (profileOpen = !profileOpen)}
-				class="relative flex w-40 max-w-40 items-center rounded-md py-1 pr-8 pl-2 text-right text-sm bg-slate-700 hover:bg-slate-500 text-white"
+				class="flex w-40 max-w-40 items-center rounded-md py-1 pr-8 pl-2 text-right text-sm bg-slate-700 hover:bg-slate-500 text-white"
 			>
 				<span>Select a Profile</span>
 				<CaretDown width="16" height="16" class="absolute right-2" />
 			</button>
 			{#if profileOpen}
-				<!-- <div
-				transition:fly={{ y: 10, duration: 180 }}
-				class="absolute top-8 right-0 left-0 overflow-hidden rounded-md bg-zinc-700 shadow-lg shadow-neutral-900"
-			>
-				<button class="w-full px-2 py-1 text-left text-sm text-white hover:bg-zinc-500">
-					NFSU2
-				</button>
-			</div> -->
+				<div
+					transition:fly={{ y: 10, duration: 180 }}
+					class="absolute top-8 right-0 left-0 overflow-hidden rounded-md bg-zinc-700 shadow-lg shadow-neutral-900 z-10"
+				>
+					<button class="w-full px-2 py-1 text-left text-sm text-white hover:bg-zinc-500">
+						NFSU2
+					</button>
+				</div>
 			{/if}
 		</div>
 		<button
@@ -98,7 +91,15 @@
 				await openXML();
 			}}
 			class="rounded-md px-4 py-1 bg-slate-700 hover:bg-slate-500 text-white"
-			data-type="controls"
+			title="Save As (Ctrl + S)"
+		>
+			<SaveIcon width="20" height="20" />
+		</button>
+		<button
+			onclick={async () => {
+				await openXML();
+			}}
+			class="rounded-md px-4 py-1 bg-slate-700 hover:bg-slate-500 text-white"
 			title="Import XML (Ctrl + I)"
 		>
 			<ImportIcon width="20" height="20" />
@@ -106,28 +107,9 @@
 	</div>
 	<button
 		onclick={create}
-		class="rounded-md px-6 py-1 bg-orange-600 text-white"
-		data-type="create"
+		class="rounded-md px-6 py-1 hover:bg-orange-600 !border-[1px] !border-orange-600 bg-orange-900 max-h-full text-white"
 		title="Create Radio Station"
 	>
 		<CreateIcon width="20" height="20" />
 	</button>
-	<div class="absolute right-2 flex gap-2">
-		<button
-			onclick={() => xmlView.set(!$xmlView)}
-			class="rounded-md px-4 py-1 bg-slate-700 hover:bg-slate-500 text-white"
-			data-type="controls"
-			title="{!$xmlView ? 'Show' : 'Hide'} XML Preview"
-		>
-			<CodeIcon width="20" height="20" />
-		</button>
-		<button
-			onclick={() => settingsOpen.set(true)}
-			class="rounded-md px-4 py-1 bg-slate-700 hover:bg-slate-500 text-white"
-			data-type="controls"
-			title="Settings"
-		>
-			<SettingsIcon width="20" height="20" />
-		</button>
-	</div>
 </div>

@@ -25,6 +25,9 @@
     "fs:allow-app-read",
     "fs:allow-app-write-recursive",
     "fs:allow-watch",
+    "global-shortcut:allow-is-registered",
+    "global-shortcut:allow-register",
+    "global-shortcut:allow-unregister",
     {
       "identifier": "opener:allow-open-path",
       "allow": [{

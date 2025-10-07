@@ -7,6 +7,7 @@
 	import { getCurrentWindow, type Theme } from '@tauri-apps/api/window';
 	import Main from '$lib/components/main';
 	import Settings from '$lib/components/settings.svelte';
+	import Titlebar from '$lib/components/titlebar.svelte';
 
 	let theme = $state<Theme | null>();
 
@@ -34,6 +35,7 @@
 	});
 </script>
 
+<Titlebar />
 <Main />
 {#if $settingsOpen}
 	<Settings />

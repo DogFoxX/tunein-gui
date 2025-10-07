@@ -56,7 +56,7 @@ select {
 button {
 	cursor: pointer;
 	user-select: none;
-	transition: 80ms ease-in-out;
+	transition: 120ms ease-in-out;
 
 	&:disabled {
 		cursor: default;

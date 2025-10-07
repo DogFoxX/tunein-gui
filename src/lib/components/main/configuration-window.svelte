@@ -5,7 +5,7 @@
 	import { exists } from '@tauri-apps/plugin-fs';
 	import { openFileDiag } from '$lib/utils/dialog';
 	import type { DialogFilter } from '@tauri-apps/plugin-dialog';
-	import { showDDSImage, convertImageToDds } from '$lib/utils/dds-parse';
+	import { showDDSImage } from '$lib/utils/dds-parse';
 	import { onMount } from 'svelte';
 	import parseAudio from '$lib/utils/audio-parse';
 	import { unsaved, logoPath } from '$lib/stores/global';
@@ -47,7 +47,7 @@
 	let trackList = $state<HTMLElement>();
 	let selected = $state([]);
 
-	let logoSrc = $state('');
+	let logoSrc = $state<string>();
 	let force = $state('0');
 	let forceGlobVal = $state('0');
 	let trackPaths = $state<string[]>([]);
@@ -120,20 +120,21 @@
 
 	logoPath.subscribe(async (logoPath) => {
 		if (logoPath) {
-			const exist = await exists(logoPath);
 			let imageExts = ['bmp', 'jpeg', 'jpg', 'png'];
 
-			if (exist) {
-				let ext = logoPath.split('.').pop()?.toLowerCase();
+			exists(logoPath)
+				.then(async () => {
+					let ext = logoPath.split('.').pop()?.toLowerCase();
 
-				if (imageExts.includes(ext ?? '')) {
-					$xmlData.project.radio.logo = 'thumb.dds';
-					return (logoSrc = convertFileSrc(logoPath));
-				}
-				return (logoSrc = await showDDSImage(logoPath));
-			}
-
-			logoSrc = '';
+					if (imageExts.includes(ext ?? '')) {
+						$xmlData.project.radio.logo = 'thumb.dds';
+						return (logoSrc = convertFileSrc(logoPath));
+					}
+					return (logoSrc = await showDDSImage(logoPath));
+				})
+				.catch(() => {
+					logoSrc = undefined;
+				});
 		}
 	});
 </script>
@@ -229,11 +230,13 @@
 					/>
 					<button
 						onclick={async () => {
-							$logoPath = await openFileDiag({
+							const dir = await openFileDiag({
 								title: 'Choose a logo',
 								filters: imageFilter,
 								multiple: false
 							});
+
+							if (dir) logoPath.set(dir);
 						}}
 						class="rounded-md text-white"
 					>

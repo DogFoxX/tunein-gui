@@ -30,8 +30,6 @@
 			JSON.stringify($settings) === JSON.stringify(tempSettings) ||
 			Object.values(settingsErr).some((err) => err != false);
 	});
-
-	$inspect(settingsErr);
 </script>
 
 <svelte:window
@@ -42,7 +40,7 @@
 
 <div
 	transition:fade={{ duration: 280 }}
-	class="absolute inset-0 flex items-center justify-center backdrop-blur-xs"
+	class="absolute top-8 bottom-0 right-0 left-0 flex items-center justify-center backdrop-blur-xs"
 >
 	<div class="bg-primary absolute inset-0 opacity-70"></div>
 	<div
