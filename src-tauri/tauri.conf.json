@@ -28,7 +28,7 @@
 			}
 		],
 		"security": {
-			"csp": "default-src http://*.localhost data:;",
+			"csp": "default-src 'self' tauri://localhost asset://localhost http://asset.localhost; script-src 'self' 'unsafe-inline' tauri://localhost; style-src 'self' 'unsafe-inline' tauri://localhost; img-src 'self' data: tauri://localhost asset://localhost http://asset.localhost; connect-src 'self' ipc://localhost http://ipc.localhost tauri://localhost asset://localhost;",
 			"assetProtocol": {
 				"enable": true,
 				"scope": ["*/**"]
@@ -49,7 +49,7 @@
 			"tsp": false,
 			"webviewInstallMode": {
 				"silent": true,
-				"type": "downloadBootstrapper"
+				"type": "embedBootstrapper"
 			},
 			"wix": null
 		},

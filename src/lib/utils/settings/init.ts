@@ -12,7 +12,7 @@ async function initSettings() {
 				cwd: await join(exePath, 'stations'),
 				tuneinCrew: {
 					version: null,
-					dir: await join(appData, 'TuneinCrew\\TuneinCrew.exe')
+					dir: await join(appData, 'TuneinCrew', 'TuneinCrew.exe')
 				},
 				fmodDir: '',
 				autoUpdate: {
