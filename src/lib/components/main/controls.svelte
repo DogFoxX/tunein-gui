@@ -1,21 +1,20 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
-	import { Command } from '@tauri-apps/plugin-shell';
+	import { Command, type Child } from '@tauri-apps/plugin-shell';
 	import { exists, mkdir } from '@tauri-apps/plugin-fs';
 	import { join } from '@tauri-apps/api/path';
 	import { saveXML, openXML } from '$lib/utils/dialog';
 	import { obj2xml } from '$lib/utils/xml-convert/index';
 	import { xmlData } from '$lib/stores/xml-obj.store';
 	import { settings } from '$lib/stores/settings.store';
-	import { stdOut } from '$lib/stores/global';
-	import formatCurrentTime from '$lib/utils/format-time';
+	import logger from '$lib/stores/logger';
 
 	// Icons
 	import CaretDown from '~icons/solar/alt-arrow-down-linear';
 	import SaveIcon from '~icons/solar/file-bold-duotone';
 	import ImportIcon from '~icons/solar/archive-down-minimlistic-line-duotone';
 	import CreateIcon from '~icons/solar/bolt-bold-duotone';
-	import { onMount } from 'svelte';
+	import StopIcon from '~icons/solar/stop-circle-bold';
 
 	let profileOpen = $state(false);
 
@@ -28,38 +27,20 @@
 
 		const xmlPath = await join(stationPath, 'data.xml');
 
-		stdOut.update((arr) => {
-			const newarr = [
-				...arr,
-				`${formatCurrentTime()} INFO: Exporting XML and saving logo file...`
-			];
-			return Array.from(new Set(newarr));
-		});
+		logger.info('Exporting XML and saving logo file...');
 
 		await saveXML(obj2xml($xmlData), xmlPath);
 
-		stdOut.update((arr) => {
-			const newarr = [...arr, `${formatCurrentTime()} INFO: Starting TuneinCrew.`];
-			return Array.from(new Set(newarr));
-		});
+		logger.info('Starting TuneinCrew.');
 
 		const command = Command.create('exec', [$settings.tuneinCrew.dir, `"${xmlPath}"`]);
 
-		command.stdout.on('data', (msg) =>
-			stdOut.update((arr) => {
-				const newarr = [...arr, msg];
-				return Array.from(new Set(newarr));
-			})
-		);
+		command.stdout.on('data', (msg) => logger.log(msg));
 
 		command.on('close', () => {
-			stdOut.update((arr) => {
-				const newarr = [
-					...arr,
-					`${formatCurrentTime()} INFO: Saved Radio: [ID: ${$xmlData.project.radio.id} | Name: ${$xmlData.project.radio.name}] in ${stationPath}`
-				];
-				return Array.from(new Set(newarr));
-			});
+			logger.info(
+				`Saved Radio: [ID: ${$xmlData.project.radio.id} | Name: ${$xmlData.project.radio.name}] in ${stationPath}`
+			);
 		});
 
 		command.spawn();

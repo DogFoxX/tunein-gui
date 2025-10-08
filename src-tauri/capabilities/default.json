@@ -28,6 +28,9 @@
     "global-shortcut:allow-is-registered",
     "global-shortcut:allow-register",
     "global-shortcut:allow-unregister",
+    "os:default",
+    "process:default",
+    "shell:allow-kill",
     {
       "identifier": "opener:allow-open-path",
       "allow": [{

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { stdOut } from '$lib/stores/global';
+	import logger from '$lib/stores/logger';
 	import { openPath } from '@tauri-apps/plugin-opener';
 
 	let console = $state<HTMLElement>();
@@ -17,7 +17,7 @@
 	}
 
 	$effect(() => {
-		if (console && $stdOut) console.scrollTop = console.scrollHeight;
+		if (console && $logger) console.scrollTop = console.scrollHeight;
 	});
 </script>
 
@@ -26,7 +26,7 @@
 	<div class="relative w-full grow rounded-md border-2 border-zinc-700">
 		<div bind:this={console} class="absolute inset-2 overflow-auto">
 			<code class="text-xs text-zinc-300">
-				{#each $stdOut as line}
+				{#each $logger as line}
 					{@const parts = extractDir(line)}
 					<div>
 						{#if parts}

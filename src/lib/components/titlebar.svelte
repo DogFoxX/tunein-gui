@@ -2,9 +2,10 @@
 	import { settingsOpen } from '$lib/stores/settings.store';
 	import { getCurrentWindow } from '@tauri-apps/api/window';
 	import { onMount } from 'svelte';
+	import { updateAvailable } from '$lib/stores/global';
+	import { guiUpdate } from '$lib/utils/updates';
 
 	// Icons
-	import RadioLogo from '~icons/solar/radio-minimalistic-bold';
 	import SettingsIcon from '~icons/solar/settings-linear';
 	import UpdateIcon from '~icons/solar/download-minimalistic-linear';
 
@@ -36,13 +37,15 @@
 	</div>
 	<div class="absolute top-0 right-0 bottom-0 flex gap-2">
 		<div class="py-1 flex gap-1">
-			<button
-				onclick={() => settingsOpen.set(true)}
-				class="h-full px-2 rounded-md text-green-400 hover:bg-zinc-700 animate-pulse hover:animate-none"
-				title="Apply Update"
-			>
-				<UpdateIcon />
-			</button>
+			{#if $updateAvailable}
+				<button
+					onclick={guiUpdate.install}
+					class="h-full px-2 rounded-md text-green-400 hover:bg-zinc-700 animate-pulse hover:animate-none"
+					title="Apply Update"
+				>
+					<UpdateIcon />
+				</button>
+			{/if}
 			<button
 				onclick={() => settingsOpen.set(true)}
 				class="h-full px-2 rounded-md text-neutral-300 hover:text-white hover:bg-zinc-700"

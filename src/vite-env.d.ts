@@ -4,7 +4,7 @@
 interface GuiSettings {
 	cwd: string;
 	tuneinCrew: {
-		version: number | null;
+		version: string | null;
 		dir: string;
 	};
 	fmodDir: string;
@@ -40,4 +40,8 @@ interface XmlData {
 interface DragDropEventPayload {
 	paths: string[];
 	position: { x: number; y: number };
+}
+
+interface UpdateAvailable {
+	version?: number;
 }

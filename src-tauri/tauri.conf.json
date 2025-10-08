@@ -63,7 +63,7 @@
 	},
 	"plugins": {
 		"updater": {
-			"pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDlEN0Q4RDA0ODFCMkY1ODYKUldTRzliS0JCSTE5blNmQ1JyWGlZMTBCcWFyWjdxdmFqYllUOWcyd0tibUF4dnR4VnhyZklDUTkK",
+			"pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDE1QkYzMkZENDY4NTNDQTUKUldTbFBJVkcvVEsvRmIxNlltR1Zzb2FwajhoOHo3ckpoODdIeXVqV29VaTFYa2hhdmJrNi83ZFkK",
 			"endpoints": [
 				"https://github.com/DogFoxX/tunein-gui/releases/latest/download/latest.json"
 			]
