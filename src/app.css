@@ -54,7 +54,6 @@ select {
 }
 
 button {
-	cursor: pointer;
 	user-select: none;
 	transition: 120ms ease-in-out;
 
