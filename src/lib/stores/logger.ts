@@ -24,7 +24,7 @@ function createLogger() {
 		info(msg: string) {
 			update((logs) => {
 				logs = [...logs, format('INFO', msg)];
-				lastIndex = logs.length;
+				lastIndex = logs.length - 1;
 				return logs;
 			});
 		},
@@ -32,6 +32,7 @@ function createLogger() {
 		warn(msg: string) {
 			update((logs) => {
 				logs = [...logs, format('WARN', msg)];
+				lastIndex = logs.length - 1;
 				return logs;
 			});
 		},
@@ -39,6 +40,7 @@ function createLogger() {
 		err(msg: string) {
 			update((logs) => {
 				logs = [...logs, format('ERR', msg)];
+				lastIndex = logs.length - 1;
 				return logs;
 			});
 		},
@@ -46,7 +48,25 @@ function createLogger() {
 		log(msg: string) {
 			update((logs) => {
 				logs = [...logs, msg];
+				lastIndex = logs.length - 1;
 				return logs;
+			});
+		},
+
+		update(template: string, value: string | number) {
+			// Replace the placeholder
+			const msg = template.replace('{}', String(value));
+			const formatted = format('INFO', msg);
+
+			update((logs) => {
+				if (lastIndex !== null && lastIndex >= 0) {
+					// Update the last line instead of adding a new one
+					const copy = [...logs];
+					copy[lastIndex] = formatted;
+					return copy;
+				}
+				// Fallback if no previous line exists
+				return [...logs, formatted];
 			});
 		}
 	};

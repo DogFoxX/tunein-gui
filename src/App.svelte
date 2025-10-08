@@ -7,7 +7,7 @@
 	import { getCurrentWindow, type Theme } from '@tauri-apps/api/window';
 	import { check } from '@tauri-apps/plugin-updater';
 	import { saveXML, openXML } from '$lib/utils/dialog';
-	import { updateAvailable } from '$lib/stores/global';
+	import logger from '$lib/stores/logger';
 	import Main from '$lib/components/main';
 	import Settings from '$lib/components/settings.svelte';
 	import Titlebar from '$lib/components/titlebar.svelte';
@@ -19,6 +19,7 @@
 		const update = await check();
 
 		if (update) {
+			logger.info(`Found a new version of Tunein GUI: ${update.version}.`);
 			await guiUpdate.download(update);
 		}
 

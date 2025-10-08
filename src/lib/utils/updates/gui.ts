@@ -6,12 +6,18 @@ import { updateAvailable } from '$lib/stores/global';
 let update: Update;
 
 async function download(updateFromCheck: Update) {
+	let contentLength = 0;
+	let downloaded = 0;
 	await updateFromCheck.download((event) => {
 		switch (event.event) {
 			case 'Started':
-				logger.info(
-					`Found a new version of Tunein GUI: ${updateFromCheck.version}. Downloading...`
-				);
+				contentLength = event.data.contentLength as number;
+				logger.info('Downloading...');
+				break;
+			case 'Progress':
+				downloaded += event.data.chunkLength;
+				let percentage = Math.floor((downloaded / contentLength) * 100);
+				logger.update('Downmloading... {}%', percentage);
 				break;
 			case 'Finished':
 				logger.info('An Update is ready to install.');
