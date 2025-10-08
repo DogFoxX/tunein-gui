@@ -40,7 +40,7 @@
 		"createUpdaterArtifacts": true,
 		"targets": ["app", "appimage", "nsis"],
 		"windows": {
-			"nsis": { "installMode": "currentUser" },
+			"nsis": { "installMode": "currentUser", "installerIcon": "icons/icon.ico" },
 			"webviewInstallMode": {
 				"silent": true,
 				"type": "embedBootstrapper"
