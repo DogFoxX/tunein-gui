@@ -16,6 +16,10 @@
 	let theme = $state<Theme | null>();
 
 	onMount(async () => {
+		store.set(await initSettings());
+		const storeSett = (await $store.get('settings')) as GuiSettings;
+		settings.set(storeSett);
+
 		const update = await check();
 
 		if (update) {
@@ -25,20 +29,16 @@
 
 		await getCurrentWindow().setTheme(null);
 
-		store.set(await initSettings());
-		const storeSett = (await $store.get('settings')) as GuiSettings;
-		settings.set(storeSett);
-
 		// TuneinCrew release check - remove for produnction
-		const version = await getLatest($settings.tuneinCrew.version);
+		// const version = await getLatest($settings.tuneinCrew.version);
 
-		if (version) {
-			$settings.tuneinCrew = {
-				...$settings.tuneinCrew,
-				version
-			};
-			await $store.set('settings', $settings);
-		}
+		// if (version) {
+		// 	$settings.tuneinCrew = {
+		// 		...$settings.tuneinCrew,
+		// 		version
+		// 	};
+		// 	await $store.set('settings', $settings);
+		// }
 
 		if (!$settings.fmodDir) {
 			$settingsOpen = true;

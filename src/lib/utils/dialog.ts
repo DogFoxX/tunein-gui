@@ -24,14 +24,16 @@ export async function openDirDiag(args: { title: string }): Promise<string[] | a
 	return open({ title, directory: true, multiple: false, canCreateDirectories: true });
 }
 
-export async function openXML(): Promise<void> {
-	const file = await open({
-		title: 'Import XML',
-		defaultPath: 'station.xml',
-		multiple: false,
-		canCreateDirectories: false,
-		filters: [{ extensions: ['xml'], name: 'XML Files' }]
-	});
+export async function openXML(file?: string | null): Promise<void> {
+	if (!file) {
+		file = await open({
+			title: 'Import XML',
+			defaultPath: 'station.xml',
+			multiple: false,
+			canCreateDirectories: false,
+			filters: [{ extensions: ['xml'], name: 'XML Files' }]
+		});
+	}
 
 	if (!file || typeof file !== 'string') return;
 

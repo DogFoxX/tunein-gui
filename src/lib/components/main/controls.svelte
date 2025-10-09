@@ -1,12 +1,14 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
-	import { Command, type Child } from '@tauri-apps/plugin-shell';
-	import { exists, mkdir } from '@tauri-apps/plugin-fs';
-	import { join } from '@tauri-apps/api/path';
+	import { onMount } from 'svelte';
+	import { Command } from '@tauri-apps/plugin-shell';
+	import { exists, mkdir, readDir } from '@tauri-apps/plugin-fs';
+	import { join, dirname } from '@tauri-apps/api/path';
 	import { saveXML, openXML } from '$lib/utils/dialog';
 	import { obj2xml } from '$lib/utils/xml-convert/index';
 	import { xmlData } from '$lib/stores/xml-obj.store';
 	import { settings } from '$lib/stores/settings.store';
+	import { unsaved } from '$lib/stores/global';
 	import logger from '$lib/stores/logger';
 
 	// Icons
@@ -14,9 +16,27 @@
 	import SaveIcon from '~icons/solar/file-bold-duotone';
 	import ImportIcon from '~icons/solar/archive-down-minimlistic-line-duotone';
 	import CreateIcon from '~icons/solar/bolt-bold-duotone';
-	import StopIcon from '~icons/solar/stop-circle-bold';
 
 	let profileOpen = $state(false);
+	let profiles = $state<{ name: string; path: string }[]>([]);
+
+	$effect(() => {
+		if ($settings) {
+			readDir($settings.cwd).then(async (stations) => {
+				for (const station of stations) {
+					const entries = await readDir(await join($settings.cwd, station.name));
+					const hasXml = entries.some((e) => e.isFile && e.name === 'data.xml');
+
+					if (hasXml) {
+						profiles.push({
+							name: station.name,
+							path: await join($settings.cwd, station.name, 'data.xml')
+						});
+					}
+				}
+			});
+		}
+	});
 
 	async function create() {
 		const stationPath = await join($settings.cwd, $xmlData.project.radio.name);
@@ -62,18 +82,24 @@
 					transition:fly={{ y: 10, duration: 180 }}
 					class="absolute top-8 right-0 left-0 overflow-hidden rounded-md bg-zinc-700 shadow-lg shadow-neutral-900 z-10"
 				>
-					<button class="w-full px-2 py-1 text-left text-sm text-white hover:bg-zinc-500">
-						NFSU2
-					</button>
+					{#each profiles as profile}
+						<button
+							onclick={async () => {
+								await openXML(profile.path);
+								profileOpen = false;
+							}}
+							class="w-full px-2 py-1 text-left text-sm text-white hover:bg-zinc-500"
+						>
+							{profile.name}
+						</button>
+					{/each}
 				</div>
 			{/if}
 		</div>
 		<button
-			onclick={async () => {
-				await openXML();
-			}}
 			class="rounded-md px-4 py-1 bg-slate-700 hover:bg-slate-500 text-white"
 			title="Save As (Ctrl + S)"
+			disabled={!$unsaved}
 		>
 			<SaveIcon width="20" height="20" />
 		</button>
