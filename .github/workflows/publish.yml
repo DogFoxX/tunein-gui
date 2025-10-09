@@ -10,16 +10,12 @@ on:
 
 jobs:
     build-tauri:
-        env:
-            RUSTFLAGS: '-C link-arg=-lstdc++'
         permissions:
             contents: write
         strategy:
             fail-fast: false
             matrix:
                 include:
-                    - platform: 'ubuntu-24.04'
-                      args: ''
                     - platform: 'windows-latest'
                       args: ''
 
@@ -32,22 +28,6 @@ jobs:
                   node-version: lts/*
             - name: install Rust stable
               uses: dtolnay/rust-toolchain@stable
-            - name: install dependencies (ubuntu only)
-              if: matrix.platform == 'ubuntu-24.04' # This must match the platform value defined above.
-              run: |
-                  sudo apt-get update
-                  sudo apt-get install -y \
-                    build-essential \
-                    g++ \
-                    libwebkit2gtk-4.1-0=2.44.0-2 \
-                    libwebkit2gtk-4.1-dev=2.44.0-2 \
-                    libjavascriptcoregtk-4.1-0=2.44.0-2 \
-                    libjavascriptcoregtk-4.1-dev=2.44.0-2 \
-                    gir1.2-javascriptcoregtk-4.1=2.44.0-2 \
-                    gir1.2-webkit2-4.1=2.44.0-2 \
-                    libappindicator3-dev \
-                    librsvg2-dev \
-                    patchelf
             - name: install frontend dependencies
               run: npm install
             - uses: tauri-apps/tauri-action@v0
