@@ -1,10 +1,10 @@
 import { sanitizeXml } from './sanitize-xml';
 
-export function obj2xml<T extends XmlData>(obj: T, indent = ''): string {
+export function obj2xml(obj: Record<string, any>, indent = ''): string {
 	let xml = '';
 
 	for (const key in obj) {
-		const value = obj[key as keyof T];
+		const value = obj[key];
 
 		if (Array.isArray(value)) {
 			xml += `${indent}<${key}>\n`;
