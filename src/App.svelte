@@ -29,7 +29,7 @@
 
 		await getCurrentWindow().setTheme(null);
 
-		// TuneinCrew release check - remove for produnction
+		// TuneinCrew release check - uncomment for produnction
 		const version = await getLatest($settings.tuneinCrew.version);
 
 		if (version) {
