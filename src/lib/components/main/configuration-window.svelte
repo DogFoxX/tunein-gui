@@ -326,7 +326,7 @@
 					>
 						<div class="bg-primary absolute inset-0 -z-10 opacity-70"></div>
 						<div class="flex w-full flex-col items-center gap-2">
-							<span class="text-sm text-white">Loading Tracks...</span>
+							<span class="text-sm text-white">Loading Track(s)...</span>
 							<div
 								class="loading relative h-1 w-1/2 overflow-hidden rounded-full bg-zinc-500"
 							></div>

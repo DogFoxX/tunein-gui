@@ -30,15 +30,15 @@
 		await getCurrentWindow().setTheme(null);
 
 		// TuneinCrew release check - uncomment for produnction
-		const version = await getLatest($settings.tuneinCrew.version);
+		// const version = await getLatest($settings.tuneinCrew.version);
 
-		if (version) {
-			$settings.tuneinCrew = {
-				...$settings.tuneinCrew,
-				version
-			};
-			await $store.set('settings', $settings);
-		}
+		// if (version) {
+		// 	$settings.tuneinCrew = {
+		// 		...$settings.tuneinCrew,
+		// 		version
+		// 	};
+		// 	await $store.set('settings', $settings);
+		// }
 
 		if (!$settings.fmodDir) {
 			$settingsOpen = true;

@@ -21,6 +21,7 @@ interface TrackData {
 	year?: string | null;
 	length?: string | null;
 	force?: string | null;
+	volume_db?: string | null;
 }
 
 interface XmlData {

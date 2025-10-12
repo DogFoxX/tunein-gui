@@ -1,5 +1,5 @@
-import { readFile } from '@tauri-apps/plugin-fs';
-import { parseBlob } from 'music-metadata';
+import logger from '$lib/stores/logger';
+import { invoke } from '@tauri-apps/api/core';
 
 function formatDuration(seconds?: number | undefined): string | null {
 	if (seconds == null) return null;
@@ -14,41 +14,17 @@ function getFileNameText(path: string) {
 	return base.replace(/\.[^/.]+$/, '');
 }
 
-function normalizeYear(year: number | undefined): string {
-	if (!year) return ''; // no year info
-
-	const str = String(year); // convert numbers to string
-	const match = str.match(/\d{4}/); // extract first 4-digit sequence
-	return match ? match[0] : '';
-}
-
 async function parseAudio(
 	paths: string[],
 	callback: (isLoading: boolean) => void,
 	forceOpts?: { setForce: boolean; forceGlobVal: string }
 ): Promise<TrackData[]> {
 	callback(true);
+	// ...(forceOpts?.setForce ? { force: forceOpts.forceGlobVal } : {})
 
-	const results = await Promise.all(
-		paths.map(async (p) => {
-			const bytes = await readFile(p);
-			const blob = new Blob([bytes.buffer]);
-			const meta = await parseBlob(blob);
-
-			return {
-				file: p,
-				name: meta.common.title ?? getFileNameText(p),
-				artist: meta.common.artist ?? '',
-				year: normalizeYear(meta.common.year) ?? '',
-				length: formatDuration(meta.format.duration),
-				...(forceOpts?.setForce ? { force: forceOpts.forceGlobVal } : {})
-			};
-		})
-	);
-
+	const result = await invoke<TrackData[]>('get_audio_info', { paths, targetVolume: 92 });
 	callback(false);
-
-	return results;
+	return result;
 }
 
 export default parseAudio;

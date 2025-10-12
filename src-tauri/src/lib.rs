@@ -1,5 +1,6 @@
 use tauri::Manager;
 mod dds_convert;
+mod audio;
 
 pub fn run() {
     tauri::Builder::default()
@@ -32,7 +33,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             dds_convert::convert_to_dds,
-            dds_convert::dds_to_png_base64
+            dds_convert::dds_to_png_base64,
+            audio::get_audio_info
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

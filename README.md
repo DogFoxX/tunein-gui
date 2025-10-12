@@ -25,7 +25,7 @@
 
 - Import an existing XML, or start from scratch
 - Choose a logo image (dxt5 dds, bmp, jpg or png)
-    - The app will convert bmp, jpg and png images file to a compatible DXT5 DDS file
+    - The app will convert bmp, jpg and png image files to a compatible DXT5 DDS file
 - Set Radio ID, Name
 - Choose Force options
     - Global Default will omit the `<force>` tag to keep it in line with The Crew's default
@@ -55,6 +55,7 @@ Report them by creating an issue.
 
 ### Currently working on:
 
+- **Track Target Volume** - mp3gain-like Target "Normal" Value
 - **Profile Select Enhancements** - Needs a live and dynamic lookup
 - **Save Profile** - Create and save a profile for editing later
 - **Check, check, check** - Implement a bunch of checks to ensure valid xml, audio files, and much more
