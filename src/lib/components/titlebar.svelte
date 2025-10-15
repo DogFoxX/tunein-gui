@@ -63,6 +63,7 @@
 				class="w-[45px] h-full flex items-center justify-center text-neutral-300 hover:bg-zinc-700"
 				aria-label="minimze"
 				title="Minimize"
+				tabindex="-1"
 			>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
@@ -84,6 +85,7 @@
 				class="w-[45px] h-full flex items-center justify-center text-neutral-300 hover:bg-zinc-700"
 				aria-label="maximize"
 				title={isMax ? 'Restore' : 'Maximize'}
+				tabindex="-1"
 			>
 				{#if !isMax}
 					<svg
@@ -121,6 +123,7 @@
 				class="w-[45px] h-full flex items-center justify-center text-neutral-300 hover:text-white hover:bg-close"
 				aria-label="close"
 				title="Close"
+				tabindex="-1"
 			>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"

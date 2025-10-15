@@ -72,7 +72,7 @@ export async function openXML(file?: string | null): Promise<void> {
 
 	xmlData.set(parsed);
 
-	const songs: TrackData[] = parsed.project.radio.songs.map((s) => s.song);
+	const songs: TrackXMLData[] = parsed.project.radio.songs.map((s) => s.song);
 	tracks.set(songs);
 }
 

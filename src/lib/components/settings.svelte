@@ -193,20 +193,20 @@
 		<div class="flex gap-2">
 			<button
 				onclick={() => (aboutOpen = true)}
-				class="rounded-md bg-slate-700 px-4 py-1 text-sm text-white hover:bg-slate-500"
+				class="rounded-md bg-slate-700 px-4 py-1 text-sm text-white !border-[1px] !border-slate-500 hover:bg-slate-500"
 				>About</button
 			>
 			<div class="flex grow justify-end gap-2">
 				<button
 					onclick={saveSettings}
-					class="rounded-md bg-slate-700 px-4 py-1 text-sm text-white hover:bg-slate-500"
+					class="rounded-md bg-slate-700 px-4 py-1 text-sm text-white !border-[1px] !border-slate-500 hover:bg-slate-500"
 					disabled={unsaved}
 				>
 					Save
 				</button>
 				<button
 					onclick={() => settingsOpen.set(false)}
-					class="rounded-md bg-slate-700 px-4 py-1 text-sm text-white hover:bg-slate-500"
+					class="rounded-md bg-slate-700 px-4 py-1 text-sm text-white !border-[1px] !border-slate-500 hover:bg-slate-500"
 				>
 					Close
 				</button>
@@ -259,7 +259,7 @@
 		<div>
 			<button
 				onclick={() => (aboutOpen = false)}
-				class="rounded-md bg-slate-700 px-4 py-1 text-sm text-white hover:bg-slate-500"
+				class="rounded-md bg-slate-700 px-4 py-1 text-sm text-white !border-[1px] !border-slate-500 hover:bg-slate-500"
 				>Back</button
 			>
 		</div>

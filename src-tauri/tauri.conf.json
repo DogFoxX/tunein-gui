@@ -2,7 +2,7 @@
 	"$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
 	"productName": "Tunein GUI",
 	"mainBinaryName": "tunein-gui",
-	"version": "0.1.3",
+	"version": "0.1.4",
 	"identifier": "com.tunein.gui",
 	"build": {
 		"frontendDist": "../dist",
@@ -15,10 +15,10 @@
 			{
 				"label": "main",
 				"title": "Tunein GUI",
-				"width": 1242,
-				"minWidth": 906,
-				"height": 768,
-				"minHeight": 600,
+				"width": 1384,
+				"minWidth": 1000,
+				"height": 850,
+				"minHeight": 641,
 				"resizable": true,
 				"fullscreen": false,
 				"backgroundColor": "#1E1E1E",

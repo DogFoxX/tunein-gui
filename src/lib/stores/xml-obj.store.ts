@@ -14,7 +14,7 @@ export const xmlData = writable<XmlData>({
 		}
 	}
 });
-export const tracks = writable<TrackData[]>([]);
+export const tracks = writable<TrackXMLData[]>([]);
 
 xmlData.subscribe((data) => {
 	const songs = data?.project?.radio?.songs ?? [];
@@ -26,7 +26,7 @@ xmlData.subscribe((data) => {
 	}
 });
 
-export function updateTracks(newTracks: TrackData[]) {
+export function updateTracks(newTracks: TrackXMLData[]) {
 	xmlData.update((d) => {
 		if (!d?.project?.radio) return d;
 		d.project.radio.songs = newTracks.map((song) => ({ song }));
@@ -34,7 +34,7 @@ export function updateTracks(newTracks: TrackData[]) {
 	});
 }
 
-export function updateTrack(index: number, field: keyof TrackData, value: string) {
+export function updateTrack(index: number, field: keyof TrackXMLData, value: string) {
 	const currentTracks = get(tracks);
 	const newTracks = [...currentTracks];
 	newTracks[index] = { ...newTracks[index], [field]: value };

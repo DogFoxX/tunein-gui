@@ -48,7 +48,7 @@ function createLogger() {
 		log(msg: string) {
 			update((logs) => {
 				logs = [...logs, msg];
-				lastIndex = logs.length - 1;
+				lastIndex = logs.length;
 				return logs;
 			});
 		},

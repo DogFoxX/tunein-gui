@@ -12,7 +12,6 @@ async function download(updateFromCheck: Update) {
 		switch (event.event) {
 			case 'Started':
 				contentLength = event.data.contentLength as number;
-				logger.info('Downloading...');
 				break;
 			case 'Progress':
 				downloaded += event.data.chunkLength;

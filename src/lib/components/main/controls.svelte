@@ -67,15 +67,15 @@
 	}
 </script>
 
-<div id="controls" class="flex w-full items-center gap-6 h-7">
-	<div class="flex gap-2">
-		<div class="relative max-h-full">
+<div id="controls" class="flex w-full items-center gap-6">
+	<div class="flex items-center gap-2">
+		<div class="relative">
 			<button
 				onclick={() => (profileOpen = !profileOpen)}
-				class="flex w-40 max-w-40 items-center rounded-md py-1 pr-8 pl-2 text-right text-sm bg-slate-700 hover:bg-slate-500 text-white"
+				class="flex w-40 max-w-40 items-center rounded-md h-7 pr-8 pl-2 text-right text-xs !border-[1px] !border-slate-500 bg-slate-700 hover:bg-slate-500 text-white"
 			>
 				<span>Select a Profile</span>
-				<CaretDown width="16" height="16" class="absolute right-2" />
+				<CaretDown width="18" height="18" class="absolute right-2" />
 			</button>
 			{#if profileOpen}
 				<div
@@ -88,7 +88,7 @@
 								await openXML(profile.path);
 								profileOpen = false;
 							}}
-							class="w-full px-2 py-1 text-left text-sm text-white hover:bg-zinc-500"
+							class="w-full px-2 py-1 text-left text-xs text-white hover:bg-zinc-500"
 						>
 							{profile.name}
 						</button>
@@ -97,27 +97,27 @@
 			{/if}
 		</div>
 		<button
-			class="rounded-md px-4 py-1 bg-slate-700 hover:bg-slate-500 text-white"
+			class="rounded-md px-4 py-1 bg-slate-700 !border-[1px] !border-slate-500 hover:bg-slate-500 text-white"
 			title="Save As (Ctrl + S)"
 			disabled={!$unsaved}
 		>
-			<SaveIcon width="20" height="20" />
+			<SaveIcon width="18" height="18" />
 		</button>
 		<button
 			onclick={async () => {
 				await openXML();
 			}}
-			class="rounded-md px-4 py-1 bg-slate-700 hover:bg-slate-500 text-white"
+			class="rounded-md px-4 py-1 bg-slate-700 !border-[1px] !border-slate-500 hover:bg-slate-500 text-white"
 			title="Import XML (Ctrl + I)"
 		>
-			<ImportIcon width="20" height="20" />
+			<ImportIcon width="18" height="18" />
 		</button>
 	</div>
 	<button
 		onclick={create}
-		class="rounded-md px-6 py-1 hover:bg-orange-600 !border-[1px] !border-orange-600 bg-orange-900 max-h-full text-white"
+		class="rounded-md px-6 py-1 hover:bg-orange-700 !border-[1px] !border-orange-700 bg-orange-900 max-h-full text-white"
 		title="Create Radio Station"
 	>
-		<CreateIcon width="20" height="20" />
+		<CreateIcon width="18" height="18" />
 	</button>
 </div>

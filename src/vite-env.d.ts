@@ -14,14 +14,24 @@ interface GuiSettings {
 	};
 }
 
-interface TrackData {
+interface TrackXMLData {
 	file?: string | null;
 	name?: string | null;
 	artist?: string | null;
 	year?: string | null;
 	length?: string | null;
 	force?: string | null;
-	volume_db?: string | null;
+	volume?: string | null;
+}
+
+interface TrackTableInfo {
+	filename: string;
+	measured_volume: number | null;
+	artist?: string;
+	name?: string;
+	year?: string;
+	length: string | null;
+	path: string;
 }
 
 interface XmlData {
