@@ -3,13 +3,12 @@ mod dds_convert;
 mod measure_volume;
 
 pub fn run() {
-    let unlocked = true;
     tauri::Builder::default()
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
-        .plugin(tauri_plugin_shellx::init(unlocked))
+        .plugin(tauri_plugin_shellx::init(true))
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {

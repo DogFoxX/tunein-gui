@@ -141,7 +141,7 @@
 						</button>
 					</div>
 					{#if settingsErr.fmodDir}
-						<span class="absolute bottom-0 left-0 text-xs text-orange-600"
+						<span class="absolute -bottom-5 left-0 text-xs text-orange-600"
 							>Set path to 'fmod_designercl.exe'</span
 						>
 					{/if}
@@ -183,7 +183,7 @@
 						</button>
 					</div>
 					{#if settingsErr.tuneinDir}
-						<span class="absolute bottom-0 left-0 text-xs text-orange-600"
+						<span class="absolute -bottom-5 left-0 text-xs text-orange-600"
 							>Set path to 'TuneinCrew.exe'</span
 						>
 					{/if}
