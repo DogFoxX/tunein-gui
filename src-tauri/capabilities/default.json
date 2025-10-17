@@ -30,6 +30,8 @@
     "global-shortcut:allow-unregister",
     "os:default",
     "process:default",
+    "shellx:allow-spawn",
+    "shellx:allow-kill",
     {
       "identifier": "opener:allow-open-path",
       "allow": [

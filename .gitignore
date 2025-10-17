@@ -24,5 +24,3 @@ dist-ssr
 *.sw?
 
 .github/workflows/publish.yml.old
-
-package-lock.json
