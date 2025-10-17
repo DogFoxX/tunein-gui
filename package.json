@@ -48,7 +48,6 @@
 		"@tauri-apps/plugin-opener": "^2.5.0",
 		"@tauri-apps/plugin-os": "^2.3.1",
 		"@tauri-apps/plugin-process": "^2.3.0",
-		"@tauri-apps/plugin-shell": "^2.3.1",
 		"@tauri-apps/plugin-store": "^2.4.0",
 		"@tauri-apps/plugin-updater": "^2.9.0",
 		"@tauri-apps/plugin-window-state": "^2.4.0",
@@ -56,6 +55,7 @@
 		"decode-dxt": "^1.0.1",
 		"fflate": "^0.8.2",
 		"highlight.js": "^11.11.1",
-		"music-metadata": "^11.9.0"
+		"music-metadata": "^11.9.0",
+		"tauri-plugin-shellx-api": "^2.0.16"
 	}
 }

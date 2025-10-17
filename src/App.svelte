@@ -20,28 +20,32 @@
 		const storeSett = (await $store.get('settings')) as GuiSettings;
 		settings.set(storeSett);
 
-		const update = await check();
-
-		if (update) {
-			logger.info(`Found a new version of Tunein GUI: ${update.version}.`);
-			await guiUpdate.download(update);
-		}
-
-		await getCurrentWindow().setTheme(null);
-
-		// TuneinCrew release check - uncomment for produnction
-		const version = await getLatest($settings.tuneinCrew.version);
-
-		if (version) {
-			$settings.tuneinCrew = {
-				...$settings.tuneinCrew,
-				version
-			};
-			await $store.set('settings', $settings);
-		}
-
-		if (!$settings.fmodDir) {
+		if (!$settings.fmodDir || !$settings.tuneinCrew.dir || !$settings.cwd) {
 			$settingsOpen = true;
+		}
+	});
+
+	settingsOpen.subscribe(async (open) => {
+		if (!open) {
+			const update = await check();
+
+			if (update) {
+				logger.info(`Found a new version of Tunein GUI: ${update.version}.`);
+				await guiUpdate.download(update);
+			}
+
+			await getCurrentWindow().setTheme(null);
+
+			// TuneinCrew release check - uncomment for produnction
+			// const version = await getLatest($settings.tuneinCrew.version);
+
+			// if (version) {
+			// 	$settings.tuneinCrew = {
+			// 		...$settings.tuneinCrew,
+			// 		version
+			// 	};
+			// 	await $store.set('settings', $settings);
+			// }
 		}
 	});
 

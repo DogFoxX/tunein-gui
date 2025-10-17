@@ -25,6 +25,7 @@ interface TrackXMLData {
 }
 
 interface TrackTableInfo {
+	number: number | null;
 	filename: string;
 	measured_volume: number | null;
 	artist?: string;

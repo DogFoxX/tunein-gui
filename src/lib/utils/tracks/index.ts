@@ -1,4 +1,5 @@
 import measureVolume from './measure-volume';
+import getFiles from './recursive-scan';
 import { readFile } from '@tauri-apps/plugin-fs';
 import { parseBlob } from 'music-metadata';
 import logger from '$lib/stores/logger';
@@ -26,13 +27,14 @@ async function parseTracks(
 	callback: (isLoading: boolean) => void,
 	onTrackParsed?: (track: TrackTableInfo) => void
 ): Promise<TrackTableInfo[]> {
+	let index = 1;
+
 	callback(true);
 
 	logger.info(`Loading Tracks 0 of ${paths.length}...`);
 
 	const results: TrackTableInfo[] = [];
 
-	let index = 1;
 	for (const path of paths) {
 		logger.update(`Loading Track {} of ${paths.length}...`, index);
 
@@ -42,6 +44,7 @@ async function parseTracks(
 			const meta = await parseBlob(blob);
 
 			const track: TrackTableInfo = {
+				number: meta.common.track.no ?? index,
 				filename: getFileNameText(path),
 				measured_volume: null,
 				artist: meta.common.artist ?? '',
@@ -69,5 +72,5 @@ async function parseTracks(
 	return results;
 }
 
-export { measureVolume };
+export { measureVolume, getFiles };
 export default parseTracks;

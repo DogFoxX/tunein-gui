@@ -6,13 +6,13 @@
 	// Tauri Imports
 	import { convertFileSrc } from '@tauri-apps/api/core';
 	import { listen } from '@tauri-apps/api/event';
-	import { exists } from '@tauri-apps/plugin-fs';
+	import { exists, lstat, readDir } from '@tauri-apps/plugin-fs';
 	import type { DialogFilter } from '@tauri-apps/plugin-dialog';
 
 	// Utils
 	import { openFileDiag } from '$lib/utils/dialog';
 	import { showDDSImage } from '$lib/utils/dds-parse';
-	import parseTracks, { measureVolume } from '$lib/utils/tracks';
+	import parseTracks, { measureVolume, getFiles } from '$lib/utils/tracks';
 	import columnResize from '$lib/utils/column-resize';
 
 	// Stores
@@ -26,17 +26,21 @@
 	} from '$lib/stores/xml-obj.store';
 
 	// Icons
-	import SolarRestartSquareBold from '~icons/solar/restart-square-bold';
-	import SolarFolderOpenBoldDuotone from '~icons/solar/folder-open-bold-duotone';
-	import SolarQuestionCircleBold from '~icons/solar/question-circle-bold';
-	import SolarAddSquareBold from '~icons/solar/add-square-bold';
+	import GenIdIcon from '~icons/solar/restart-square-bold';
+	import OpenFolderIcon from '~icons/solar/folder-open-bold-duotone';
+	import InfoIcon from '~icons/solar/question-circle-bold';
+	import AddIcon from '~icons/solar/add-square-bold';
 	import AnalyzeIcon from '~icons/solar/pulse-2-bold';
-	import SolarTrashBinTrashBold from '~icons/solar/trash-bin-trash-bold';
+	import RemoveIcon from '~icons/solar/trash-bin-trash-bold';
+	import CaretUp from '~icons/solar/alt-arrow-up-linear';
+	import CaretDown from '~icons/solar/alt-arrow-down-linear';
+	import { filename } from '@tauri-apps/plugin-window-state';
+	import { join } from '@tauri-apps/api/path';
 
 	// Dialog Filters
 	const audioFilter: DialogFilter[] = [
 		{
-			extensions: ['flac', 'mp3', 'ogg', 'wav', 'wma'],
+			extensions: ['flac', 'mp3', 'ogg', 'wav'],
 			name: 'Audio Files'
 		}
 	];
@@ -59,7 +63,7 @@
 	let filteredTracks = $derived<TrackTableInfo[]>(
 		trackList.filter((track) =>
 			Object.entries(track)
-				.filter(([key]) => key !== 'length') // 👈 exclude "name"
+				.filter(([key]) => key !== 'length')
 				.map(([, value]) => value)
 				.join(' ')
 				.toLowerCase()
@@ -84,18 +88,15 @@
 	let radioName = $derived($xmlData.project.radio.name);
 
 	onMount(() => {
-		listen<DragDropEventPayload>('tauri://drag-drop', (event) => {
+		listen<DragDropEventPayload>('tauri://drag-drop', async (event) => {
 			const { x, y } = event.payload.position;
 
 			// get element under cursor
 			const el = document.elementFromPoint(x, y);
 			if (el && audioDropArea?.contains(el)) {
-				const allowedExt = ['flac', 'mp3', 'ogg', 'wav', 'wma'];
-				let files = event.payload.paths;
+				let paths = event.payload.paths;
 
-				trackPaths = files.filter((file) =>
-					allowedExt.some((ext) => file.toLocaleLowerCase().endsWith(ext))
-				);
+				trackPaths = await getFiles(paths);
 
 				loadTracks();
 			}
@@ -176,7 +177,7 @@
 
 		// Only scroll if row not visible
 
-		row?.scrollIntoView({ block: 'nearest' });
+		row.scrollIntoView({ block: 'nearest' });
 
 		// Extra logic for sticky header overlap on ArrowUp
 		if (options.checkStickyOverlap) {
@@ -225,13 +226,11 @@
 			);
 		}
 	});
-
-	$inspect($xmlData);
 </script>
 
 <svelte:window
 	onkeydown={(e) => {
-		if (document.activeElement !== audioDropArea && !filteredTracks.length) return;
+		if (document.activeElement !== audioDropArea || !filteredTracks.length) return;
 
 		windowShiftDown = e.shiftKey;
 		windowCtrlDown = e.ctrlKey;
@@ -241,16 +240,49 @@
 			selectedTrack = trackList.map((_, i) => i);
 		}
 
+		if (e.key === 'Home' && selectedTrack.length) {
+			e.preventDefault();
+
+			if (windowShiftDown) {
+				if (lastSelectedIndex !== null) {
+					const start = 0;
+					const end = lastSelectedIndex;
+
+					selectedTrack = Array.from({ length: end - start + 1 }, (_, i) => start + i);
+				}
+			} else selectedTrack = [0];
+
+			lastSelectedIndex = 0;
+			focusRow(selectedTrack[selectedTrack.length - 1], { checkStickyOverlap: true });
+		}
+
+		if (e.key === 'End' && selectedTrack.length) {
+			e.preventDefault();
+
+			if (windowShiftDown) {
+				if (lastSelectedIndex !== null) {
+					const start = lastSelectedIndex;
+					const end = filteredTracks.length - 1;
+
+					selectedTrack = Array.from({ length: end - start + 1 }, (_, i) => start + i);
+				}
+			} else selectedTrack = [filteredTracks.length - 1];
+
+			lastSelectedIndex = filteredTracks.length - 1;
+			focusRow(selectedTrack[selectedTrack.length - 1]);
+		}
+
 		if (e.key === 'Delete' && selectedTrack.length) {
+			e.preventDefault();
 			removeTrack();
 		}
 
 		if (e.key === 'Escape' && selectedTrack.length) {
+			e.preventDefault();
 			selectedTrack = [];
 		}
 
 		if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
-
 		e.preventDefault();
 
 		// Nothing selected yet
@@ -350,7 +382,7 @@
 							class="rounded-md text-white"
 							title="Generate Random ID"
 						>
-							<SolarRestartSquareBold width="20" height="20" />
+							<GenIdIcon width="20" height="20" />
 						</button>
 					</div>
 				</div>
@@ -397,7 +429,7 @@
 						}}
 						class="rounded-md text-white"
 					>
-						<SolarFolderOpenBoldDuotone width="20" height="20" />
+						<OpenFolderIcon width="20" height="20" />
 					</button>
 				</div>
 			</div>
@@ -421,7 +453,7 @@
 						class="text-white"
 						title="km/h value when music is faded in. Disable: Keep the game's default value (80). Enable: Set a custom value (max 300) - 0 disables the effect, i.e no fade-in."
 					>
-						<SolarQuestionCircleBold width="16" height="16" />
+						<InfoIcon width="16" height="16" />
 					</i>
 				</div>
 				<div class="input-flex flex rounded-md bg-zinc-800 px-2 py-1">
@@ -461,7 +493,7 @@
 						class="text-white"
 						title="Value in dB to normalize each track. Enable: Set a volume value for each track (best 95). Disable: No volume change."
 					>
-						<SolarQuestionCircleBold width="16" height="16" />
+						<InfoIcon width="16" height="16" />
 					</i>
 				</div>
 				<div class="input-flex flex rounded-md bg-zinc-800 px-2 py-1">
@@ -485,7 +517,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="flex grow gap-2">
+	<div class="flex grow gap-4">
 		<div class="flex flex-col gap-2">
 			<span class="text-sm text-white">Track XML Info</span>
 			<div class="relative flex grow w-100 flex-col rounded-md border-2 border-zinc-700">
@@ -623,7 +655,7 @@
 									tabindex="-1"
 									title="(Optional) Gain offset in dB relative to Target Volume (float value, e.g. -5.5)"
 								>
-									<SolarQuestionCircleBold width="16" height="16" />
+									<InfoIcon width="16" height="16" />
 								</div>
 							</div>
 							<div
@@ -649,7 +681,7 @@
 		</div>
 		<div class="flex grow min-w-120 flex-col gap-2">
 			<span class="text-sm text-white">Tracks</span>
-			<div class="relative flex h-full flex-col rounded-md">
+			<div class="relative flex h-full flex-col rounded-md gap-2">
 				{#if loadingTracks}
 					<div
 						in:fade={{ duration: 180 }}
@@ -676,12 +708,45 @@
 						>
 							<thead class="bg-secondary sticky top-0">
 								<tr>
+									<th class="border-r-[1px] border-r-zinc-600 relative w-12 z-8">
+										<div
+											class="font-normal truncate text-left text-xs text-white px-2 py-1.5"
+										>
+											#
+										</div>
+										<button
+											class="sort absolute inset-0 flex overflow-hidden items-start justify-center text-neutral-400"
+											tabindex="-1"
+										>
+											<CaretDown
+												height="14"
+												width="14"
+												class="absolute -top-1"
+											/>
+										</button>
+										<button
+											use:columnResize
+											class="absolute -right-1.5 top-0 bottom-0 cursor-col-resize w-3"
+											aria-label="column_resizer"
+											tabindex="-1"
+										></button>
+									</th>
 									<th class="border-r-[1px] border-r-zinc-600 relative w-40 z-7">
 										<div
-											class="truncate text-left text-xs text-white px-2 py-1.5"
+											class="font-normal truncate text-left text-xs text-white px-2 py-1.5"
 										>
 											Filename
 										</div>
+										<button
+											class="sort absolute inset-0 flex overflow-hidden items-start justify-center text-neutral-400"
+											tabindex="-1"
+										>
+											<CaretDown
+												height="14"
+												width="14"
+												class="absolute -top-1"
+											/>
+										</button>
 										<button
 											use:columnResize
 											class="absolute -right-1.5 top-0 bottom-0 cursor-col-resize w-3"
@@ -691,10 +756,20 @@
 									</th>
 									<th class="border-r-[1px] border-zinc-600 relative z-6 w-40">
 										<div
-											class="truncate text-left text-xs text-white px-2 py-1.5"
+											class="font-normal truncate text-left text-xs text-white px-2 py-1.5"
 										>
 											Measured Volume (dB)
 										</div>
+										<button
+											class="sort absolute inset-0 flex items-start overflow-hidden justify-center text-neutral-400"
+											tabindex="-1"
+										>
+											<CaretDown
+												height="14"
+												width="14"
+												class="absolute -top-1"
+											/>
+										</button>
 										<button
 											use:columnResize
 											class="absolute -right-1.5 top-0 bottom-0 cursor-col-resize w-3"
@@ -704,10 +779,20 @@
 									</th>
 									<th class="border-r-[1px] border-zinc-600 relative w-40 z-5">
 										<div
-											class="truncate text-left text-xs text-white px-2 py-1.5"
+											class="font-normal truncate text-left text-xs text-white px-2 py-1.5"
 										>
 											Artist
 										</div>
+										<button
+											class="sort absolute inset-0 flex overflow-hidden items-start justify-center text-neutral-400"
+											tabindex="-1"
+										>
+											<CaretDown
+												height="14"
+												width="14"
+												class="absolute -top-1"
+											/>
+										</button>
 										<button
 											use:columnResize
 											class="absolute -right-1.5 top-0 bottom-0 cursor-col-resize w-3"
@@ -717,10 +802,20 @@
 									</th>
 									<th class="border-r-[1px] border-zinc-600 relative w-40 z-4">
 										<div
-											class="truncate text-left text-xs text-white px-2 py-1.5"
+											class="font-normal truncate text-left text-xs text-white px-2 py-1.5"
 										>
 											Name
 										</div>
+										<button
+											class="sort absolute inset-0 flex overflow-hidden items-start justify-center text-neutral-400"
+											tabindex="-1"
+										>
+											<CaretDown
+												height="14"
+												width="14"
+												class="absolute -top-1"
+											/>
+										</button>
 										<button
 											use:columnResize
 											class="absolute -right-1.5 top-0 bottom-0 cursor-col-resize w-3"
@@ -730,10 +825,20 @@
 									</th>
 									<th class="border-r-[1px] border-zinc-600 relative w-16 z-3">
 										<div
-											class="truncate text-left text-xs text-white px-2 py-1.5"
+											class="font-normal truncate text-left text-xs text-white px-2 py-1.5"
 										>
 											Year
 										</div>
+										<button
+											class="sort absolute inset-0 flex overflow-hidden items-start justify-center text-neutral-400"
+											tabindex="-1"
+										>
+											<CaretDown
+												height="14"
+												width="14"
+												class="absolute -top-1"
+											/>
+										</button>
 										<button
 											use:columnResize
 											class="absolute -right-1.5 top-0 bottom-0 cursor-col-resize w-3"
@@ -743,10 +848,20 @@
 									</th>
 									<th class="border-r-[1px] border-zinc-600 relative w-16 z-2">
 										<div
-											class="truncate text-left text-xs text-white px-2 py-1.5"
+											class="font-normal truncate text-left text-xs text-white px-2 py-1.5"
 										>
 											Length
 										</div>
+										<button
+											class="sort absolute inset-0 flex overflow-hidden items-start justify-center text-neutral-400"
+											tabindex="-1"
+										>
+											<CaretDown
+												height="14"
+												width="14"
+												class="absolute -top-1"
+											/>
+										</button>
 										<button
 											use:columnResize
 											class="absolute -right-1.5 top-0 bottom-0 cursor-col-resize w-3"
@@ -758,10 +873,20 @@
 										class="border-r-[1px] border-zinc-600 relative z-1 overflow-hidden w-44"
 									>
 										<div
-											class="truncate text-left text-xs text-white px-2 py-1.5"
+											class="font-normal truncate text-left text-xs text-white px-2 py-1.5"
 										>
 											Path
 										</div>
+										<button
+											class="sort absolute inset-0 flex overflow-hidden items-start justify-center text-neutral-400"
+											tabindex="-1"
+										>
+											<CaretDown
+												height="14"
+												width="14"
+												class="absolute -top-1"
+											/>
+										</button>
 										<button
 											use:columnResize
 											class="absolute -right-1.5 top-0 bottom-0 cursor-col-resize w-3"
@@ -822,57 +947,65 @@
 								class="absolute inset-0 flex flex-col items-center justify-center -z-1"
 							>
 								<span class="font-semibold text-zinc-500"
-									>Drop audio file(s) here</span
+									>Drop folder(s) or audio file(s) here</span
 								>
 								<span class="text-sm text-zinc-500"
 									>...or click "Add File(s)" to browse</span
 								>
-								<span class="text-sm text-zinc-500"
-									>Accepts flac, mp3, ogg, wav, wma</span
-								>
+								<span class="text-sm text-zinc-500">(flac, mp3, ogg, wav)</span>
 							</div>
 						{/if}
 					</div>
 				</div>
-				<div class="flex flex-col gap-4 p-2">
-					<div class="flex items-center gap-2">
-						<button
-							onclick={addTracks}
-							class="flex items-center gap-2 rounded-md bg-zinc-800 hover:bg-zinc-600 !border-[1px] !border-zinc-600 px-2 py-1 text-xs text-white"
-						>
-							<SolarAddSquareBold width="18" height="18" />
-							<span>Add File(s)</span>
-						</button>
-						<button
-							onclick={async () => {
-								await measureVolume(
-									trackList,
-									(isLoading) => (loadingTracks = isLoading),
-									(measuredTrack) => {
-										// Live update the UI immediately
-										trackList = trackList.map((t) =>
-											t.path === measuredTrack.path ? measuredTrack : t
-										);
-									}
-								);
-							}}
-							class="flex items-center gap-2 rounded-md bg-zinc-800 hover:bg-zinc-600 !border-[1px] !border-zinc-600 px-2 py-1 text-xs text-white"
-							disabled={trackList.length < 1}
-						>
-							<AnalyzeIcon width="18" height="18" />
-							<span>Analyze Tracks</span>
-						</button>
-						<button
-							onclick={removeTrack}
-							class="flex items-center gap-2 rounded-md bg-zinc-800 hover:bg-zinc-600 !border-[1px] !border-zinc-600 px-2 py-1 text-xs text-white"
-							disabled={selectedTrack.length < 1}
-						>
-							<SolarTrashBinTrashBold width="18" height="18" />
-							<span>Remove</span>
-						</button>
-						<div class="flex items-center grow justify-end gap-2">
-							<span class="text-xs text-zinc-400">Total Tracks:</span>
-							<span class="text-xs font-bold text-white">{trackList.length}</span>
+				<div class="flex flex-col gap-4">
+					<div class="flex items-center gap-4">
+						<div class="flex gap-2">
+							<button
+								onclick={addTracks}
+								class="flex items-center gap-2 rounded-md bg-zinc-800 hover:bg-zinc-600 !border-[1px] !border-zinc-600 px-2 py-1 text-xs text-white"
+							>
+								<AddIcon width="18" height="18" />
+								<span>Add File(s)</span>
+							</button>
+							<button
+								onclick={async () => {
+									await measureVolume(
+										trackList,
+										(isLoading) => (loadingTracks = isLoading),
+										(measuredTrack) => {
+											trackList = trackList.map((t) =>
+												t.path === measuredTrack.path ? measuredTrack : t
+											);
+										}
+									);
+								}}
+								class="flex items-center gap-2 rounded-md bg-zinc-800 hover:bg-zinc-600 !border-[1px] !border-zinc-600 px-2 py-1 text-xs text-white"
+								disabled={trackList.length < 1}
+							>
+								<AnalyzeIcon width="18" height="18" />
+								<span>Analyze Tracks</span>
+							</button>
+							<button
+								onclick={removeTrack}
+								class="flex items-center gap-2 rounded-md bg-zinc-800 hover:bg-zinc-600 !border-[1px] !border-zinc-600 px-2 py-1 text-xs text-white"
+								disabled={selectedTrack.length < 1}
+							>
+								<RemoveIcon width="18" height="18" />
+								<span>Remove</span>
+							</button>
+						</div>
+						<div class="flex items-center grow justify-end">
+							<div class="flex items-center gap-2">
+								<span class="text-xs text-zinc-400">Total Tracks:</span>
+								<span class="text-xs font-bold text-white">{trackList.length}</span>
+							</div>
+							<i class="text-xs text-zinc-600 px-2">|</i>
+							<div class="flex items-center gap-2">
+								<span class="text-xs text-zinc-400">Selected:</span>
+								<span class="text-xs font-bold text-white"
+									>{selectedTrack.length}</span
+								>
+							</div>
 						</div>
 					</div>
 					<div class="flex flex-1 items-center grow gap-2">
@@ -896,6 +1029,11 @@
 </div>
 
 <style>
+	thead th {
+		&:hover {
+			background-color: var(--color-slate-700);
+		}
+	}
 	tbody tr {
 		&.selected {
 			background-color: #51a2ff99;

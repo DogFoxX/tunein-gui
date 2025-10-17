@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
 	import { onMount } from 'svelte';
-	import { Command } from '@tauri-apps/plugin-shell';
+	import { Command } from 'tauri-plugin-shellx-api';
 	import { exists, mkdir, readDir } from '@tauri-apps/plugin-fs';
 	import { join, dirname } from '@tauri-apps/api/path';
 	import { saveXML, openXML } from '$lib/utils/dialog';
@@ -53,7 +53,7 @@
 
 		logger.info('Starting TuneinCrew.');
 
-		const command = Command.create('exec', [$settings.tuneinCrew.dir, `"${xmlPath}"`]);
+		const command = Command.create($settings.tuneinCrew.dir, [xmlPath]);
 
 		command.stdout.on('data', (msg) => logger.log(msg));
 
@@ -63,7 +63,7 @@
 			);
 		});
 
-		command.spawn();
+		command.spawn().catch((err) => console.log(err));
 	}
 </script>
 

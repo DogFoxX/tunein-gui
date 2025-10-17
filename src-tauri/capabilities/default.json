@@ -30,12 +30,13 @@
     "global-shortcut:allow-unregister",
     "os:default",
     "process:default",
-    "shell:allow-kill",
     {
       "identifier": "opener:allow-open-path",
-      "allow": [{
-        "path": "*/**"
-      }]
+      "allow": [
+        {
+          "path": "*/**"
+        }
+      ]
     },
     {
       "identifier": "fs:scope",
@@ -47,15 +48,11 @@
     },
     {
       "identifier": "http:default",
-      "allow": [{ "url": "https://*" }]
-    },
-    {
-      "identifier": "shell:allow-spawn",
-      "allow": [{
-        "name": "exec",
-        "cmd": "powershell.exe",
-        "args": true
-      }]
+      "allow": [
+        {
+          "url": "https://*"
+        }
+      ]
     }
   ]
 }
