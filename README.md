@@ -77,3 +77,16 @@ Report them by creating an issue.
 ### Planned:
 
 - **Jingle Support**
+
+# Credits
+
+:star: Thanx to FTIW for:
+
+- PitCrew
+    - Source: https://github.com/Telonof/PitCrew
+    - ModWorkshop: https://modworkshop.net/mod/52455
+- TuneinCrew
+    - Source: https://github.com/Telonof/TuneinCrew
+    - ModWorkshop: https://modworkshop.net/mod/53708
+
+:star: Everyone who's been testing the app and giving suggestions to shape it into an All-In-One tool!
