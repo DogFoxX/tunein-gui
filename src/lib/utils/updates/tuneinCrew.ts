@@ -15,7 +15,7 @@ const axiosInstance = axios.create({
 	env: { fetch: tauriFetch }
 });
 
-async function getLatest(currentVersion: string | null): Promise<string | null> {
+async function getTuneinCrewLatest(currentVersion: string | null): Promise<string | null> {
 	logger.info('Getting latest TuneinCrew release...');
 
 	const metaRes = await axiosInstance.get(
@@ -69,7 +69,7 @@ async function getLatest(currentVersion: string | null): Promise<string | null> 
 		const relativePath = path.replace(rootFolder, '');
 		if (!relativePath) continue;
 
-		const targetDir = await dirname(get(settings).tuneinCrew.dir);
+		const targetDir = get(settings).tuneinCrew.dir;
 		const outPath = await join(targetDir, relativePath);
 		const parentDir = await dirname(outPath);
 		await mkdir(parentDir, { recursive: true });
@@ -86,4 +86,4 @@ async function getLatest(currentVersion: string | null): Promise<string | null> 
 	return release.tag_name;
 }
 
-export default getLatest;
+export default getTuneinCrewLatest;

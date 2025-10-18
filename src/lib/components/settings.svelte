@@ -1,14 +1,24 @@
 <script lang="ts">
-	import { getVersion } from '@tauri-apps/api/app';
-	import { openUrl } from '@tauri-apps/plugin-opener';
+	// Svelte Imports
+	import { onMount } from 'svelte';
 	import { scale } from 'svelte/transition';
-	import { store } from '$lib/utils/settings';
+
+	import { getVersion } from '@tauri-apps/api/app';
+	import { exists, lstat } from '@tauri-apps/plugin-fs';
+	import { extname, join } from '@tauri-apps/api/path';
+	import { openUrl } from '@tauri-apps/plugin-opener';
+	import { settStore } from '$lib/utils/settings';
 	import { settingsOpen, settings } from '$lib/stores/settings.store';
 	import { openDirDiag, openFileDiag } from '$lib/utils/dialog';
+	import { getTuneinCrewLatest } from '$lib/utils/updates';
 
 	// Icons
 	import SolarFolderOpenBoldDuotone from '~icons/solar/folder-open-bold-duotone';
 	import SolarSquareTopDownOutline from '~icons/solar/square-top-down-outline';
+	import InfoIcon from '~icons/solar/info-circle-bold';
+	import InstallIcon from '~icons/solar/download-square-bold';
+	import InstalledIcon from '~icons/solar/check-circle-bold';
+	import NotInstalledIcon from '~icons/solar/close-circle-bold';
 
 	let unsaved = $state<boolean>();
 	let aboutOpen = $state(false);
@@ -16,14 +26,17 @@
 	let tempSettings = $state($settings);
 
 	let settingsErr = $derived({
-		cwd: tempSettings.cwd == '',
-		fmodDir: tempSettings.fmodDir == '',
-		tuneinDir: tempSettings.tuneinCrew.dir == ''
+		cwd: !tempSettings.cwd,
+		fmodDir: !tempSettings.fmodDir,
+		tuneinDir: !tempSettings.tuneinCrew.dir
 	});
 
+	let tuneinCrewExe = $state(false);
+	let isFilePath = $state(false);
+
 	async function saveSettings() {
-		await store.set(tempSettings);
-		settings.set(await store.get());
+		await settStore.set(tempSettings);
+		settings.set(await settStore.get());
 	}
 
 	$effect(() => {
@@ -32,7 +45,21 @@
 			Object.values(settingsErr).some((err) => err != false);
 	});
 
-	$inspect(tempSettings);
+	$effect(() => {
+		extname($settings.tuneinCrew.dir)
+			.then((ext) => {
+				return (isFilePath = ext !== '');
+			})
+			.catch(() => {
+				return (isFilePath = false);
+			});
+
+		join($settings.tuneinCrew.dir, 'TuneinCrew.exe').then((exePath) => {
+			exists(exePath).then((found) => {
+				tuneinCrewExe = found;
+			});
+		});
+	});
 </script>
 
 <svelte:window
@@ -44,152 +71,198 @@
 {#if !aboutOpen}
 	<div
 		transition:scale={{ start: 0.9, duration: 100 }}
-		class="bg-secondary absolute inset-4 flex flex-col gap-4"
+		class="bg-secondary absolute inset-4 flex flex-col gap-2"
 	>
 		<header class="text-2xl text-white">Settings</header>
-		<div class="flex w-full grow flex-col gap-4 px-2">
-			<div class="flex gap-4">
-				<div class="flex gap-2">
-					<input
-						type="checkbox"
-						name=""
-						id="gui-update"
-						bind:checked={tempSettings.autoUpdate.gui}
-					/>
-					<label for="gui-update" class="text-sm text-white">Auto update GUI</label>
-				</div>
-				<div class="flex gap-2">
-					<input
-						type="checkbox"
-						name=""
-						id="tunein-update"
-						bind:checked={tempSettings.autoUpdate.tuneinCrew}
-					/>
-					<label for="tunein-update" class="text-sm text-white"
-						>Auto update TuneinCrew</label
-					>
-				</div>
-			</div>
-			<div class="flex flex-col gap-7 py-2">
-				<div class="relative flex flex-col gap-2">
-					<label for="cwd" class="text-xs text-white">Working Directory</label>
-					<div
-						class="flex items-center gap-2 rounded-md bg-zinc-700 px-2 py-1 outline-1 outline-transparent"
-						class:!outline-orange-700={settingsErr.cwd}
-					>
-						<input
-							bind:value={tempSettings.cwd}
-							id="cwd"
-							class="w-full text-sm text-white"
-							type="text"
-							spellcheck="false"
-							placeholder="Click browse to choose a folder..."
-							autocomplete="off"
-						/>
-						<button
-							onclick={async () => {
-								let dir = await openDirDiag({
-									title: 'Choose a working directory'
-								});
+		<div class="relative w-full grow">
+			<div class="absolute inset-0 p-2 flex flex-col gap-4 overflow-y-auto">
+				<div class="flex flex-col gap-4">
+					<span class="text-white text-lg">GUI</span>
+					<div class="flex flex-col gap-4 px-2">
+						<div class="flex gap-2">
+							<input
+								type="checkbox"
+								name=""
+								id="gui-update"
+								bind:checked={tempSettings.autoUpdate.gui}
+							/>
+							<label for="gui-update" class="text-xs text-white"
+								>Auto update GUI</label
+							>
+						</div>
+						<div class="flex flex-col gap-2">
+							<label for="cwd" class="text-xs text-white">Working Directory</label>
+							<div
+								class="flex items-center gap-2 rounded-md bg-zinc-700 px-2 py-1 outline-1 outline-transparent"
+								class:!outline-red-400={settingsErr.cwd}
+							>
+								<input
+									bind:value={tempSettings.cwd}
+									id="cwd"
+									class="w-full text-sm text-white"
+									type="text"
+									spellcheck="false"
+									placeholder="Click browse to choose a folder..."
+									autocomplete="off"
+								/>
+								<button
+									onclick={async () => {
+										let dir = await openDirDiag({
+											title: 'Choose a working directory'
+										});
 
-								if (dir) tempSettings.cwd = dir;
-							}}
-							class="rounded-md text-white"
-						>
-							<SolarFolderOpenBoldDuotone width="20" height="20" />
-						</button>
+										if (dir) tempSettings.cwd = dir;
+									}}
+									class="rounded-md text-white"
+								>
+									<SolarFolderOpenBoldDuotone width="20" height="20" />
+								</button>
+							</div>
+							{#if settingsErr.cwd}
+								<div class="flex items-center gap-2 text-red-400">
+									<InfoIcon width="16" height="16" />
+									<span class="text-xs">Working Directory cannot be empty</span>
+								</div>
+							{/if}
+						</div>
 					</div>
-					{#if settingsErr.cwd}
-						<span class="absolute -bottom-5 left-0 text-xs text-orange-600"
-							>Working Directory cannot be empty</span
-						>
-					{/if}
 				</div>
-				<div class="relative flex flex-col gap-2">
-					<label for="fmod" class="text-xs text-white"
-						>FMOD Designer Path (fmod_designercl)</label
-					>
-					<div
-						class="flex items-center gap-2 rounded-md bg-zinc-700 px-2 py-1 outline-1 outline-transparent"
-						class:!outline-orange-700={settingsErr.fmodDir}
-					>
-						<input
-							bind:value={tempSettings.fmodDir}
-							id="fmod"
-							class="w-full text-sm text-white"
-							type="text"
-							spellcheck="false"
-							placeholder="Click browse to choose 'fmod_designercl.exe' path..."
-							autocomplete="off"
-						/>
-						<button
-							onclick={async () => {
-								let dir = await openFileDiag({
-									title: 'Choose fmod_designercl.exe path',
-									filters: [
-										{
-											extensions: ['exe'],
-											name: 'fmod_designercl.exe'
+				<div class="flex flex-col gap-4">
+					<span class="text-white text-lg">TuneinCrew</span>
+					<div class="flex flex-col gap-4 px-2">
+						<div class="flex gap-2">
+							<input
+								type="checkbox"
+								name=""
+								id="tunein-update"
+								bind:checked={tempSettings.autoUpdate.tuneinCrew}
+							/>
+							<label for="tunein-update" class="text-xs text-white"
+								>Auto update TuneinCrew</label
+							>
+						</div>
+						<div class="flex flex-col gap-2">
+							<div class="flex flex-col gap-2">
+								<label for="tuneincrew" class="text-xs text-white"
+									>TuneinCrew Directory</label
+								>
+								<div
+									class="flex items-center gap-2 rounded-md bg-zinc-700 px-2 py-1 outline-1 outline-transparent"
+									class:!outline-red-400={settingsErr.tuneinDir}
+								>
+									<input
+										bind:value={tempSettings.tuneinCrew.dir}
+										id="tuneincrew"
+										class="w-full text-sm text-white"
+										type="text"
+										spellcheck="false"
+										placeholder="Click browse to set TuneinCrew path..."
+										autocomplete="off"
+									/>
+									<button
+										onclick={async () => {
+											const dir = await openDirDiag({
+												title: 'Set TuneinCrew path'
+											});
+
+											if (dir) tempSettings.tuneinCrew.dir = dir;
+										}}
+										class="rounded-md text-white"
+									>
+										<SolarFolderOpenBoldDuotone width="20" height="20" />
+									</button>
+								</div>
+							</div>
+							{#if settingsErr.tuneinDir}
+								<div class="flex items-center gap-2 text-red-400">
+									<InfoIcon width="16" height="16" />
+									<span class="text-xs">Set TuneinCrew path</span>
+								</div>
+							{/if}
+							{#if isFilePath}
+								<div class="flex items-center gap-2 text-red-400">
+									<InfoIcon width="16" height="16" />
+									<span class="text-xs"
+										>Set TuneinCrew path without extension</span
+									>
+								</div>
+							{/if}
+							<div class="flex items-center gap-2">
+								<button
+									onclick={async () => {
+										const version = await getTuneinCrewLatest(
+											$settings.tuneinCrew.version
+										);
+
+										if (version) {
+											$settings.tuneinCrew = {
+												...$settings.tuneinCrew,
+												version
+											};
+											await settStore.set($settings);
 										}
-									],
-									multiple: false,
-									defaultPath: $settings?.fmodDir
-								});
+									}}
+									class="flex items-center gap-2 rounded-md bg-zinc-700 hover:bg-zinc-500 !border-[1px] !border-zinc-500 px-2 py-1 text-xs text-white"
+									disabled={isFilePath ||
+										!unsaved ||
+										(!settingsErr.tuneinDir && tuneinCrewExe)}
+								>
+									<InstallIcon width="18" height="18" />
+									<span>Install</span>
+								</button>
+								{#if tuneinCrewExe}
+									<InstalledIcon width="16" height="16" class="text-green-400" />
+								{:else}
+									<NotInstalledIcon width="16" height="16" class="text-red-400" />
+								{/if}
+							</div>
+						</div>
+						<div class="flex flex-col gap-2">
+							<label for="fmod" class="text-xs text-white"
+								>FMOD Designer Path (fmod_designercl.exe)</label
+							>
+							<div
+								class="flex items-center gap-2 rounded-md bg-zinc-700 px-2 py-1 outline-1 outline-transparent"
+								class:!outline-orange-700={settingsErr.fmodDir}
+							>
+								<input
+									bind:value={tempSettings.fmodDir}
+									id="fmod"
+									class="w-full text-sm text-white"
+									type="text"
+									spellcheck="false"
+									placeholder="Click browse to choose 'fmod_designercl.exe' path..."
+									autocomplete="off"
+								/>
+								<button
+									onclick={async () => {
+										let dir = await openFileDiag({
+											title: 'Choose fmod_designercl.exe path',
+											filters: [
+												{
+													extensions: ['exe'],
+													name: 'fmod_designercl.exe'
+												}
+											],
+											multiple: false,
+											defaultPath: $settings?.fmodDir
+										});
 
-								if (dir) tempSettings.fmodDir = dir;
-							}}
-							class="rounded-md text-white"
-						>
-							<SolarFolderOpenBoldDuotone width="20" height="20" />
-						</button>
+										if (dir) tempSettings.fmodDir = dir;
+									}}
+									class="rounded-md text-white"
+								>
+									<SolarFolderOpenBoldDuotone width="20" height="20" />
+								</button>
+							</div>
+							{#if settingsErr.fmodDir}
+								<div class="flex items-center gap-2 text-red-400">
+									<InfoIcon width="16" height="16" />
+									<span class="text-xs">Set path to 'fmod_designercl.exe'</span>
+								</div>
+							{/if}
+						</div>
 					</div>
-					{#if settingsErr.fmodDir}
-						<span class="absolute -bottom-5 left-0 text-xs text-orange-600"
-							>Set path to 'fmod_designercl.exe'</span
-						>
-					{/if}
-				</div>
-				<div class="relative flex flex-col gap-2">
-					<label for="tuneincrew" class="text-xs text-white">TuneinCrew Path</label>
-					<div
-						class="flex items-center gap-2 rounded-md bg-zinc-700 px-2 py-1"
-						class:!outline-orange-700={settingsErr.tuneinDir}
-					>
-						<input
-							bind:value={tempSettings.tuneinCrew.dir}
-							id="tuneincrew"
-							class="w-full text-sm text-white"
-							type="text"
-							spellcheck="false"
-							placeholder="Click browse to choose TuneinCrew.exe path..."
-							autocomplete="off"
-						/>
-						<button
-							onclick={async () => {
-								let dir = await openFileDiag({
-									title: 'Choose TuneinCrew.exe path',
-									filters: [
-										{
-											extensions: ['exe'],
-											name: 'TuneinCrew.exe'
-										}
-									],
-									multiple: false,
-									defaultPath: $settings.tuneinCrew.dir
-								});
-
-								if (dir) tempSettings.tuneinCrew.dir = dir;
-							}}
-							class="rounded-md text-white"
-						>
-							<SolarFolderOpenBoldDuotone width="20" height="20" />
-						</button>
-					</div>
-					{#if settingsErr.tuneinDir}
-						<span class="absolute -bottom-5 left-0 text-xs text-orange-600"
-							>Set path to 'TuneinCrew.exe'</span
-						>
-					{/if}
 				</div>
 			</div>
 		</div>
@@ -222,9 +295,9 @@
 		class="bg-secondary absolute inset-4 flex flex-col"
 	>
 		<header class="text-2xl text-white">About</header>
-		<div class="flex grow flex-col items-center justify-center gap-4 py-4">
+		<div class="flex grow flex-col items-center justify-center gap-4 px-16">
 			<h1 class="text text-center text-white">
-				A complete GUI Suite for creating custom radio station mods for The Crew (2014)
+				An unofficial GUI Suite for creating custom radio station mods for The Crew (2014)
 			</h1>
 			<div class="flex flex-col items-center gap-2">
 				<h1 class="text-lg font-bold text-white">GUI by DogFoxX</h1>
@@ -255,7 +328,9 @@
 				</div>
 				<div class="flex gap-2">
 					<span class="text-sm text-zinc-400">TuneinCrew Version:</span>
-					<span class="text-sm font-bold text-white">{$settings.tuneinCrew.version}</span>
+					<span class="text-sm font-bold text-white"
+						>{$settings.tuneinCrew.version ?? 'N/A'}</span
+					>
 				</div>
 			</div>
 		</div>

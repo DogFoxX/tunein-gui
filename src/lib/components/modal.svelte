@@ -11,7 +11,7 @@
 	<div class="bg-primary absolute inset-0 opacity-70"></div>
 	<div
 		transition:scale={{ start: 0.9, duration: 100 }}
-		class="bg-secondary relative z-10 flex h-[400px] w-[500px] flex-col gap-4 rounded-lg shadow-lg shadow-neutral-900"
+		class="bg-secondary relative z-10 flex h-[520px] w-[600px] flex-col gap-4 rounded-lg shadow-lg shadow-neutral-900"
 	>
 		{@render children()}
 	</div>

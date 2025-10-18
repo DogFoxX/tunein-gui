@@ -11,10 +11,11 @@
 	import { openFileDiag } from '$lib/utils/dialog';
 	import parseTracks, { measureVolume, getFiles } from '$lib/utils/tracks';
 	import columnResize from '$lib/utils/column-resize';
-	import { tableOpts } from '$lib/utils/settings';
+	import { tableStore } from '$lib/utils/settings';
 
 	// Stores
 	import { updateTracks } from '$lib/stores/xml-obj.store';
+	import { tableState } from '$lib/stores/settings.store';
 
 	// Icons
 	import InfoIcon from '~icons/solar/question-circle-bold';
@@ -23,6 +24,7 @@
 	import RemoveIcon from '~icons/solar/trash-bin-trash-bold';
 	import CaretUp from '~icons/solar/alt-arrow-up-linear';
 	import CaretDown from '~icons/solar/alt-arrow-down-linear';
+	import logger from '$lib/stores/logger';
 
 	let {
 		force,
@@ -73,11 +75,12 @@
 		'Length',
 		'Path'
 	]);
-	let tableState = $state<TableOpts>();
 
 	// Input States
 	let trackGain = $derived<string>(
-		(volume.value - trackList[selectedTrack[0]].measured_volume!).toFixed(1)
+		volume.enable && trackList[selectedTrack[0]].measured_volume
+			? (volume.value - trackList[selectedTrack[0]].measured_volume!).toFixed(1)
+			: ''
 	);
 
 	listen<DragDropEventPayload>('tauri://drag-drop', async (event) => {
@@ -88,14 +91,15 @@
 		if (el && audioDropArea?.contains(el)) {
 			let paths = event.payload.paths;
 
-			trackPaths = await getFiles(paths);
-
-			loadTracks();
+			getFiles(paths)
+				.then((res) => {
+					trackPaths = res;
+					loadTracks();
+				})
+				.catch((err: Error) => {
+					return logger.err(err.message);
+				});
 		}
-	});
-
-	onMount(async () => {
-		tableState = await tableOpts.get();
 	});
 
 	function removeTrack() {
@@ -120,7 +124,6 @@
 			trackPaths,
 			(isLoading) => (loadingTracks = isLoading),
 			(track) => {
-				// UI updates *immediately* when a new track is parsed
 				trackList = [...trackList, track];
 			}
 		);
@@ -436,11 +439,11 @@
 					<table class="select-none table-fixed w-min border-separate border-spacing-0">
 						<thead class="bg-secondary sticky top-0">
 							<tr>
-								{#if tableState}
+								{#if $tableState}
 									{#each tableFields as field, i}
 										<th
 											class="border-r-[1px] border-r-zinc-600 relative"
-											style="width: {tableState?.fields[i]
+											style="width: {$tableState.fields[i]
 												.width}px; z-index: {tableFields.length - (i + 1)}"
 										>
 											<div
@@ -450,51 +453,67 @@
 											</div>
 											<button
 												onclick={async () => {
-													if (tableState?.fields[i].sort) {
-														tableState.ascending =
-															!tableState.ascending;
+													if ($tableState.fields[i].sort) {
+														$tableState.ascending =
+															!$tableState.ascending;
 													}
 
-													tableState.fields = tableState?.fields.map(
-														(field, index) => ({
-															...field,
-															sort: i === index
-														})
-													);
+													tableState.update((state) => {
+														return {
+															...state,
+															fields: state.fields.map(
+																(field, index) => ({
+																	...field,
+																	sort: index === i
+																})
+															)
+														};
+													});
 
 													if (trackList.length) {
-														const key = Object.keys(trackList[0])[i];
-														if (!tableState?.ascending) {
-															return trackList.sort((a, b) => {
-																if (
-																	isNaN(a[key] as number) ||
-																	isNaN(b[key] as number)
-																) {
-																	return a[key].localeCompare(
-																		b[key]
-																	);
-																}
-
-																return a[key] - b[key];
-															});
-														}
+														const key = Object.keys(trackList[0])[
+															i
+														] as keyof TrackTableInfo;
 
 														return trackList.sort((a, b) => {
-															if (isNaN(a[key]) || isNaN(b[key])) {
-																return b[key].localeCompare(a[key]);
+															const aValue = a[key];
+															const bValue = b[key];
+
+															if (aValue == null) return 1;
+															if (bValue == null) return -1;
+
+															const ascending =
+																!$tableState.ascending;
+
+															if (
+																typeof aValue === 'number' &&
+																typeof bValue === 'number'
+															) {
+																return ascending
+																	? aValue - bValue
+																	: bValue - aValue;
 															}
 
-															return b[key] - a[key];
+															if (
+																typeof aValue === 'string' &&
+																typeof bValue === 'string'
+															) {
+																return ascending
+																	? aValue.localeCompare(bValue)
+																	: bValue.localeCompare(aValue);
+															}
+
+															return 0;
 														});
 													}
 
-													await tableOpts.set(tableState);
+													await tableStore.set($tableState);
 												}}
 												class="sort absolute inset-0 flex overflow-hidden items-start justify-center text-neutral-400 z-1"
 												tabindex="-1"
 											>
-												{#if tableState?.fields[i].sort}
-													{#if tableState?.ascending}
+												{#if $tableState.fields[i].sort}
+													{#if $tableState?.ascending}
 														<CaretDown
 															height="14"
 															width="14"
@@ -513,17 +532,22 @@
 												use:columnResize={(width, done) => {
 													if (done) {
 														// Persist once, at the end
-														tableOpts.set(tableState);
+														tableStore.set($tableState);
 														return;
 													}
 
 													// Update local reactive state live
-													tableState = {
-														...tableState,
-														fields: tableState.fields.map((f, idx) =>
-															idx === i ? { ...f, width } : f
-														)
-													};
+													tableState.update((state) => {
+														return {
+															...state,
+															fields: state.fields.map(
+																(field, index) =>
+																	index === i
+																		? { ...field, width }
+																		: field
+															)
+														};
+													});
 												}}
 												class="absolute -right-1.5 top-0 bottom-0 cursor-col-resize w-3 z-2"
 												aria-label="column_resizer"

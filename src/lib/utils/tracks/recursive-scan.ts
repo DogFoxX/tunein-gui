@@ -1,8 +1,9 @@
 import { lstat, readDir } from '@tauri-apps/plugin-fs';
+import { extname } from '@tauri-apps/api/path';
 import { join } from '@tauri-apps/api/path';
-import logger from '$lib/stores/logger';
 
-const allowedExts = ['.mp3', '.flac', '.ogg', '.wav'];
+const allowedExts = ['mp3', 'flac', 'ogg', 'wav'];
+
 async function scanDirectoryRecursive(dirPath: string): Promise<string[]> {
 	const entries = await readDir(dirPath);
 	let results: string[] = [];
@@ -10,10 +11,13 @@ async function scanDirectoryRecursive(dirPath: string): Promise<string[]> {
 	for (const entry of entries) {
 		const childPath = await join(dirPath, entry.name);
 
-		if (entry.isFile && allowedExts.some((ext) => childPath.toLowerCase().endsWith(ext))) {
-			results.push(childPath);
+		if (entry.isFile) {
+			const extension = await extname(childPath);
+
+			if (allowedExts.some((ext) => extension == ext)) results.push(childPath);
 		} else if (entry.isDirectory) {
 			const nested = await scanDirectoryRecursive(childPath);
+
 			results = results.concat(nested);
 		}
 	}
@@ -27,14 +31,20 @@ async function getFiles(paths: string[]): Promise<string[]> {
 	for (const path of paths) {
 		const info = await lstat(path);
 
-		if (info.isFile && allowedExts.some((ext) => path.toLowerCase().endsWith(ext))) {
-			results.push(path);
+		if (info.isFile) {
+			const extension = await extname(path);
+
+			if (allowedExts.some((ext) => extension == ext)) results.push(path);
 		}
 
 		if (info.isDirectory) {
 			const nestedFiles = await scanDirectoryRecursive(path);
 			results = results.concat(nestedFiles);
 		}
+	}
+
+	if (!results.length) {
+		throw Error('No supported files found.');
 	}
 
 	return results;

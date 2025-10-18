@@ -1,4 +1,4 @@
-import store from './settings';
-import tableOpts from './table-state';
+import settStore from './settings';
+import tableStore from './table-state';
 
-export { store, tableOpts };
+export { settStore, tableStore };

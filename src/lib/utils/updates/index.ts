@@ -1,4 +1,4 @@
-import getLatest from './tuneinCrew';
+import getTuneinCrewLatest from './tuneinCrew';
 import guiUpdate from './gui';
 
-export { getLatest, guiUpdate };
+export { getTuneinCrewLatest, guiUpdate };

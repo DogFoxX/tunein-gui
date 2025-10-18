@@ -40,11 +40,11 @@ export function xml2obj(xml: string): XmlData {
 		return parent?.querySelector(tag)?.textContent?.trim() ?? '';
 	};
 
-	const getSongs = (songsNode: Element | null): { song: TrackData }[] => {
+	const getSongs = (songsNode: Element | null): { song: TrackXMLData }[] => {
 		if (!songsNode) return [];
 		const songEls = Array.from(songsNode.querySelectorAll('song'));
 		return songEls.map((songEl) => {
-			const track: TrackData = {
+			const track: TrackXMLData = {
 				file: getText(songEl, 'file'),
 				name: getText(songEl, 'name'),
 				artist: getText(songEl, 'artist'),

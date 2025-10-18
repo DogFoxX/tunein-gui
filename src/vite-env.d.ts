@@ -4,7 +4,7 @@
 interface GuiSettings {
 	cwd: string;
 	tuneinCrew: {
-		version: string | null;
+		version: string;
 		dir: string;
 	};
 	fmodDir: string;
@@ -14,7 +14,7 @@ interface GuiSettings {
 	};
 }
 
-interface TableOpts {
+interface TableState {
 	fields: {
 		sort?: boolean;
 		width: number;
@@ -49,7 +49,7 @@ interface XmlData {
 		radio: {
 			id: string;
 			name: string;
-			logo: string;
+			logo?: string;
 			songs?: {
 				song: TrackData;
 			}[];

@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { settings, settingsOpen } from '$lib/stores/settings.store';
+	import { settings, settingsOpen, tableState } from '$lib/stores/settings.store';
 	import { register } from '@tauri-apps/plugin-global-shortcut';
-	import { store, tableOpts } from '$lib/utils/settings';
-	import { getLatest, guiUpdate } from '$lib/utils/updates';
+	import { settStore, tableStore } from '$lib/utils/settings';
+	import { getTuneinCrewLatest, guiUpdate } from '$lib/utils/updates';
 	import { check } from '@tauri-apps/plugin-updater';
 	import { openXML } from '$lib/utils/dialog';
 	import logger from '$lib/stores/logger';
@@ -11,19 +11,12 @@
 	import Settings from '$lib/components/settings.svelte';
 	import Titlebar from '$lib/components/titlebar.svelte';
 	import Modal from '$lib/components/modal.svelte';
+	import { exists, lstat } from '@tauri-apps/plugin-fs';
+	import { extname, join } from '@tauri-apps/api/path';
 
-	async function handleUpdates() {
-		if ($settings.autoUpdate.tuneinCrew) {
-			const version = await getLatest($settings.tuneinCrew.version);
-
-			if (version) {
-				$settings.tuneinCrew = {
-					...$settings.tuneinCrew,
-					version
-				};
-				await store.set($settings);
-			}
-		}
+	onMount(async () => {
+		settings.set(await settStore.init());
+		tableState.set(await tableStore.init());
 
 		if ($settings.autoUpdate.gui) {
 			const update = await check();
@@ -33,19 +26,37 @@
 				await guiUpdate.download(update);
 			}
 		}
-	}
-
-	onMount(async () => {
-		await store.init();
-		settings.set(await store.get());
 
 		if (!$settings.fmodDir || !$settings.tuneinCrew.dir || !$settings.cwd) {
 			$settingsOpen = true;
 		}
-	});
 
-	$effect(() => {
-		handleUpdates();
+		if ($settings.tuneinCrew.dir) {
+			extname($settings.tuneinCrew.dir)
+				.then((ext) => {
+					return ($settingsOpen = ext !== '');
+				})
+				.catch(() => {
+					return;
+				});
+
+			const tuneinCrewDir = await join($settings.tuneinCrew.dir, 'TuneinCrew.exe');
+			const tuneinCrewExist = await exists(tuneinCrewDir);
+
+			if (!tuneinCrewExist) return ($settingsOpen = true);
+
+			if ($settings.autoUpdate.tuneinCrew) {
+				const version = await getTuneinCrewLatest($settings.tuneinCrew.version);
+
+				if (version) {
+					$settings.tuneinCrew = {
+						...$settings.tuneinCrew,
+						version
+					};
+					await settStore.set($settings);
+				}
+			}
+		}
 	});
 
 	register('CommandOrControl+I', async ({ state }) => {

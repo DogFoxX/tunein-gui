@@ -1,20 +1,19 @@
 import { load, type Store } from '@tauri-apps/plugin-store';
 import { appDataDir, join, homeDir } from '@tauri-apps/api/path';
 
-let settStore: Store;
+let store: Store;
 
-const store = {
+const settStore = {
 	init: async () => {
 		const home = await homeDir();
-		const appData = await appDataDir();
 
-		settStore = await load('settings.json', {
+		store = await load('settings.json', {
 			defaults: {
 				settings: {
 					cwd: await join(home, 'Tunein', 'Stations'),
 					tuneinCrew: {
-						version: null,
-						dir: await join(appData, 'TuneinCrew', 'TuneinCrew.exe')
+						version: 'N/A',
+						dir: await join(home, 'Tunein', 'TuneinCrew')
 					},
 					fmodDir: '',
 					autoUpdate: {
@@ -24,14 +23,16 @@ const store = {
 				}
 			}
 		});
-		await settStore.save();
+		await store.save();
+
+		return (await store.get('settings')) as GuiSettings;
 	},
 	get: async () => {
-		return (await settStore.get('settings')) as GuiSettings;
+		return (await store.get('settings')) as GuiSettings;
 	},
 	set: async (settings: GuiSettings) => {
-		return await settStore.set('settings', settings);
+		return await store.set('settings', settings);
 	}
 };
 
-export default store;
+export default settStore;

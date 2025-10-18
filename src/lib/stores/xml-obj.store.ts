@@ -9,7 +9,6 @@ export const xmlData = writable<XmlData>({
 		radio: {
 			id: '',
 			name: '',
-			logo: '',
 			songs: []
 		}
 	}

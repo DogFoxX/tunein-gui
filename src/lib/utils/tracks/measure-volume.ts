@@ -6,13 +6,11 @@ async function measureVolume(
 	callback: (isLoading: boolean) => void,
 	onTrackMeasured?: (track: TrackTableInfo) => void
 ): Promise<TrackTableInfo[]> {
-	let index = 1;
-
 	logger.info(`Analyzing Tracks 0 of ${tracks.length}...`);
 	callback(true);
 
 	for (const track of tracks) {
-		logger.update(`Analyzing Track {} of ${tracks.length}...`, index);
+		logger.update(`Analyzing Track {} of ${tracks.length}...`, tracks.indexOf(track) + 1);
 
 		try {
 			const { volume } = await invoke<{ volume: number }>('get_volume', {
@@ -26,12 +24,13 @@ async function measureVolume(
 			logger.warn(`Failed to measure volume for ${track.filename}: ${String(error)}`);
 		}
 
-		if (index === tracks.length) {
-			logger.update(`Analyzing Track {} of ${tracks.length}... Done`, index);
+		if (tracks.indexOf(track) + 1 === tracks.length) {
+			logger.update(
+				`Analyzing Track {} of ${tracks.length}... Done`,
+				tracks.indexOf(track) + 1
+			);
 			callback(false);
 		}
-
-		index++;
 
 		// Optional: small yield for smoother UI rendering
 		await new Promise((r) => setTimeout(r, 0));

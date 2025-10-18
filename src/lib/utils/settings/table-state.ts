@@ -1,12 +1,12 @@
 import { load, type Store } from '@tauri-apps/plugin-store';
 
-let tableSett: Store;
+let store: Store;
 
-const tableOpts = {
+const tableStore = {
 	init: async () => {
-		tableSett = await load('table-opts.json', {
+		store = await load('table-state.json', {
 			defaults: {
-				table_opts: {
+				table_state: {
 					fields: [
 						{
 							sort: true,
@@ -39,15 +39,16 @@ const tableOpts = {
 			}
 		});
 
-		await tableSett.save();
+		await store.save();
+
+		return (await store.get('table_state')) as TableState;
 	},
 	get: async () => {
-		await tableOpts.init();
-		return (await tableSett.get('table_opts')) as TableOpts;
+		return (await store.get('table_state')) as TableState;
 	},
-	set: async (tableOpts: TableOpts) => {
-		return await tableSett.set('table_opts', tableOpts);
+	set: async (tableOpts: TableState) => {
+		return await store.set('table_state', tableOpts);
 	}
 };
 
-export default tableOpts;
+export default tableStore;

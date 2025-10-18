@@ -39,21 +39,28 @@
 	});
 
 	async function create() {
-		const stationPath = await join($settings.cwd, $xmlData.project.radio.name);
+		const tuneinCrewExe = await join($settings.tuneinCrew.dir, 'TuneinCrew.exe');
+		const exeExist = await exists(tuneinCrewExe);
 
+		const stationPath = await join($settings.cwd, $xmlData.project.radio.name);
 		const stationExist = await exists(stationPath);
 
 		if (!stationExist) await mkdir(stationPath, { recursive: true });
 
 		const xmlPath = await join(stationPath, 'data.xml');
 
-		logger.info('Exporting XML and saving logo file...');
+		logger.info('Exporting Radio data...');
 
 		await saveXML(obj2xml($xmlData), xmlPath);
 
 		logger.info('Starting TuneinCrew.');
 
-		const command = Command.create($settings.tuneinCrew.dir, [xmlPath]);
+		if (!exeExist) {
+			logger.err('Could not find "TuneinCrew.exe". Check path in Settings.');
+			return;
+		}
+
+		const command = Command.create(tuneinCrewExe, [xmlPath]);
 
 		command.stdout.on('data', (msg) => logger.log(msg));
 

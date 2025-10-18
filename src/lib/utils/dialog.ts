@@ -1,6 +1,6 @@
 import { open, type DialogFilter } from '@tauri-apps/plugin-dialog';
 import { writeTextFile, readTextFile, exists, copyFile } from '@tauri-apps/plugin-fs';
-import { dirname, isAbsolute, join } from '@tauri-apps/api/path';
+import { dirname, isAbsolute, join, extname } from '@tauri-apps/api/path';
 import { xml2obj } from './xml-convert';
 import { tracks, xmlData } from '$lib/stores/xml-obj.store';
 import { logoPath } from '$lib/stores/global';
@@ -78,16 +78,19 @@ export async function openXML(file?: string | null): Promise<void> {
 
 export async function saveXML(xml: string, path: string) {
 	const logo = get(logoPath);
-	const imageExts = ['bmp', 'jpeg', 'jpg', 'png'];
-	const dir = await dirname(path);
-	const logoDir = await dirname(logo);
 
-	if (logoDir != dir) {
-		const ext = logo.split('.').pop()?.toLowerCase();
-		if (imageExts.includes(ext ?? '')) {
-			convertImageToDds(logo, dir).catch(() => console.log('encountered an error'));
-		} else if (ext === 'dds') {
-			await copyFile(logo, await join(dir, 'thumb.dds'));
+	if (logo) {
+		const imageExts = ['bmp', 'jpeg', 'jpg', 'png'];
+		const dir = await dirname(path);
+		const logoDir = await dirname(logo);
+
+		if (logoDir != dir) {
+			const extension = await extname(logo);
+			if (imageExts.some((ext) => extension === ext)) {
+				convertImageToDds(logo, dir).catch(() => console.log('encountered an error'));
+			} else if (extension === 'dds') {
+				await copyFile(logo, await join(dir, 'thumb.dds'));
+			}
 		}
 	}
 

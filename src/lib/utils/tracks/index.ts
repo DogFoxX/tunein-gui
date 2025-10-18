@@ -27,8 +27,6 @@ async function parseTracks(
 	callback: (isLoading: boolean) => void,
 	onTrackParsed?: (track: TrackTableInfo) => void
 ): Promise<TrackTableInfo[]> {
-	let index = 1;
-
 	callback(true);
 
 	logger.info(`Loading Tracks 0 of ${paths.length}...`);
@@ -36,7 +34,7 @@ async function parseTracks(
 	const results: TrackTableInfo[] = [];
 
 	for (const path of paths) {
-		logger.update(`Loading Track {} of ${paths.length}...`, index);
+		logger.update(`Loading Track {} of ${paths.length}...`, paths.indexOf(path) + 1);
 
 		try {
 			const bytes = await readFile(path);
@@ -44,7 +42,7 @@ async function parseTracks(
 			const meta = await parseBlob(blob);
 
 			const track: TrackTableInfo = {
-				number: meta.common.track.no ?? index,
+				number: paths.indexOf(path) + 1,
 				filename: getFileNameText(path),
 				measured_volume: null,
 				artist: meta.common.artist ?? '',
@@ -61,12 +59,10 @@ async function parseTracks(
 			logger.warn(`Failed to load track ${getFileNameText(path)}: ${String(error)}`);
 		}
 
-		if (index === paths.length) {
-			logger.update(`Loading Track {} of ${paths.length}... Done`, index);
+		if (paths.indexOf(path) + 1 === paths.length) {
+			logger.update(`Loading Track {} of ${paths.length}... Done`, paths.indexOf(path) + 1);
 			callback(false);
 		}
-
-		index++;
 	}
 
 	return results;
