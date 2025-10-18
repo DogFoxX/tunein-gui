@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { settings, settingsOpen, store } from '$lib/stores/settings.store';
+	import { settings, settingsOpen } from '$lib/stores/settings.store';
 	import { register } from '@tauri-apps/plugin-global-shortcut';
-	import initSettings from '$lib/utils/settings';
+	import { store, tableOpts } from '$lib/utils/settings';
 	import { getLatest, guiUpdate } from '$lib/utils/updates';
 	import { check } from '@tauri-apps/plugin-updater';
 	import { openXML } from '$lib/utils/dialog';
@@ -21,7 +21,7 @@
 					...$settings.tuneinCrew,
 					version
 				};
-				await $store.set('settings', $settings);
+				await store.set($settings);
 			}
 		}
 
@@ -36,9 +36,8 @@
 	}
 
 	onMount(async () => {
-		store.set(await initSettings());
-		const storeSett = (await $store.get('settings')) as GuiSettings;
-		settings.set(storeSett);
+		await store.init();
+		settings.set(await store.get());
 
 		if (!$settings.fmodDir || !$settings.tuneinCrew.dir || !$settings.cwd) {
 			$settingsOpen = true;

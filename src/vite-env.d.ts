@@ -14,6 +14,14 @@ interface GuiSettings {
 	};
 }
 
+interface TableOpts {
+	fields: {
+		sort?: boolean;
+		width: number;
+	}[];
+	ascending: boolean;
+}
+
 interface TrackXMLData {
 	file?: string | null;
 	name?: string | null;

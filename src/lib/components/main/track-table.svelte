@@ -1,6 +1,7 @@
 <script lang="ts">
 	// Svelte Imports
 	import { fade } from 'svelte/transition';
+	import { onMount } from 'svelte';
 
 	// Tauri Imports
 	import { listen } from '@tauri-apps/api/event';
@@ -10,6 +11,7 @@
 	import { openFileDiag } from '$lib/utils/dialog';
 	import parseTracks, { measureVolume, getFiles } from '$lib/utils/tracks';
 	import columnResize from '$lib/utils/column-resize';
+	import { tableOpts } from '$lib/utils/settings';
 
 	// Stores
 	import { updateTracks } from '$lib/stores/xml-obj.store';
@@ -61,44 +63,17 @@
 	let shiftAnchorIndex = $state<number | null>(null);
 
 	// Table fields
-	let tableOpts = $state({
-		fields: [
-			{
-				label: '#',
-				width: 48,
-				sort: true
-			},
-			{
-				label: 'Filename',
-				width: 160
-			},
-			{
-				label: 'Measured Volume (dB)',
-				width: 160
-			},
-			{
-				label: 'Artist',
-				width: 160
-			},
-			{
-				label: 'Name',
-				width: 160
-			},
-			{
-				label: 'Year',
-				width: 64
-			},
-			{
-				label: 'Length',
-				width: 64
-			},
-			{
-				label: 'Path',
-				width: 224
-			}
-		],
-		ascending: false
-	});
+	let tableFields = $state([
+		'#',
+		'Filename',
+		'Measured Volume (dB)',
+		'Artist',
+		'Name',
+		'Year',
+		'Length',
+		'Path'
+	]);
+	let tableState = $state<TableOpts>();
 
 	// Input States
 	let trackGain = $derived<string>(
@@ -117,6 +92,10 @@
 
 			loadTracks();
 		}
+	});
+
+	onMount(async () => {
+		tableState = await tableOpts.get();
 	});
 
 	function removeTrack() {
@@ -457,82 +436,102 @@
 					<table class="select-none table-fixed w-min border-separate border-spacing-0">
 						<thead class="bg-secondary sticky top-0">
 							<tr>
-								{#each tableOpts.fields as { label, width, sort }, i}
-									<th
-										onclick={() => {
-											if (sort) {
-												tableOpts.ascending = !tableOpts.ascending;
-											}
-
-											tableOpts.fields = tableOpts.fields.map(
-												(field, index) => ({
-													...field,
-													sort: i === index
-												})
-											);
-
-											if (trackList.length) {
-												const key = Object.keys(trackList[0])[i];
-												if (!tableOpts.ascending) {
-													return trackList.sort((a, b) => {
-														if (
-															isNaN(a[key] as number) ||
-															isNaN(b[key] as number)
-														) {
-															return a[key as string].localeCompare(
-																b[key]
-															);
-														}
-
-														return a[key] - b[key];
-													});
-												}
-
-												return trackList.sort((a, b) => {
-													if (isNaN(a[key]) || isNaN(b[key])) {
-														return b[key].localeCompare(a[key]);
+								{#if tableState}
+									{#each tableFields as field, i}
+										<th
+											class="border-r-[1px] border-r-zinc-600 relative"
+											style="width: {tableState?.fields[i]
+												.width}px; z-index: {tableFields.length - (i + 1)}"
+										>
+											<div
+												class="font-normal truncate text-left text-xs text-white px-2 py-1.5"
+											>
+												{field}
+											</div>
+											<button
+												onclick={async () => {
+													if (tableState?.fields[i].sort) {
+														tableState.ascending =
+															!tableState.ascending;
 													}
 
-													return b[key] - a[key];
-												});
-											}
-										}}
-										class="border-r-[1px] border-r-zinc-600 relative z-8"
-										style="width: {width}px"
-									>
-										<div
-											class="font-normal truncate text-left text-xs text-white px-2 py-1.5"
-										>
-											{label}
-										</div>
-										<div
-											class="sort absolute inset-0 flex overflow-hidden items-start justify-center text-neutral-400"
-											tabindex="-1"
-										>
-											{#if sort}
-												{#if tableOpts.ascending}
-													<CaretDown
-														height="14"
-														width="14"
-														class="absolute -top-1"
-													/>
-												{:else}
-													<CaretUp
-														height="14"
-														width="14"
-														class="absolute -top-1"
-													/>
+													tableState.fields = tableState?.fields.map(
+														(field, index) => ({
+															...field,
+															sort: i === index
+														})
+													);
+
+													if (trackList.length) {
+														const key = Object.keys(trackList[0])[i];
+														if (!tableState?.ascending) {
+															return trackList.sort((a, b) => {
+																if (
+																	isNaN(a[key] as number) ||
+																	isNaN(b[key] as number)
+																) {
+																	return a[key].localeCompare(
+																		b[key]
+																	);
+																}
+
+																return a[key] - b[key];
+															});
+														}
+
+														return trackList.sort((a, b) => {
+															if (isNaN(a[key]) || isNaN(b[key])) {
+																return b[key].localeCompare(a[key]);
+															}
+
+															return b[key] - a[key];
+														});
+													}
+
+													await tableOpts.set(tableState);
+												}}
+												class="sort absolute inset-0 flex overflow-hidden items-start justify-center text-neutral-400 z-1"
+												tabindex="-1"
+											>
+												{#if tableState?.fields[i].sort}
+													{#if tableState?.ascending}
+														<CaretDown
+															height="14"
+															width="14"
+															class="absolute -top-1"
+														/>
+													{:else}
+														<CaretUp
+															height="14"
+															width="14"
+															class="absolute -top-1"
+														/>
+													{/if}
 												{/if}
-											{/if}
-										</div>
-										<button
-											use:columnResize
-											class="absolute -right-1.5 top-0 bottom-0 cursor-col-resize w-3"
-											aria-label="column_resizer"
-											tabindex="-1"
-										></button>
-									</th>
-								{/each}
+											</button>
+											<button
+												use:columnResize={(width, done) => {
+													if (done) {
+														// Persist once, at the end
+														tableOpts.set(tableState);
+														return;
+													}
+
+													// Update local reactive state live
+													tableState = {
+														...tableState,
+														fields: tableState.fields.map((f, idx) =>
+															idx === i ? { ...f, width } : f
+														)
+													};
+												}}
+												class="absolute -right-1.5 top-0 bottom-0 cursor-col-resize w-3 z-2"
+												aria-label="column_resizer"
+												tabindex="-1"
+											></button>
+										</th>
+									{/each}
+								{/if}
 							</tr>
 						</thead>
 						{#if filteredTracks.length}

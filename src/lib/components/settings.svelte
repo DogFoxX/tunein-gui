@@ -2,7 +2,8 @@
 	import { getVersion } from '@tauri-apps/api/app';
 	import { openUrl } from '@tauri-apps/plugin-opener';
 	import { scale } from 'svelte/transition';
-	import { settingsOpen, store, settings } from '$lib/stores/settings.store';
+	import { store } from '$lib/utils/settings';
+	import { settingsOpen, settings } from '$lib/stores/settings.store';
 	import { openDirDiag, openFileDiag } from '$lib/utils/dialog';
 
 	// Icons
@@ -21,8 +22,8 @@
 	});
 
 	async function saveSettings() {
-		await $store.set('settings', tempSettings);
-		settings.set((await $store.get('settings')) as GuiSettings);
+		await store.set(tempSettings);
+		settings.set(await store.get());
 	}
 
 	$effect(() => {
@@ -30,6 +31,8 @@
 			JSON.stringify($settings) === JSON.stringify(tempSettings) ||
 			Object.values(settingsErr).some((err) => err != false);
 	});
+
+	$inspect(tempSettings);
 </script>
 
 <svelte:window

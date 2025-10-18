@@ -1,6 +1,9 @@
 import type { SvelteAction } from './types.d.ts';
 
-const columnResize: SvelteAction<HTMLButtonElement> = (node) => {
+const columnResize: SvelteAction<HTMLButtonElement> = (
+	node: HTMLButtonElement,
+	callback: (width: number, done?: boolean) => void
+) => {
 	let startX = 0;
 	let startWidth = 0;
 	let parent: HTMLElement | null = null;
@@ -24,12 +27,14 @@ const columnResize: SvelteAction<HTMLButtonElement> = (node) => {
 		const deltaX = e.clientX - startX;
 		const newWidth = Math.max(25, startWidth + deltaX);
 		parent.style.width = `${newWidth}px`;
+		callback(newWidth);
 	}
 
-	function onMouseUp() {
+	async function onMouseUp() {
 		document.removeEventListener('mousemove', onMouseMove);
 		document.removeEventListener('mouseup', onMouseUp);
 		document.body.style.cursor = '';
+		callback(0, true);
 	}
 
 	node.addEventListener('mousedown', onMouseDown);

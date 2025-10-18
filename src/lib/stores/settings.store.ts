@@ -1,8 +1,6 @@
-import { Store } from '@tauri-apps/plugin-store';
-import { writable, get } from 'svelte/store';
+import { writable } from 'svelte/store';
 import { xmlData } from './xml-obj.store';
 
-export const store = writable<Store>();
 export const settingsOpen = writable(false);
 export const settings = writable<GuiSettings>();
 
