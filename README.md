@@ -50,12 +50,12 @@ Settings will open if required parameters are not set
 
 > [!IMPORTANT]
 >
-> ### \*:
+> #### \* Global Force:
 >
 > **Force** is the km/h value at which the music fully fades in - default `80`.
 > Set this to `0` to disable the effect completely - no fade-in; always full volume - or up to a max value of `300`
 >
-> ### \*\*:
+> #### \*\* Target Volume:
 >
 > **Target Volume** is the the dB value to normalize all tracks, e.g. `95`.
 > This value is used to calculate a `gain offset` for each track to reach the **Target Volume**.
