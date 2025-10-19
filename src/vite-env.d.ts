@@ -47,8 +47,8 @@ interface XmlData {
 	project: {
 		fmod: string;
 		radio: {
-			id: string;
-			name: string;
+			id?: string;
+			name?: string;
 			logo?: string;
 			songs?: {
 				song: TrackData;

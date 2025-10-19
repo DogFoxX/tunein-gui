@@ -4,6 +4,7 @@
 
 	// Tauri Imports
 	import { convertFileSrc } from '@tauri-apps/api/core';
+	import { extname } from '@tauri-apps/api/path';
 	import { listen } from '@tauri-apps/api/event';
 	import { exists } from '@tauri-apps/plugin-fs';
 	import type { DialogFilter } from '@tauri-apps/plugin-dialog';
@@ -40,8 +41,8 @@
 	let forceGlobVal = $state('80');
 	let volumeEnable = $state(false);
 	let volumeVal = $state<number>(95);
-	let radioId = $derived($xmlData.project.radio.id);
-	let radioName = $derived($xmlData.project.radio.name);
+	let radioId = $state<string>();
+	let radioName = $state<string>();
 
 	listen<DragDropEventPayload>('tauri://drag-drop', async (event) => {
 		const { x, y } = event.payload.position;
@@ -63,29 +64,46 @@
 		const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 		const array = new Uint32Array(4);
 		crypto.getRandomValues(array);
-		$xmlData.project.radio.id = Array.from(array, (x) => chars[x % chars.length]).join('');
+		radioId = Array.from(array, (x) => chars[x % chars.length]).join('');
 	}
 
 	logoPath.subscribe(async (logoPath) => {
 		if (logoPath) {
 			let imageExts = ['bmp', 'jpeg', 'jpg', 'png'];
 
-			const valid = await exists(logoPath);
+			const logoExist = await exists(logoPath);
 
-			if (!valid) {
+			if (!logoExist) {
 				logoSrc = '';
 				return;
 			}
 
-			let ext = logoPath.split('.').pop()?.toLowerCase();
+			let extension = await extname(logoPath);
 
-			if (imageExts.includes(ext ?? '')) {
-				$xmlData.project.radio.logo = 'thumb.dds';
+			if (imageExts.some((ext) => extension === ext)) {
 				return (logoSrc = convertFileSrc(logoPath));
 			}
+
 			return (logoSrc = await showDDSImage(logoPath));
 		}
 	});
+
+	$effect(() => {
+		xmlData.update((data) => ({
+			...data,
+			project: {
+				fmod: data.project.fmod,
+				radio: {
+					...(radioId ? { id: radioId } : {}),
+					...(radioName ? { name: radioName } : {}),
+					...(logoSrc ? { logo: 'thumb.dds' } : {}),
+					songs: data.project.radio.songs
+				}
+			}
+		}));
+	});
+
+	$inspect($xmlData);
 </script>
 
 <div class="relative flex flex-1 max-h-full min-w-max flex-col gap-4">
@@ -130,8 +148,7 @@
 						class="flex input-flex items-center gap-2 rounded-md bg-zinc-800 px-2 py-1"
 					>
 						<input
-							value={radioId}
-							oninput={(e) => ($xmlData.project.radio.id = e.currentTarget.value)}
+							bind:value={radioId}
 							id="radio-id"
 							class="w-[8ch] text-sm text-white"
 							type="text"
@@ -152,8 +169,7 @@
 					<label for="radio-name" class="text-xs text-white">Radio Station Name</label>
 					<div class="flex input-flex rounded-md bg-zinc-800 px-2 py-1">
 						<input
-							value={radioName}
-							oninput={(e) => ($xmlData.project.radio.name = e.currentTarget.value)}
+							bind:value={radioName}
 							id="radio-name"
 							class="w-[35ch] text-sm text-white"
 							type="text"

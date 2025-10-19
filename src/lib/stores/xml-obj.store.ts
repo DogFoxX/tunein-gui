@@ -7,23 +7,21 @@ export const xmlData = writable<XmlData>({
 	project: {
 		fmod: '',
 		radio: {
-			id: '',
-			name: '',
 			songs: []
 		}
 	}
 });
 export const tracks = writable<TrackXMLData[]>([]);
 
-xmlData.subscribe((data) => {
-	const songs = data?.project?.radio?.songs ?? [];
-	const currentTracks = get(tracks);
+// xmlData.subscribe((data) => {
+// 	const songs = data?.project?.radio?.songs ?? [];
+// 	const currentTracks = get(tracks);
 
-	const newTracks = songs.map((s) => s.song);
-	if (JSON.stringify(currentTracks) !== JSON.stringify(newTracks)) {
-		tracks.set(newTracks);
-	}
-});
+// 	const newTracks = songs.map((s) => s.song);
+// 	if (JSON.stringify(currentTracks) !== JSON.stringify(newTracks)) {
+// 		tracks.set(newTracks);
+// 	}
+// });
 
 export function updateTracks(newTracks: TrackXMLData[]) {
 	xmlData.update((d) => {

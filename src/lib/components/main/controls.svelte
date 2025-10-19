@@ -42,6 +42,12 @@
 		const tuneinCrewExe = await join($settings.tuneinCrew.dir, 'TuneinCrew.exe');
 		const exeExist = await exists(tuneinCrewExe);
 
+		if (!$xmlData.project.radio.id) return logger.err('Missing "Radio ID".');
+
+		if (!$xmlData.project.radio.name) return logger.err('Missing "Radio Station Name".');
+
+		if (!$xmlData.project.radio.songs?.length) return logger.err('Missing "Tracks".');
+
 		const stationPath = await join($settings.cwd, $xmlData.project.radio.name);
 		const stationExist = await exists(stationPath);
 
