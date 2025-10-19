@@ -8,9 +8,9 @@
 2. [PitCrew](https://modworkshop.net/mod/52455) by FTIW
 3. Latest Microsoft [webview2](https://developer.microsoft.com/en-us/Microsoft-edge/webview2/?form=MA13LH#download)
 
-<sub>webview2 should already be part of your windows system. Only install if needed!<br>Get the **<ins>Evergreen Standalone Installer</ins>** for your system (x86, x64 or arm64)</sub>
+webview2 should already be part of your windows system. Only install if needed!<br>Get the **<ins>Evergreen Standalone Installer</ins>** for your system (x86, x64)
 
-**For Windows 7, get the latest available webview2 version `109.0.1518.140` from [here](https://www.catalog.update.microsoft.com/Search.aspx?q=runtime%20edge%20109.0.1518.140)** for your system (x86, x64 or arm64)
+**For Windows 7, get the latest available webview2 version `109.0.1518.140` from [here](https://www.catalog.update.microsoft.com/Search.aspx?q=runtime%20edge%20109.0.1518.140)** for your system (x86, x64)
 
 > [!NOTE]
 >
@@ -21,23 +21,31 @@
 
 ### First run:
 
-- Settings will open if FMOD Designer Path is not set
-    - Set `fmod_designercl.exe` location
-    - This is a good opportunity to change other settings, like Working Directory (default is the app's exe path)
-    - **<ins>Experimental</ins>** TuneinCrew's exe path (best to keep at default)
+Settings will open if required parameters are not set
+
+- Working Directory (required)
+    - Location where created Ratio Stations are saved
+    - Default `%USERPROFILE%\Tunein\Stations`
+- TuneinCrew Path & Install (required)
+    - Set path to existing TuneinCrew (if available)
+    - Deafult `%USERPROFILE%\Tunein\TuneinCrew`
+- Set `fmod_designercl.exe` location (required)
+    - Note `cl` at the end - **commmand-line version**
+    - By default this can be found at `C:\Program Files (x86)\FMOD SoundSystem\FMOD Designer`
 
 ### Creating a Radio:
 
-- Import an existing XML, or start from scratch
-- Choose a logo image (dxt5 dds, bmp, jpg or png)
+- Choose a logo image (dxt5 dds, bmp, jpg or png) (not required)
     - The app will convert bmp, jpg and png image files to a compatible DXT5 DDS file
-- Set Radio ID, Name
-- Set Force (\*)
-    - Enable to set a custom Force value (max 300)
-    - Disable to keep game default value
-- Set Target Volume (\*\*)
+    - 1:1 square image - recommended 512x512px
+- Set Radio ID & Name (required)
+- Set Global Force
+    - See (\*)
+- Set Target Volume
+    - See (\*\*)
 - Add Tracks: pulls meta data if available
     - Set Track Info as needed
+    - Optionally Analyze Tracks
 - :rocket: Create Radio
 
 > [!IMPORTANT]
@@ -50,14 +58,17 @@
 > ### \*\*:
 >
 > **Target Volume** is the the dB value to normalize all tracks, e.g. `95`.
-> This value is used to calculate a `gain offset` for each track to reach the **Target Volume**.<br>
-> **NOTE**: Run `Analyze Tracks` to get the Measured Volume of each track in your list for Target Volume to take effect.
+> This value is used to calculate a `gain offset` for each track to reach the **Target Volume**.
+
+> [!NOTE]
+>
+> Run `Analyze Tracks` to get the Measured Volume of each track in your list for Target Volume to take effect.
 
 ### After Creating a Radio:
 
-Running **Create Radio** will create a folder with your **Radio Name**, e.g. Awesome FM, inside the Working Directory. This folder will contain the TuneinCrew generated files, as well as the logo dds and xml file.
+Running **Create Radio** will save the TuneinCrew generated files inside `Working Directory` under a folder with `Radio Name`.
 
-When tuneinCrew successfully exists, a `.zip` file will be generated in your Radio Station Folder. Install the `.zip` file with PitCrew
+Among these is a `.zip` file that can be installed with PitCrew.
 
 # Bugs! :bug:
 
@@ -69,7 +80,7 @@ Report them by creating an issue.
 ### Currently working on:
 
 - ~~**Track Target Volume**~~ - mp3gain-like Target "Normal" Value - **Done**
-- **Save Table Sort and Column States**
+- ~~**Save Table Sort and Column States**~~ - **Done**
 - **Profile Select Enhancements** - Needs a live and dynamic lookup
 - **Save Profile** - Create and save a profile for editing later
 - **Check, check, check** - Implement a bunch of checks to ensure valid xml, audio files, and much more
