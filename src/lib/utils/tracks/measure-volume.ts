@@ -17,7 +17,7 @@ async function measureVolume(
 				pathStr: track.path
 			});
 
-			track.measured_volume = volume;
+			track.measured_volume = volume.toFixed(1);
 
 			onTrackMeasured?.(track);
 		} catch (error) {

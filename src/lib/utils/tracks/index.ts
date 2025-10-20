@@ -38,13 +38,11 @@ async function parseTracks(
 		try {
 			const bytes = await readFile(path);
 			const blob = new Blob([bytes.buffer]);
-			const meta = await parseBlob(blob);
+			const meta = await parseBlob(blob, { duration: true, skipPostHeaders: true });
 
 			const track: TrackTableInfo = {
 				id: crypto.randomUUID(),
-				...(meta.common.track.no && meta.common.track.no !== 63
-					? { number: meta.common.track.no.toString() }
-					: {}),
+				...(meta.common.track.no ? { number: meta.common.track.no.toString() } : {}),
 				filename: getFileNameText(path),
 				...(meta.common.artist ? { artist: meta.common.artist } : {}),
 				...(meta.common.title ? { name: meta.common.title } : {}),

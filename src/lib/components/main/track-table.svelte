@@ -164,16 +164,24 @@
 				// filename first, then value
 				if (aEmpty && !bEmpty) return -1;
 				if (!aEmpty && bEmpty) return 1;
+				if (!isNaN(Number(aValue)) && !isNaN(Number(bValue))) {
+					return Number(bValue) - Number(aValue);
+				}
 				return b.filename.localeCompare(a.filename, undefined, { numeric: true });
 			} else {
 				// descending: value first, then filename
 				if (aEmpty && !bEmpty) return 1; // empty goes last
 				if (!aEmpty && bEmpty) return -1;
+				if (!isNaN(Number(aValue)) && !isNaN(Number(bValue))) {
+					return Number(aValue) - Number(bValue);
+				}
 				return a.filename.localeCompare(b.filename, undefined, { numeric: true });
 			}
 		}
 
-		return ascending ? aValue!.localeCompare(bValue!) : bValue!.localeCompare(aValue!);
+		return ascending
+			? aValue!.localeCompare(bValue!, undefined, { numeric: true })
+			: bValue!.localeCompare(aValue!, undefined, { numeric: true });
 	}
 
 	function focusRow(index: number, options: { checkStickyOverlap?: boolean } = {}) {

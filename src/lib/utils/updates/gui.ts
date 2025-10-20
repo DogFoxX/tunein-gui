@@ -16,7 +16,7 @@ async function download(updateFromCheck: Update) {
 			case 'Progress':
 				downloaded += event.data.chunkLength;
 				let percentage = Math.floor((downloaded / contentLength) * 100);
-				logger.update('Downmloading... {}%', percentage);
+				logger.update('Downloading... {}%', percentage);
 				break;
 			case 'Finished':
 				logger.info('An Update is ready to install.');
