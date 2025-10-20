@@ -102,8 +102,6 @@
 			}
 		}));
 	});
-
-	$inspect($xmlData);
 </script>
 
 <div class="relative flex flex-1 max-h-full min-w-max flex-col gap-4">

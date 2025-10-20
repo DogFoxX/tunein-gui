@@ -4,8 +4,7 @@ import { readFile } from '@tauri-apps/plugin-fs';
 import { parseBlob } from 'music-metadata';
 import logger from '$lib/stores/logger';
 
-function formatDuration(seconds?: number): string | null {
-	if (seconds == null) return null;
+function formatDuration(seconds: number): string {
 	const m = Math.floor((seconds % 3600) / 60);
 	const s = Math.floor(seconds % 60);
 	return [m, s].map((v) => v.toString().padStart(2, '0')).join(':');
@@ -15,7 +14,7 @@ function getFileNameText(path: string): string {
 	return path.split(/[/\\]/).pop() ?? '';
 }
 
-function normalizeYear(year: number | undefined): string {
+function normalizeYear(year: number): string {
 	if (!year) return '';
 	const str = String(year);
 	const match = str.match(/\d{4}/);
@@ -42,13 +41,15 @@ async function parseTracks(
 			const meta = await parseBlob(blob);
 
 			const track: TrackTableInfo = {
-				number: paths.indexOf(path) + 1,
+				id: crypto.randomUUID(),
+				...(meta.common.track.no && meta.common.track.no !== 63
+					? { number: meta.common.track.no.toString() }
+					: {}),
 				filename: getFileNameText(path),
-				measured_volume: null,
-				artist: meta.common.artist ?? '',
-				name: meta.common.title ?? '',
-				year: normalizeYear(meta.common.year),
-				length: formatDuration(meta.format.duration),
+				...(meta.common.artist ? { artist: meta.common.artist } : {}),
+				...(meta.common.title ? { name: meta.common.title } : {}),
+				...(meta.common.year ? { year: normalizeYear(meta.common.year) } : {}),
+				...(meta.format.duration ? { length: formatDuration(meta.format.duration) } : {}),
 				path
 			};
 

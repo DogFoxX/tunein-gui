@@ -6,6 +6,7 @@ interface GuiSettings {
 	tuneinCrew: {
 		version: string;
 		dir: string;
+		installed: boolean;
 	};
 	fmodDir: string;
 	autoUpdate: {
@@ -33,13 +34,14 @@ interface TrackXMLData {
 }
 
 interface TrackTableInfo {
-	number: number;
+	id: string;
+	number?: string;
 	filename: string;
-	measured_volume: number | null;
+	measured_volume?: string;
 	artist?: string;
 	name?: string;
 	year?: string;
-	length: string | null;
+	length?: string;
 	path: string;
 }
 

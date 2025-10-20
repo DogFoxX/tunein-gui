@@ -76,10 +76,21 @@
 		'Path'
 	]);
 
+	const fieldMap: (keyof TrackTableInfo)[] = [
+		'number',
+		'filename',
+		'measured_volume',
+		'artist',
+		'name',
+		'year',
+		'length',
+		'path'
+	];
+
 	// Input States
 	let trackGain = $derived<string>(
 		volume.enable && trackList[selectedTrack[0]].measured_volume
-			? (volume.value - trackList[selectedTrack[0]].measured_volume!).toFixed(1)
+			? (volume.value - Number(trackList[selectedTrack[0]].measured_volume!)).toFixed(1)
 			: ''
 	);
 
@@ -129,6 +140,42 @@
 		);
 	}
 
+	function compareTracks(
+		a: TrackTableInfo,
+		b: TrackTableInfo,
+		key: keyof TrackTableInfo,
+		ascending: boolean
+	): number {
+		const isEmpty = (v: string | undefined) => v === undefined;
+
+		const aValue = a[key];
+		const bValue = b[key];
+
+		// All values empty in this column
+		const allValues = trackList.map((t) => t[key]);
+		if (allValues.every(isEmpty)) return 0;
+
+		// Partial values present
+		if (allValues.some(isEmpty)) {
+			const aEmpty = isEmpty(aValue);
+			const bEmpty = isEmpty(bValue);
+
+			if (ascending) {
+				// filename first, then value
+				if (aEmpty && !bEmpty) return -1;
+				if (!aEmpty && bEmpty) return 1;
+				return b.filename.localeCompare(a.filename, undefined, { numeric: true });
+			} else {
+				// descending: value first, then filename
+				if (aEmpty && !bEmpty) return 1; // empty goes last
+				if (!aEmpty && bEmpty) return -1;
+				return a.filename.localeCompare(b.filename, undefined, { numeric: true });
+			}
+		}
+
+		return ascending ? aValue!.localeCompare(bValue!) : bValue!.localeCompare(aValue!);
+	}
+
 	function focusRow(index: number, options: { checkStickyOverlap?: boolean } = {}) {
 		if (!audioDropArea) return;
 
@@ -173,7 +220,7 @@
 						length: track.length,
 						...(force.enable ? { force: force.value } : {}),
 						...(volume.enable && track.measured_volume
-							? { volume: (volume.value - track.measured_volume).toFixed(1) }
+							? { volume: (volume.value - Number(track.measured_volume)).toFixed(1) }
 							: {})
 					};
 				})
@@ -471,40 +518,16 @@
 													});
 
 													if (trackList.length) {
-														const key = Object.keys(trackList[0])[
-															i
-														] as keyof TrackTableInfo;
+														const key = fieldMap[i];
 
-														return trackList.sort((a, b) => {
-															const aValue = a[key];
-															const bValue = b[key];
-
-															if (aValue == null) return 1;
-															if (bValue == null) return -1;
-
-															const ascending =
-																!$tableState.ascending;
-
-															if (
-																typeof aValue === 'number' &&
-																typeof bValue === 'number'
-															) {
-																return ascending
-																	? aValue - bValue
-																	: bValue - aValue;
-															}
-
-															if (
-																typeof aValue === 'string' &&
-																typeof bValue === 'string'
-															) {
-																return ascending
-																	? aValue.localeCompare(bValue)
-																	: bValue.localeCompare(aValue);
-															}
-
-															return 0;
-														});
+														trackList.sort((a, b) =>
+															compareTracks(
+																a,
+																b,
+																key,
+																!$tableState.ascending
+															)
+														);
 													}
 
 													await tableStore.set($tableState);
@@ -560,7 +583,7 @@
 						</thead>
 						{#if filteredTracks.length}
 							<tbody transition:fade={{ duration: 80 }}>
-								{#each filteredTracks as track, i (track.name)}
+								{#each filteredTracks as track, i (track.id)}
 									<tr
 										onclick={() => {
 											if (windowCtrlDown) {
@@ -591,9 +614,9 @@
 										class:selected={selectedTrack.includes(i)}
 										data-index={i}
 									>
-										{#each Object.values(track) as data}
+										{#each fieldMap as key}
 											<td class="truncate px-2 py-1 text-xs text-white">
-												{data}
+												{track[key] ?? ''}
 											</td>
 										{/each}
 									</tr>

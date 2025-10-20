@@ -22,19 +22,23 @@
 
 	$effect(() => {
 		if ($settings) {
-			readDir($settings.cwd).then(async (stations) => {
-				for (const station of stations) {
-					const entries = await readDir(await join($settings.cwd, station.name));
-					const hasXml = entries.some((e) => e.isFile && e.name === 'data.xml');
+			readDir($settings.cwd)
+				.then(async (stations) => {
+					for (const station of stations) {
+						const entries = await readDir(await join($settings.cwd, station.name));
+						const hasXml = entries.some((e) => e.isFile && e.name === 'data.xml');
 
-					if (hasXml) {
-						profiles.push({
-							name: station.name,
-							path: await join($settings.cwd, station.name, 'data.xml')
-						});
+						if (hasXml) {
+							profiles.push({
+								name: station.name,
+								path: await join($settings.cwd, station.name, 'data.xml')
+							});
+						}
 					}
-				}
-			});
+				})
+				.catch(() => {
+					profiles = [];
+				});
 		}
 	});
 
