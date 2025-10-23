@@ -11,8 +11,18 @@
 	import Settings from '$lib/components/settings.svelte';
 	import Titlebar from '$lib/components/titlebar.svelte';
 	import Modal from '$lib/components/modal.svelte';
-	import { exists, lstat } from '@tauri-apps/plugin-fs';
+	import { exists } from '@tauri-apps/plugin-fs';
 	import { extname, join } from '@tauri-apps/api/path';
+
+	// import { listen } from '@tauri-apps/api/event';
+
+	// listen<string>('open-tuneingui', (event) => {
+	// 	const filePath = event.payload;
+	// 	logger.info(`Received .tuneingui file: ${filePath}`);
+	// 	// handle logic here
+	// });
+
+	// logger.info(`Received .tuneingui file: ${window.openedFile}`);
 
 	onMount(async () => {
 		settings.set(await settStore.init());

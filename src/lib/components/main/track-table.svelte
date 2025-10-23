@@ -12,6 +12,7 @@
 	import parseTracks, { measureVolume, getFiles } from '$lib/utils/tracks';
 	import columnResize from '$lib/utils/column-resize';
 	import { tableStore } from '$lib/utils/settings';
+	import logger from '$lib/stores/logger';
 
 	// Stores
 	import { updateTracks } from '$lib/stores/xml-obj.store';
@@ -20,11 +21,11 @@
 	// Icons
 	import InfoIcon from '~icons/solar/question-circle-bold';
 	import AddIcon from '~icons/solar/add-square-bold';
+	import NumberingIcon from '~icons/solar/sort-bold';
 	import AnalyzeIcon from '~icons/solar/pulse-2-bold';
 	import RemoveIcon from '~icons/solar/trash-bin-trash-bold';
 	import CaretUp from '~icons/solar/alt-arrow-up-linear';
 	import CaretDown from '~icons/solar/alt-arrow-down-linear';
-	import logger from '$lib/stores/logger';
 
 	let {
 		force,
@@ -65,7 +66,7 @@
 	let shiftAnchorIndex = $state<number | null>(null);
 
 	// Table fields
-	let tableFields = $state([
+	const tableFields = [
 		'#',
 		'Filename',
 		'Measured Volume (dB)',
@@ -74,7 +75,7 @@
 		'Year',
 		'Length',
 		'Path'
-	]);
+	];
 
 	const fieldMap: (keyof TrackTableInfo)[] = [
 		'number',
@@ -131,13 +132,18 @@
 	}
 
 	async function loadTracks() {
-		await parseTracks(
-			trackPaths,
-			(isLoading) => (loadingTracks = isLoading),
-			(track) => {
-				trackList = [...trackList, track];
-			}
-		);
+		parseTracks(trackPaths, (isLoading) => (loadingTracks = isLoading)).then((tracks) => {
+			trackList = [...trackList, ...tracks];
+
+			trackList.sort((a, b) =>
+				compareTracks(
+					a,
+					b,
+					fieldMap[$tableState.fields.findIndex((f) => f.sort)],
+					!$tableState.ascending
+				)
+			);
+		});
 	}
 
 	function compareTracks(
@@ -164,18 +170,24 @@
 				// filename first, then value
 				if (aEmpty && !bEmpty) return -1;
 				if (!aEmpty && bEmpty) return 1;
-				if (!isNaN(Number(aValue)) && !isNaN(Number(bValue))) {
-					return Number(bValue) - Number(aValue);
+				if (!aEmpty && !bEmpty) {
+					if (!isNaN(Number(aValue)) && !isNaN(Number(bValue))) {
+						return Number(aValue) - Number(bValue);
+					}
+					return aValue!.localeCompare(bValue!, undefined, { numeric: true });
 				}
-				return b.filename.localeCompare(a.filename, undefined, { numeric: true });
+				return a.filename.localeCompare(b.filename, undefined, { numeric: true });
 			} else {
 				// descending: value first, then filename
 				if (aEmpty && !bEmpty) return 1; // empty goes last
 				if (!aEmpty && bEmpty) return -1;
-				if (!isNaN(Number(aValue)) && !isNaN(Number(bValue))) {
-					return Number(aValue) - Number(bValue);
+				if (!aEmpty && !bEmpty) {
+					if (!isNaN(Number(aValue)) && !isNaN(Number(bValue))) {
+						return Number(bValue) - Number(aValue);
+					}
+					return bValue!.localeCompare(aValue!, undefined, { numeric: true });
 				}
-				return a.filename.localeCompare(b.filename, undefined, { numeric: true });
+				return b.filename.localeCompare(a.filename, undefined, { numeric: true });
 			}
 		}
 
@@ -196,23 +208,21 @@
 		row.scrollIntoView({ block: 'nearest' });
 
 		// Extra logic for sticky header overlap on ArrowUp
-		if (options.checkStickyOverlap) {
-			const rect = row.getBoundingClientRect();
-			const thead = audioDropArea.querySelector('thead');
+		const rect = row.getBoundingClientRect();
+		const thead = audioDropArea.querySelector('thead');
 
-			if (!thead) return;
+		if (!thead) return;
 
-			const headerRect = thead.getBoundingClientRect();
+		const headerRect = thead.getBoundingClientRect();
 
-			if (rect.top < headerRect.bottom) {
-				if (!audioDropArea) return;
+		if (rect.top < headerRect.bottom) {
+			if (!audioDropArea) return;
 
-				const scrollTarget = audioDropArea.scrollTop - (headerRect.bottom - rect.top);
+			const scrollTarget = audioDropArea.scrollTop - (headerRect.bottom - rect.top);
 
-				audioDropArea.scrollTo({
-					top: scrollTarget
-				});
-			}
+			audioDropArea.scrollTo({
+				top: scrollTarget
+			});
 		}
 	}
 
@@ -239,10 +249,14 @@
 
 <svelte:window
 	onkeydown={(e) => {
-		if (document.activeElement !== audioDropArea || !filteredTracks.length) return;
-
 		windowShiftDown = e.shiftKey;
 		windowCtrlDown = e.ctrlKey;
+
+		if (
+			document.activeElement !== audioDropArea?.querySelector('table tbody') ||
+			!filteredTracks.length
+		)
+			return;
 
 		if (e.ctrlKey && e.key.toLowerCase() === 'a') {
 			e.preventDefault();
@@ -289,6 +303,7 @@
 		if (e.key === 'Escape' && selectedTrack.length) {
 			e.preventDefault();
 			selectedTrack = [];
+			lastSelectedIndex = null;
 		}
 
 		if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
@@ -327,7 +342,7 @@
 		}
 
 		lastSelectedIndex = next;
-		focusRow(next, { checkStickyOverlap: e.key === 'ArrowUp' });
+		focusRow(next, { checkStickyOverlap: true });
 	}}
 	onkeyup={(e) => {
 		windowShiftDown = e.shiftKey;
@@ -335,19 +350,34 @@
 	}}
 />
 
-<div class="flex grow gap-4">
-	<div class="flex flex-col gap-2">
-		<span class="text-sm text-white">Track XML Info</span>
-		<div class="relative flex grow w-100 flex-col rounded-md border-2 border-zinc-700">
-			<div class="absolute inset-0 p-2 overflow-auto flex flex-col gap-4">
+<div class="flex grow flex-col">
+	<div class="p-2">
+		<span class="text-sm text-white">Tracks</span>
+	</div>
+	<div class="flex h-full border-t-1 border-b-1 border-zinc-700">
+		<div class="relative w-100 flex-col border-r-1 border-zinc-700">
+			<div class="absolute inset-1 p-1 overflow-y-scroll flex flex-col gap-4">
 				<div class="flex flex-col gap-4">
 					<div class="flex flex-col gap-2">
 						<label for="track-artist" class="text-xs text-white">Artist</label>
 						<div class="input-flex flex rounded-md bg-zinc-800 px-2 py-1">
 							<input
-								value={trackList[selectedTrack[0]]?.artist}
+								value={selectedTrack.length > 1
+									? (() => {
+											const values = selectedTrack.map(
+												(i) => trackList[i]?.artist ?? ''
+											);
+											return values.every((v) => v === values[0])
+												? values[0]
+												: '<mixed>';
+										})()
+									: trackList[selectedTrack[0]]?.artist}
 								oninput={(e) => {
-									trackList[selectedTrack[0]].artist = e.currentTarget.value;
+									trackList.forEach((track, i) => {
+										if (selectedTrack.some((index) => index === i)) {
+											track.artist = e.currentTarget.value;
+										}
+									});
 								}}
 								id="track-artist"
 								class="w-full text-sm text-white"
@@ -362,9 +392,22 @@
 						<label for="track-name" class="text-xs text-white">Name</label>
 						<div class="input-flex flex rounded-md bg-zinc-800 px-2 py-1">
 							<input
-								value={trackList[selectedTrack[0]]?.name}
+								value={selectedTrack.length > 1
+									? (() => {
+											const values = selectedTrack.map(
+												(i) => trackList[i]?.name ?? ''
+											);
+											return values.every((v) => v === values[0])
+												? values[0]
+												: '<mixed>';
+										})()
+									: trackList[selectedTrack[0]]?.name}
 								oninput={(e) => {
-									trackList[selectedTrack[0]].name = e.currentTarget.value;
+									trackList.forEach((track, i) => {
+										if (selectedTrack.some((index) => index === i)) {
+											track.name = e.currentTarget.value;
+										}
+									});
 								}}
 								id="track-name"
 								class="w-full text-sm text-white"
@@ -378,21 +421,65 @@
 				</div>
 				<div class="flex gap-4">
 					<div class="flex flex-1 flex-col gap-2">
-						<label for="track-year" class="text-xs text-white">Year</label>
+						<label for="track-number" class="text-xs text-white">Track #</label>
 						<div class="input-flex flex rounded-md bg-zinc-800 px-2 py-1">
 							<input
-								value={trackList[selectedTrack[0]]?.year}
+								value={selectedTrack.length > 1
+									? (() => {
+											const values = selectedTrack.map(
+												(i) => trackList[i]?.number ?? ''
+											);
+											return values.every((v) => v === values[0])
+												? values[0]
+												: '<mixed>';
+										})()
+									: trackList[selectedTrack[0]]?.number}
 								oninput={(e) => {
 									e.currentTarget.value = e.currentTarget.value.replace(
 										/\D/g,
 										''
 									);
+
+									trackList.forEach((track, i) => {
+										if (selectedTrack.some((index) => index === i)) {
+											track.number = e.currentTarget.value;
+										}
+									});
+								}}
+								id="track-number"
+								class="w-full text-sm text-white"
+								type="text"
+								spellcheck="false"
+								autocomplete="off"
+								disabled={!selectedTrack.length}
+							/>
+						</div>
+					</div>
+					<div class="flex flex-1 flex-col gap-2">
+						<label for="track-year" class="text-xs text-white">Year</label>
+						<div class="input-flex flex rounded-md bg-zinc-800 px-2 py-1">
+							<input
+								value={selectedTrack.length > 1
+									? (() => {
+											const values = selectedTrack.map(
+												(i) => trackList[i]?.year ?? ''
+											);
+											return values.every((v) => v === values[0])
+												? values[0]
+												: '<mixed>';
+										})()
+									: trackList[selectedTrack[0]]?.year}
+								oninput={(e) => {
 									e.currentTarget.value = e.currentTarget.value.replace(
-										/^0+/,
+										/\D/g,
 										''
 									);
 
-									trackList[selectedTrack[0]].year = e.currentTarget.value;
+									trackList.forEach((track, i) => {
+										if (selectedTrack.some((index) => index === i)) {
+											track.year = e.currentTarget.value;
+										}
+									});
 								}}
 								id="track-year"
 								class="w-full text-sm text-white"
@@ -408,7 +495,16 @@
 						<label for="track-length" class="text-xs text-white">Length</label>
 						<div class="input-flex flex rounded-md bg-zinc-800 px-2 py-1">
 							<input
-								value={trackList[selectedTrack[0]]?.length}
+								value={selectedTrack.length > 1
+									? (() => {
+											const values = selectedTrack.map(
+												(i) => trackList[i]?.length ?? ''
+											);
+											return values.every((v) => v === values[0])
+												? values[0]
+												: '<mixed>';
+										})()
+									: trackList[selectedTrack[0]]?.length}
 								id="track-length"
 								class="w-full text-sm text-white"
 								type="text"
@@ -435,7 +531,7 @@
 								autocomplete="off"
 								readonly
 								title="Readonly"
-								disabled={!selectedTrack.length}
+								disabled={selectedTrack.length !== 1}
 								tabindex="-1"
 							/>
 						</div>
@@ -456,14 +552,29 @@
 							title="Readonly"
 						>
 							<input
-								value={selectedTrack.length && volume.enable ? trackGain : ''}
+								value={selectedTrack.length && volume.enable
+									? selectedTrack.length > 1
+										? (() => {
+												const values = selectedTrack.map(
+													(i) => trackList[i]?.measured_volume
+												);
+
+												if (values.every((v) => v === undefined))
+													return null;
+
+												return values.every((v) => v === values[0])
+													? (volume.value - Number(values[0])).toFixed(1)
+													: '<mixed>';
+											})()
+										: trackGain
+									: null}
 								id="track-force"
 								class="w-full text-sm text-white"
 								type="text"
 								spellcheck="false"
 								autocomplete="off"
 								readonly
-								disabled={selectedTrack.length < 1}
+								disabled={selectedTrack.length !== 1}
 								tabindex="-1"
 							/>
 						</div>
@@ -471,244 +582,294 @@
 				</div>
 			</div>
 		</div>
-	</div>
-	<div class="flex grow min-w-120 flex-col gap-2">
-		<span class="text-sm text-white">Tracks</span>
-		<div class="relative flex h-full flex-col rounded-md gap-2">
-			{#if loadingTracks}
-				<div
-					in:fade={{ duration: 180 }}
-					class="absolute inset-0 z-10 flex items-center justify-center"
-				>
-					<div class="bg-primary absolute inset-0 -z-10 opacity-90"></div>
-					<div class="flex w-full flex-col items-center gap-2">
-						<span class="text-sm text-white">Loading Track(s)...</span>
-						<div
-							class="loading relative h-1 w-1/2 overflow-hidden rounded-full bg-zinc-500"
-						></div>
+		<div class="flex grow min-w-120 flex-col gap-2">
+			<div class="relative flex h-full flex-col">
+				{#if loadingTracks}
+					<div
+						in:fade={{ duration: 180 }}
+						class="absolute inset-0 z-10 flex items-center justify-center"
+					>
+						<div class="bg-primary absolute inset-0 -z-10 opacity-90"></div>
+						<div class="flex w-full flex-col items-center gap-2">
+							<span class="text-sm text-white">Loading Track(s)...</span>
+							<div
+								class="loading relative h-1 w-1/2 overflow-hidden rounded-full bg-zinc-500"
+							></div>
+						</div>
 					</div>
-				</div>
-			{/if}
-			<div class="relative grow">
-				<div bind:this={audioDropArea} tabindex="-1" class="inset-0 absolute overflow-auto">
-					<table class="select-none table-fixed w-min border-separate border-spacing-0">
-						<thead class="bg-secondary sticky top-0">
-							<tr>
-								{#if $tableState}
-									{#each tableFields as field, i}
-										<th
-											class="border-r-[1px] border-r-zinc-600 relative"
-											style="width: {$tableState.fields[i]
-												.width}px; z-index: {tableFields.length - (i + 1)}"
-										>
-											<div
-												class="font-normal truncate text-left text-xs text-white px-2 py-1.5"
+				{/if}
+				<div class="relative grow">
+					<div
+						bind:this={audioDropArea}
+						tabindex="-1"
+						class="inset-0 absolute overflow-x-auto overflow-y-scroll"
+					>
+						<table
+							class="select-none table-fixed w-min border-separate border-spacing-0"
+						>
+							<thead class="bg-primary sticky top-0">
+								<tr>
+									{#if $tableState}
+										{#each tableFields as field, i}
+											<th
+												class="border-r-1 border-r-zinc-600 relative"
+												style="width: {$tableState.fields[i]
+													.width}px; z-index: {tableFields.length -
+													(i + 1)}"
 											>
-												{field}
-											</div>
-											<button
-												onclick={async () => {
-													if ($tableState.fields[i].sort) {
-														$tableState.ascending =
-															!$tableState.ascending;
-													}
+												<div
+													class="font-normal truncate text-left text-xs text-white px-2 py-1.5"
+												>
+													{field}
+												</div>
+												<button
+													onclick={async () => {
+														if ($tableState.fields[i].sort) {
+															$tableState.ascending =
+																!$tableState.ascending;
+														}
 
-													tableState.update((state) => {
-														return {
-															...state,
-															fields: state.fields.map(
-																(field, index) => ({
-																	...field,
-																	sort: index === i
-																})
-															)
-														};
-													});
+														tableState.update((state) => {
+															return {
+																...state,
+																fields: state.fields.map(
+																	(field, index) => ({
+																		...field,
+																		sort: index === i
+																	})
+																)
+															};
+														});
 
-													if (trackList.length) {
-														const key = fieldMap[i];
+														if (trackList.length) {
+															const key = fieldMap[i];
 
-														trackList.sort((a, b) =>
-															compareTracks(
-																a,
-																b,
-																key,
-																!$tableState.ascending
-															)
-														);
-													}
+															trackList.sort((a, b) =>
+																compareTracks(
+																	a,
+																	b,
+																	key,
+																	!$tableState.ascending
+																)
+															);
+														}
 
-													await tableStore.set($tableState);
-												}}
-												class="sort absolute inset-0 flex overflow-hidden items-start justify-center text-neutral-400 z-1"
-												tabindex="-1"
-											>
-												{#if $tableState.fields[i].sort}
-													{#if $tableState?.ascending}
-														<CaretDown
-															height="14"
-															width="14"
-															class="absolute -top-1"
-														/>
-													{:else}
-														<CaretUp
-															height="14"
-															width="14"
-															class="absolute -top-1"
-														/>
+														await tableStore.set($tableState);
+													}}
+													class="sort absolute inset-0 flex overflow-hidden items-start justify-center text-neutral-400 z-1"
+													tabindex="-1"
+												>
+													{#if $tableState.fields[i].sort}
+														{#if $tableState?.ascending}
+															<CaretDown
+																height="14"
+																width="14"
+																class="absolute -top-1"
+															/>
+														{:else}
+															<CaretUp
+																height="14"
+																width="14"
+																class="absolute -top-1"
+															/>
+														{/if}
 													{/if}
-												{/if}
-											</button>
-											<button
-												use:columnResize={(width, done) => {
-													if (done) {
-														// Persist once, at the end
-														tableStore.set($tableState);
-														return;
-													}
+												</button>
+												<button
+													use:columnResize={(width, done) => {
+														if (done) {
+															// Persist once, at the end
+															tableStore.set($tableState);
+															return;
+														}
 
-													// Update local reactive state live
-													tableState.update((state) => {
-														return {
-															...state,
-															fields: state.fields.map(
-																(field, index) =>
-																	index === i
-																		? { ...field, width }
-																		: field
-															)
-														};
-													});
-												}}
-												class="absolute -right-1.5 top-0 bottom-0 cursor-col-resize w-3 z-2"
-												aria-label="column_resizer"
-												tabindex="-1"
-											></button>
-										</th>
-									{/each}
-								{/if}
-							</tr>
-						</thead>
-						{#if filteredTracks.length}
-							<tbody transition:fade={{ duration: 80 }}>
-								{#each filteredTracks as track, i (track.id)}
-									<tr
-										onclick={() => {
-											if (windowCtrlDown) {
-												if (selectedTrack.includes(i)) {
-													selectedTrack = selectedTrack.filter(
-														(n) => n !== i
-													);
-												} else {
-													selectedTrack = [...selectedTrack, i];
-												}
-												lastSelectedIndex = i;
-
-												return;
-											}
-
-											if (windowShiftDown && lastSelectedIndex !== null) {
-												const start = Math.min(lastSelectedIndex, i);
-												const end = Math.max(lastSelectedIndex, i);
-												const range = Array.from(
-													{ length: end - start + 1 },
-													(_, idx) => start + idx
-												);
-												return (selectedTrack = Array.from(new Set(range)));
-											}
-											selectedTrack = [i];
-											lastSelectedIndex = i;
-										}}
-										class:selected={selectedTrack.includes(i)}
-										data-index={i}
-									>
-										{#each fieldMap as key}
-											<td class="truncate px-2 py-1 text-xs text-white">
-												{track[key] ?? ''}
-											</td>
+														// Update local reactive state live
+														tableState.update((state) => {
+															return {
+																...state,
+																fields: state.fields.map(
+																	(field, index) =>
+																		index === i
+																			? { ...field, width }
+																			: field
+																)
+															};
+														});
+													}}
+													class="absolute -right-1.5 top-0 bottom-0 cursor-col-resize w-3 z-2"
+													aria-label="column_resizer"
+													tabindex="-1"
+												></button>
+											</th>
 										{/each}
-									</tr>
-								{/each}
-							</tbody>
+									{/if}
+								</tr>
+							</thead>
+							{#if filteredTracks.length}
+								<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+								<tbody
+									transition:fade={{ duration: 80 }}
+									tabindex="0"
+									onfocus={() => {
+										if (!selectedTrack.length) {
+											focusRow(0, { checkStickyOverlap: true });
+										} else if (selectedTrack.length > 1) {
+											focusRow(selectedTrack[selectedTrack.length - 1], {
+												checkStickyOverlap: true
+											});
+										} else
+											focusRow(selectedTrack[0], {
+												checkStickyOverlap: true
+											});
+									}}
+								>
+									{#each filteredTracks as track, i (track.id)}
+										<tr
+											onmousedown={(e) => {
+												document.querySelector<HTMLElement>(
+													'tr[data-index="0"]'
+												)!.style.boxShadow = '';
+
+												shiftAnchorIndex = null;
+
+												focusRow(i, { checkStickyOverlap: true });
+
+												if (windowCtrlDown) {
+													if (selectedTrack.includes(i)) {
+														selectedTrack = selectedTrack.filter(
+															(n) => n !== i
+														);
+													} else {
+														selectedTrack = [...selectedTrack, i];
+													}
+													lastSelectedIndex = i;
+
+													return;
+												}
+
+												if (windowShiftDown && lastSelectedIndex !== null) {
+													const start = Math.min(lastSelectedIndex, i);
+													const end = Math.max(lastSelectedIndex, i);
+													const range = Array.from(
+														{ length: end - start + 1 },
+														(_, idx) => start + idx
+													);
+													return (selectedTrack = Array.from(
+														new Set(range)
+													));
+												}
+												selectedTrack = [i];
+												lastSelectedIndex = i;
+											}}
+											class:selected={selectedTrack.includes(i)}
+											data-index={i}
+										>
+											{#each fieldMap as key}
+												<td class="truncate px-2 py-1 text-xs text-white">
+													{track[key] ?? ''}
+												</td>
+											{/each}
+										</tr>
+									{/each}
+								</tbody>
+							{/if}
+						</table>
+						{#if !trackList.length}
+							<div
+								transition:fade={{ duration: 80 }}
+								class="absolute inset-0 flex flex-col items-center justify-center -z-1"
+							>
+								<span class="font-semibold text-zinc-500"
+									>Drop folder(s) or audio file(s) here</span
+								>
+								<span class="text-sm text-zinc-500"
+									>...or click "Add File(s)" to browse</span
+								>
+								<span class="text-sm text-zinc-500">(flac, mp3, ogg, wav)</span>
+							</div>
 						{/if}
-					</table>
-					{#if !trackList.length}
-						<div
-							transition:fade={{ duration: 80 }}
-							class="absolute inset-0 flex flex-col items-center justify-center -z-1"
-						>
-							<span class="font-semibold text-zinc-500"
-								>Drop folder(s) or audio file(s) here</span
-							>
-							<span class="text-sm text-zinc-500"
-								>...or click "Add File(s)" to browse</span
-							>
-							<span class="text-sm text-zinc-500">(flac, mp3, ogg, wav)</span>
-						</div>
-					{/if}
-				</div>
-			</div>
-			<div class="flex flex-col gap-4">
-				<div class="flex items-center gap-4">
-					<div class="flex gap-2">
-						<button
-							onclick={addTracks}
-							class="flex items-center gap-2 rounded-md bg-zinc-800 hover:bg-zinc-600 !border-[1px] !border-zinc-600 px-2 py-1 text-xs text-white"
-						>
-							<AddIcon width="18" height="18" />
-							<span>Add File(s)</span>
-						</button>
-						<button
-							onclick={async () => {
-								await measureVolume(
-									trackList,
-									(isLoading) => (loadingTracks = isLoading),
-									(measuredTrack) => {
-										trackList = trackList.map((t) =>
-											t.path === measuredTrack.path ? measuredTrack : t
-										);
-									}
-								);
-							}}
-							class="flex items-center gap-2 rounded-md bg-zinc-800 hover:bg-zinc-600 !border-[1px] !border-zinc-600 px-2 py-1 text-xs text-white"
-							disabled={trackList.length < 1}
-						>
-							<AnalyzeIcon width="18" height="18" />
-							<span>Analyze Tracks</span>
-						</button>
-						<button
-							onclick={removeTrack}
-							class="flex items-center gap-2 rounded-md bg-zinc-800 hover:bg-zinc-600 !border-[1px] !border-zinc-600 px-2 py-1 text-xs text-white"
-							disabled={selectedTrack.length < 1}
-						>
-							<RemoveIcon width="18" height="18" />
-							<span>Remove</span>
-						</button>
-					</div>
-					<div class="flex items-center grow justify-end">
-						<div class="flex items-center gap-2">
-							<span class="text-xs text-zinc-400">Total Tracks:</span>
-							<span class="text-xs font-bold text-white">{trackList.length}</span>
-						</div>
-						<i class="text-xs text-zinc-600 px-2">|</i>
-						<div class="flex items-center gap-2">
-							<span class="text-xs text-zinc-400">Selected:</span>
-							<span class="text-xs font-bold text-white">{selectedTrack.length}</span>
-						</div>
 					</div>
 				</div>
-				<div class="flex flex-1 items-center grow gap-2">
-					<label for="track-filter" class="text-xs text-white">Filter:</label>
-					<div class="input-flex w-full flex rounded-md bg-zinc-800 px-2 py-1">
-						<input
-							bind:value={trackFilter}
-							id="track-filter"
-							class="w-full text-sm text-white"
-							type="text"
-							spellcheck="false"
-							autocomplete="off"
-							disabled={!trackList.length}
-						/>
+				<div class="flex flex-col gap-4 p-2">
+					<div class="flex items-center gap-4">
+						<div class="flex gap-2">
+							<button
+								onclick={addTracks}
+								class="flex items-center gap-2 rounded-md bg-zinc-800 hover:bg-zinc-600 !border-1 !border-zinc-600 px-2 py-1 text-xs text-white"
+							>
+								<AddIcon width="18" height="18" />
+								<span>Add File(s)</span>
+							</button>
+							<button
+								onclick={() => {
+									trackList = trackList.map((track) => {
+										track.number = Number(
+											trackList.indexOf(track) + 1
+										).toString();
+
+										return track;
+									});
+								}}
+								class="flex items-center gap-2 rounded-md bg-zinc-800 hover:bg-zinc-600 !border-1 !border-zinc-600 px-2 py-1 text-xs text-white"
+								disabled={trackList.length < 1}
+							>
+								<NumberingIcon width="18" height="18" />
+								<span>Auto Number</span>
+							</button>
+							<button
+								onclick={async () => {
+									await measureVolume(
+										trackList,
+										(isLoading) => (loadingTracks = isLoading),
+										(measuredTrack) => {
+											trackList = trackList.map((t) =>
+												t.path === measuredTrack.path ? measuredTrack : t
+											);
+										}
+									);
+								}}
+								class="flex items-center gap-2 rounded-md bg-zinc-800 hover:bg-zinc-600 !border-1 !border-zinc-600 px-2 py-1 text-xs text-white"
+								disabled={trackList.length < 1}
+							>
+								<AnalyzeIcon width="18" height="18" />
+								<span>Analyze Tracks</span>
+							</button>
+							<button
+								onclick={removeTrack}
+								class="flex items-center gap-2 rounded-md bg-zinc-800 hover:bg-zinc-600 !border-1 !border-zinc-600 px-2 py-1 text-xs text-white"
+								disabled={selectedTrack.length < 1}
+							>
+								<RemoveIcon width="18" height="18" />
+								<span>Remove</span>
+							</button>
+						</div>
+						<div class="flex items-center grow justify-end">
+							<div class="flex items-center gap-2">
+								<span class="text-xs text-zinc-400">Total Tracks:</span>
+								<span class="text-xs font-bold text-white">{trackList.length}</span>
+							</div>
+							<i class="text-xs text-zinc-600 px-2">|</i>
+							<div class="flex items-center gap-2">
+								<span class="text-xs text-zinc-400">Selected:</span>
+								<span class="text-xs font-bold text-white"
+									>{selectedTrack.length}</span
+								>
+							</div>
+						</div>
+					</div>
+					<div class="flex flex-1 items-center grow gap-2">
+						<label for="track-filter" class="text-xs text-white">Filter:</label>
+						<div class="input-flex w-full flex rounded-md bg-zinc-800 px-2 py-1">
+							<input
+								bind:value={trackFilter}
+								id="track-filter"
+								class="w-full text-sm text-white"
+								type="text"
+								spellcheck="false"
+								autocomplete="off"
+								disabled={!trackList.length}
+							/>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -719,21 +880,39 @@
 <style>
 	thead th {
 		&:hover {
-			background-color: var(--color-slate-700);
+			background-color: var(--color-secondary);
 		}
 	}
 
-	tbody tr {
-		&.selected {
-			background-color: #51a2ff99;
+	tbody {
+		&:focus-within {
+			outline: none;
+
+			tr.selected {
+				background-color: #51a2ff99;
+			}
 		}
 
-		&:hover {
-			box-shadow: inset 0 0 0 1px var(--color-blue-300);
+		&:focus-visible:not(:has(.selected)) {
+			outline: none;
+
+			tr:first-of-type {
+				box-shadow: inset 0 0 0 1px var(--color-blue-300);
+			}
 		}
 
-		&:not(.selected):hover {
-			background-color: #51a2ff33;
+		tr {
+			&.selected {
+				background-color: #51a2ff66;
+			}
+
+			&:hover {
+				box-shadow: inset 0 0 0 1px var(--color-blue-300);
+			}
+
+			&:not(.selected):hover {
+				background-color: #51a2ff33;
+			}
 		}
 	}
 

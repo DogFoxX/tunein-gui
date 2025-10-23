@@ -15,7 +15,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-	border: 6px solid transparent; /* 12px - (4px * 2) = 4px visible thumb */
+	border: 6px solid transparent;
 	background-color: #999;
 	border-radius: 8px;
 	background-clip: content-box;

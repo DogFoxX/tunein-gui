@@ -21,14 +21,20 @@
 	});
 </script>
 
-<div class="flex h-40 min-w-full flex-col gap-2">
-	<span class="text-xs text-white">Console</span>
-	<div class="relative w-full grow rounded-md border-2 border-zinc-700">
-		<div bind:this={console} class="absolute inset-2 overflow-auto">
+<div class="flex h-40 min-w-full flex-col">
+	<div class="p-2">
+		<span class="text-sm text-white">Console</span>
+	</div>
+	<div class="relative w-full grow border-t-1 border-zinc-700">
+		<div
+			bind:this={console}
+			class="absolute top-1 bottom-1 left-1 right-0 overflow-auto"
+			tabindex="-1"
+		>
 			<code class="text-xs text-zinc-300">
 				{#each $logger as line}
 					{@const parts = extractDir(line)}
-					<div>
+					<div class="whitespace-pre">
 						{#if parts}
 							{parts.before}
 							<button

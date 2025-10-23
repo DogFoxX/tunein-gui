@@ -104,8 +104,8 @@
 	});
 </script>
 
-<div class="relative flex flex-1 max-h-full min-w-max flex-col gap-4">
-	<div class="flex gap-4">
+<div class="relative flex flex-1 max-h-full min-w-max flex-col gap-2">
+	<div class="flex gap-4 p-2">
 		<div
 			bind:this={logoDropArea}
 			ondblclick={async () => {
@@ -115,7 +115,7 @@
 					multiple: false
 				});
 			}}
-			class="relative flex h-28 w-28 items-center justify-center rounded-md border-2 border-dotted border-zinc-700 p-2"
+			class="relative flex h-28 w-28 items-center justify-center rounded-md border-1 border-dashed border-zinc-700 p-2"
 			role="img"
 		>
 			{#if !logoSrc}
