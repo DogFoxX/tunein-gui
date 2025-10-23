@@ -79,9 +79,9 @@ export async function openXML(file?: string | null): Promise<void> {
 
 export async function saveXML(xml: string, path: string) {
 	const logo = get(logoPath);
-	const logoName = await basename(logo);
 
 	if (logo) {
+		const logoName = await basename(logo);
 		const imageExts = ['bmp', 'jpeg', 'jpg', 'png'];
 		const dir = await dirname(path);
 		const logoDir = await dirname(logo);

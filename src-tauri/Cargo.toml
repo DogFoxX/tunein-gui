@@ -1,6 +1,6 @@
 [package]
 name = "tunein-gui"
-version = "0.3.0"
+version = "0.3.1"
 description = "Unofficial GUI for TuneinCrew - Create custom radio stations for The Crew 2014"
 authors = ["DogFoxX"]
 license = "GPL-3.0"

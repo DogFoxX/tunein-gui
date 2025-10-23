@@ -64,10 +64,8 @@ async function parseTracks(
 
 	if (failed.length > 0) {
 		logger.err(
-			`Failed to parse ${failed.length} track(s):\n` +
-				failed
-					.map((f) => `\t- "${getFileNameText(f.path)}" - Reason: ${f.error}`)
-					.join('\n')
+			`Failed to parse ${failed.length} track(s):`,
+			failed.map((f) => `- "${getFileNameText(f.path)}" - Reason: ${f.error}`)
 		);
 	}
 

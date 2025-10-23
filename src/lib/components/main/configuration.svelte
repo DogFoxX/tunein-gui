@@ -69,22 +69,22 @@
 
 	logoPath.subscribe(async (logoPath) => {
 		if (logoPath) {
-			let imageExts = ['bmp', 'jpeg', 'jpg', 'png'];
+			try {
+				await exists(logoPath);
 
-			const logoExist = await exists(logoPath);
+				let imageExts = ['bmp', 'jpeg', 'jpg', 'png'];
+				let extension = await extname(logoPath);
 
-			if (!logoExist) {
+				if (imageExts.some((ext) => extension === ext)) {
+					return (logoSrc = convertFileSrc(logoPath));
+				}
+
+				logoSrc = await showDDSImage(logoPath);
+			} catch {
 				logoSrc = '';
-				return;
 			}
-
-			let extension = await extname(logoPath);
-
-			if (imageExts.some((ext) => extension === ext)) {
-				return (logoSrc = convertFileSrc(logoPath));
-			}
-
-			return (logoSrc = await showDDSImage(logoPath));
+		} else {
+			logoSrc = '';
 		}
 	});
 
@@ -104,7 +104,7 @@
 	});
 </script>
 
-<div class="relative flex flex-1 max-h-full min-w-max flex-col gap-2">
+<div class="relative flex flex-1 max-h-full min-w-max flex-col">
 	<div class="flex gap-4 p-2">
 		<div
 			bind:this={logoDropArea}
@@ -182,10 +182,7 @@
 				<label for="logo-src" class="text-xs text-white">Logo</label>
 				<div class="flex input-flex items-center gap-2 rounded-md bg-zinc-800 px-2 py-1">
 					<input
-						value={$logoPath}
-						oninput={(e) => {
-							logoPath.set(e.currentTarget.value);
-						}}
+						bind:value={$logoPath}
 						id="logo-src"
 						class="w-full text-sm text-white"
 						type="text"

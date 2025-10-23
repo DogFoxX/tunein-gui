@@ -32,6 +32,7 @@
     "process:default",
     "shellx:allow-spawn",
     "shellx:allow-kill",
+    "shellx:allow-open",
     {
       "identifier": "opener:allow-open-path",
       "allow": [

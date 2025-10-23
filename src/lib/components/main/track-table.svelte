@@ -252,11 +252,7 @@
 		windowShiftDown = e.shiftKey;
 		windowCtrlDown = e.ctrlKey;
 
-		if (
-			document.activeElement !== audioDropArea?.querySelector('table tbody') ||
-			!filteredTracks.length
-		)
-			return;
+		if (document.activeElement !== audioDropArea || !filteredTracks.length) return;
 
 		if (e.ctrlKey && e.key.toLowerCase() === 'a') {
 			e.preventDefault();
@@ -542,7 +538,7 @@
 							<div
 								class="text-white"
 								tabindex="-1"
-								title="(Optional) Gain offset in dB relative to Target Volume (float value, e.g. -5.5)"
+								title="Gain offset in dB relative to Target Volume (float value, e.g. -5.5)"
 							>
 								<InfoIcon width="16" height="16" />
 							</div>
@@ -599,9 +595,23 @@
 					</div>
 				{/if}
 				<div class="relative grow">
+					<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 					<div
 						bind:this={audioDropArea}
-						tabindex="-1"
+						onfocus={() => {
+							if (!selectedTrack.length) {
+								focusRow(0, { checkStickyOverlap: true });
+							} else if (selectedTrack.length > 1) {
+								focusRow(selectedTrack[selectedTrack.length - 1], {
+									checkStickyOverlap: true
+								});
+							} else
+								focusRow(selectedTrack[0], {
+									checkStickyOverlap: true
+								});
+						}}
+						tabindex="0"
+						id="track-table"
 						class="inset-0 absolute overflow-x-auto overflow-y-scroll"
 					>
 						<table
@@ -706,23 +716,7 @@
 								</tr>
 							</thead>
 							{#if filteredTracks.length}
-								<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-								<tbody
-									transition:fade={{ duration: 80 }}
-									tabindex="0"
-									onfocus={() => {
-										if (!selectedTrack.length) {
-											focusRow(0, { checkStickyOverlap: true });
-										} else if (selectedTrack.length > 1) {
-											focusRow(selectedTrack[selectedTrack.length - 1], {
-												checkStickyOverlap: true
-											});
-										} else
-											focusRow(selectedTrack[0], {
-												checkStickyOverlap: true
-											});
-									}}
-								>
+								<tbody transition:fade={{ duration: 80 }}>
 									{#each filteredTracks as track, i (track.id)}
 										<tr
 											onmousedown={(e) => {
@@ -884,16 +878,16 @@
 		}
 	}
 
-	tbody {
+	#track-table {
 		&:focus-within {
 			outline: none;
 
-			tr.selected {
+			tbody tr.selected {
 				background-color: #51a2ff99;
 			}
 		}
 
-		&:focus-visible:not(:has(.selected)) {
+		&:focus-visible tbody:not(:has(tr.selected)) {
 			outline: none;
 
 			tr:first-of-type {
@@ -901,7 +895,7 @@
 			}
 		}
 
-		tr {
+		tbody tr {
 			&.selected {
 				background-color: #51a2ff66;
 			}
