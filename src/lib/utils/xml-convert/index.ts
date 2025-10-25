@@ -1,70 +1,120 @@
-import { sanitizeXml } from './sanitize-xml';
+import type { ProfileParseData, XMLParseData } from './types';
+import { XMLParser, XMLBuilder } from 'fast-xml-parser';
 
-export function obj2xml(obj: Record<string, any>, indent = ''): string {
-	let xml = '';
+function normalizeArrays(obj: any): any {
+	if (Array.isArray(obj)) {
+		// Handle empty arrays
+		if (obj.length === 0) return obj;
 
-	for (const key in obj) {
-		const value = obj[key];
+		// If all array elements are single-key objects (e.g. [{song:{}},{song:{}}])
+		const allSameKey = obj.every(
+			(i) => typeof i === 'object' && i !== null && Object.keys(i).length === 1
+		);
 
-		if (Array.isArray(value)) {
-			xml += `${indent}<${key}>\n`;
-			for (const item of value) {
-				xml += obj2xml(item, indent + '  ');
-			}
-			xml += `${indent}</${key}>\n`;
-		} else if (typeof value === 'object' && value !== null) {
-			xml += `${indent}<${key}>\n${obj2xml(value, indent + '  ')}${indent}</${key}>\n`;
-		} else if (typeof value === 'string') {
-			xml += `${indent}<${key}>${sanitizeXml(value)}</${key}>\n`;
-		} else {
-			xml += `${indent}<${key}>${String(value ?? '')}</${key}>\n`;
+		if (allSameKey) {
+			const key = Object.keys(obj[0])[0];
+			return {
+				[key]: obj.map((i) => normalizeArrays(i[key]))
+			};
 		}
+
+		// Otherwise, just normalize each element
+		return obj.map(normalizeArrays);
 	}
+
+	// Recurse through objects
+	if (typeof obj === 'object' && obj !== null) {
+		const result: Record<string, any> = {};
+		for (const [key, val] of Object.entries(obj)) {
+			result[key] = normalizeArrays(val);
+		}
+		return result;
+	}
+
+	// Return primitives unchanged
+	return obj;
+}
+
+export function obj2xml(obj: Record<string, any>): string {
+	const normalized = normalizeArrays(obj);
+
+	const builder = new XMLBuilder({
+		ignoreAttributes: false,
+		textNodeName: '',
+		format: true,
+		suppressBooleanAttributes: false,
+		commentPropName: 'comment'
+	});
+
+	const xml = builder.build(normalized);
 
 	return xml;
 }
 
-export function xml2obj(xml: string): XmlData {
-	const parser = new DOMParser();
-	const doc = parser.parseFromString(xml, 'application/xml');
+export async function profile2obj(xml: string): Promise<ProfileData> {
+	const parser = new XMLParser({
+		ignoreAttributes: false,
+		textNodeName: 'text',
+		attributeNamePrefix: '',
+		allowBooleanAttributes: true,
+		isArray: (name, jpath) => {
+			return jpath === 'profile.tracks.track';
+		}
+	});
 
-	const parseError = doc.querySelector('parsererror');
-	if (parseError) throw new Error('Invalid XML: ' + parseError.textContent);
+	const json = parser.parse(xml);
 
-	const projectEl = doc.querySelector('project');
-	if (!projectEl) throw new Error('Missing <project> root');
+	const profile = json.profile as ProfileParseData;
 
-	const radioEl = projectEl.querySelector('radio');
-
-	const getText = (parent: Element | null, tag: string): string => {
-		return parent?.querySelector(tag)?.textContent?.trim() ?? '';
+	return {
+		name: profile.name,
+		radioData: profile.radioData,
+		force: {
+			enable: profile.glob_force.enable === 'true',
+			value: String(profile.glob_force?.text ?? '')
+		},
+		targetVolume: {
+			enable: profile.target_vol?.enable === 'true',
+			value: String(profile.target_vol?.text ?? '')
+		},
+		...(profile.tracks
+			? {
+					trackData: profile.tracks.track.map((track: any) => ({
+						track
+					}))
+				}
+			: {})
 	};
+}
 
-	const getSongs = (songsNode: Element | null): { song: TrackXMLData }[] => {
-		if (!songsNode) return [];
-		const songEls = Array.from(songsNode.querySelectorAll('song'));
-		return songEls.map((songEl) => {
-			const track: TrackXMLData = {
-				file: getText(songEl, 'file'),
-				name: getText(songEl, 'name'),
-				artist: getText(songEl, 'artist'),
-				year: getText(songEl, 'year'),
-				length: getText(songEl, 'length')
-			};
-			const force = getText(songEl, 'force');
-			if (force) track.force = force;
-			return { song: track };
-		});
-	};
+export function xmldata2obj(xml: string): XmlData {
+	const parser = new XMLParser({
+		ignoreAttributes: false,
+		attributeNamePrefix: '',
+		allowBooleanAttributes: true,
+		isArray: (_, jpath) => {
+			return jpath === 'project.radio.songs.song';
+		}
+	});
+
+	const json = parser.parse(xml);
+
+	const project = json.project as XMLParseData;
 
 	return {
 		project: {
-			fmod: getText(projectEl, 'fmod'),
+			fmod: project.fmod,
 			radio: {
-				id: getText(radioEl, 'id'),
-				name: getText(radioEl, 'name'),
-				logo: getText(radioEl, 'logo'),
-				songs: getSongs(radioEl?.querySelector('songs') ?? null)
+				id: project.radio.id,
+				...(project.radio.logo ? { logo: project.radio.logo } : {}),
+				name: project.radio.name,
+				...(project.radio.songs
+					? {
+							songs: project.radio.songs.song.map((song: any) => ({
+								song
+							}))
+						}
+					: {})
 			}
 		}
 	};

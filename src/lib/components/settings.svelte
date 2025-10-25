@@ -1,15 +1,19 @@
 <script lang="ts">
 	// Svelte Imports
-	import { onMount } from 'svelte';
 	import { scale } from 'svelte/transition';
 
+	// Tauri Imports
 	import { getVersion } from '@tauri-apps/api/app';
-	import { exists, lstat } from '@tauri-apps/plugin-fs';
+	import { exists } from '@tauri-apps/plugin-fs';
 	import { extname, join } from '@tauri-apps/api/path';
 	import { openUrl } from '@tauri-apps/plugin-opener';
+
+	// Utils
 	import { settStore } from '$lib/utils/settings';
-	import { settingsOpen, settings } from '$lib/stores/settings.store';
 	import { openDirDiag, openFileDiag } from '$lib/utils/dialog';
+
+	// Stores
+	import { settingsOpen, settings } from '$lib/stores/settings.store';
 	import { getTuneinCrewLatest } from '$lib/utils/updates';
 
 	// Icons
@@ -79,12 +83,12 @@
 				<div class="flex flex-col gap-4">
 					<span class="text-white text-lg">GUI</span>
 					<div class="flex flex-col gap-4 px-2">
-						<div class="flex gap-2">
+						<div class="flex items-center gap-2">
 							<input
-								type="checkbox"
-								name=""
-								id="gui-update"
 								bind:checked={tempSettings.autoUpdate.gui}
+								class="h-3 w-3 rounded-xs bg-white checked:text-sky-500"
+								id="gui-update"
+								type="checkbox"
 							/>
 							<label for="gui-update" class="text-xs text-white"
 								>Auto update GUI</label
@@ -130,12 +134,12 @@
 				<div class="flex flex-col gap-4">
 					<span class="text-white text-lg">TuneinCrew</span>
 					<div class="flex flex-col gap-4 px-2">
-						<div class="flex gap-2">
+						<div class="flex items-center gap-2">
 							<input
-								type="checkbox"
-								name=""
-								id="tunein-update"
 								bind:checked={tempSettings.autoUpdate.tuneinCrew}
+								class="h-3 w-3 rounded-xs bg-white checked:text-sky-500"
+								id="tunein-update"
+								type="checkbox"
 							/>
 							<label for="tunein-update" class="text-xs text-white"
 								>Auto update TuneinCrew</label

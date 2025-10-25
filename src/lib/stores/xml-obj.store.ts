@@ -1,5 +1,4 @@
-import { writable, get } from 'svelte/store';
-import { settings } from './settings.store';
+import { writable } from 'svelte/store';
 
 export const xmlView = writable(true);
 
@@ -11,17 +10,8 @@ export const xmlData = writable<XmlData>({
 		}
 	}
 });
+
 export const tracks = writable<TrackXMLData[]>([]);
-
-// xmlData.subscribe((data) => {
-// 	const songs = data?.project?.radio?.songs ?? [];
-// 	const currentTracks = get(tracks);
-
-// 	const newTracks = songs.map((s) => s.song);
-// 	if (JSON.stringify(currentTracks) !== JSON.stringify(newTracks)) {
-// 		tracks.set(newTracks);
-// 	}
-// });
 
 export function updateTracks(newTracks: TrackXMLData[]) {
 	xmlData.update((d) => {
@@ -29,13 +19,6 @@ export function updateTracks(newTracks: TrackXMLData[]) {
 		d.project.radio.songs = newTracks.map((song) => ({ song }));
 		return d;
 	});
-}
-
-export function updateTrack(index: number, field: keyof TrackXMLData, value: string) {
-	const currentTracks = get(tracks);
-	const newTracks = [...currentTracks];
-	newTracks[index] = { ...newTracks[index], [field]: value };
-	updateTracks(newTracks);
 }
 
 export function resetForce() {

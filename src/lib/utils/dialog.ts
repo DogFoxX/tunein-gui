@@ -1,9 +1,9 @@
 import { open, type DialogFilter } from '@tauri-apps/plugin-dialog';
-import { writeTextFile, readTextFile, copyFile } from '@tauri-apps/plugin-fs';
+import { writeTextFile, readTextFile, copyFile, exists } from '@tauri-apps/plugin-fs';
 import { dirname, isAbsolute, join, extname, basename } from '@tauri-apps/api/path';
-import { xml2obj } from './xml-convert';
-import { tracks, xmlData } from '$lib/stores/xml-obj.store';
-import { logoPath } from '$lib/stores/global';
+import { profile2obj, xmldata2obj } from './xml-convert';
+import { xmlData } from '$lib/stores/xml-obj.store';
+import { logoPath, trackList } from '$lib/stores/global';
 import { convertImageToDds } from './dds-parse';
 import { get } from 'svelte/store';
 import logger from '$lib/stores/logger';
@@ -25,6 +25,11 @@ export async function openDirDiag(args: { title: string }): Promise<string[] | a
 	return open({ title, directory: true, multiple: false, canCreateDirectories: true });
 }
 
+export async function openProfile(file: string): Promise<ProfileData> {
+	const xmlString = await readTextFile(file);
+	return (await profile2obj(xmlString)) as ProfileData;
+}
+
 export async function openXML(file?: string | null): Promise<void> {
 	if (!file) {
 		file = await open({
@@ -41,7 +46,7 @@ export async function openXML(file?: string | null): Promise<void> {
 	const path = await dirname(file);
 
 	const xmlString = await readTextFile(file);
-	const parsed: XmlData = xml2obj(xmlString) as XmlData;
+	const parsed: XmlData = xmldata2obj(xmlString) as XmlData;
 
 	// Ensure structure exists
 	parsed.project = parsed.project ?? {
@@ -55,9 +60,12 @@ export async function openXML(file?: string | null): Promise<void> {
 	if (parsed.project.radio.logo) {
 		const absolute = await isAbsolute(parsed.project.radio.logo);
 		if (!absolute) {
-			logoPath.set(await join(path, parsed.project.radio.logo));
+			const logoFullPath = await join(path, parsed.project.radio.logo);
+			(await exists(logoFullPath)) ? logoPath.set(logoFullPath) : logoPath.set('');
 		} else {
-			logoPath.set(parsed.project.radio.logo);
+			(await exists(parsed.project.radio.logo))
+				? logoPath.set(parsed.project.radio.logo)
+				: logoPath.set('');
 		}
 	}
 
@@ -73,8 +81,21 @@ export async function openXML(file?: string | null): Promise<void> {
 
 	xmlData.set(parsed);
 
-	const songs: TrackXMLData[] = parsed.project.radio.songs.map((s) => s.song);
-	tracks.set(songs);
+	const songs: TrackTableInfo[] = parsed.project.radio.songs.map(({ song }, i) => ({
+		id: crypto.randomUUID(),
+		filename: song.file?.split(/[/\\]/).pop()!,
+		name: song.name,
+		artist: song.artist,
+		year: song.year,
+		length: song.length,
+		path: song.file
+	}));
+
+	trackList.set(songs);
+}
+
+export async function saveProfile(xml: string, path: string) {
+	return await writeTextFile(path, xml);
 }
 
 export async function saveXML(xml: string, path: string) {

@@ -11,7 +11,6 @@
   "permissions": [
     "window-state:default",
     "store:default",
-    "global-shortcut:default",
     "updater:default"
   ]
 }

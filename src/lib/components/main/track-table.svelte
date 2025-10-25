@@ -1,7 +1,6 @@
 <script lang="ts">
 	// Svelte Imports
 	import { fade } from 'svelte/transition';
-	import { onMount } from 'svelte';
 
 	// Tauri Imports
 	import { listen } from '@tauri-apps/api/event';
@@ -15,6 +14,7 @@
 	import logger from '$lib/stores/logger';
 
 	// Stores
+	import { trackList } from '$lib/stores/global';
 	import { updateTracks } from '$lib/stores/xml-obj.store';
 	import { tableState } from '$lib/stores/settings.store';
 
@@ -30,8 +30,10 @@
 	let {
 		force,
 		volume
-	}: { force: { enable: boolean; value: string }; volume: { enable: boolean; value: number } } =
-		$props();
+	}: {
+		force: { enable?: boolean; value?: string };
+		volume: { enable?: boolean; value?: string };
+	} = $props();
 
 	// Dialog Filters
 	const audioFilter: DialogFilter[] = [
@@ -47,17 +49,7 @@
 	// Track List for Table
 	let loadingTracks = $state<boolean>();
 	let trackPaths = $state<string[]>([]);
-	let trackList = $state<TrackTableInfo[]>([]);
-	let filteredTracks = $derived<TrackTableInfo[]>(
-		trackList.filter((track) =>
-			Object.entries(track)
-				.filter(([key]) => key !== 'length')
-				.map(([, value]) => value)
-				.join(' ')
-				.toLowerCase()
-				.includes(trackFilter.toLowerCase())
-		)
-	);
+	let filteredTracks = $state<TrackTableInfo[]>([]);
 	let trackFilter = $state('');
 	let selectedTrack = $state<number[]>([]);
 	let lastSelectedIndex = $state<number | null>(null);
@@ -90,8 +82,10 @@
 
 	// Input States
 	let trackGain = $derived<string>(
-		volume.enable && trackList[selectedTrack[0]].measured_volume
-			? (volume.value - Number(trackList[selectedTrack[0]].measured_volume!)).toFixed(1)
+		volume.enable && $trackList[selectedTrack[0]].measured_volume
+			? (
+					Number(volume.value) - Number($trackList[selectedTrack[0]].measured_volume!)
+				).toFixed(1)
 			: ''
 	);
 
@@ -115,7 +109,7 @@
 	});
 
 	function removeTrack() {
-		trackList = trackList.filter((_, i) => !selectedTrack.some((n) => n === i));
+		trackList.update((tracks) => tracks.filter((_, i) => !selectedTrack.some((n) => n === i)));
 
 		selectedTrack = [];
 		lastSelectedIndex = null;
@@ -133,9 +127,9 @@
 
 	async function loadTracks() {
 		parseTracks(trackPaths, (isLoading) => (loadingTracks = isLoading)).then((tracks) => {
-			trackList = [...trackList, ...tracks];
+			$trackList = [...$trackList, ...tracks];
 
-			trackList.sort((a, b) =>
+			$trackList.sort((a, b) =>
 				compareTracks(
 					a,
 					b,
@@ -158,7 +152,7 @@
 		const bValue = b[key];
 
 		// All values empty in this column
-		const allValues = trackList.map((t) => t[key]);
+		const allValues = $trackList.map((t) => t[key]);
 		if (allValues.every(isEmpty)) return 0;
 
 		// Partial values present
@@ -196,7 +190,7 @@
 			: bValue!.localeCompare(aValue!, undefined, { numeric: true });
 	}
 
-	function focusRow(index: number, options: { checkStickyOverlap?: boolean } = {}) {
+	function focusRow(index: number) {
 		if (!audioDropArea) return;
 
 		const row = document.querySelector(`tr[data-index="${index}"]`);
@@ -227,9 +221,9 @@
 	}
 
 	$effect(() => {
-		if (trackList) {
+		if ($trackList.length > 0) {
 			updateTracks(
-				trackList.map((track) => {
+				$trackList.map((track) => {
 					return {
 						file: track.path,
 						artist: track.artist,
@@ -238,12 +232,30 @@
 						length: track.length,
 						...(force.enable ? { force: force.value } : {}),
 						...(volume.enable && track.measured_volume
-							? { volume: (volume.value - Number(track.measured_volume)).toFixed(1) }
+							? {
+									volume: (
+										Number(volume.value) - Number(track.measured_volume)
+									).toFixed(1)
+								}
 							: {})
 					};
 				})
 			);
 		}
+	});
+
+	$effect(() => {
+		filteredTracks =
+			$trackList.length > 0
+				? $trackList.filter((track) =>
+						Object.entries(track)
+							.filter(([key]) => key !== 'length')
+							.map(([, value]) => value)
+							.join(' ')
+							.toLowerCase()
+							.includes(trackFilter.toLowerCase())
+					)
+				: [];
 	});
 </script>
 
@@ -256,7 +268,7 @@
 
 		if (e.ctrlKey && e.key.toLowerCase() === 'a') {
 			e.preventDefault();
-			selectedTrack = trackList.map((_, i) => i);
+			selectedTrack = $trackList.map((_, i) => i);
 		}
 
 		if (e.key === 'Home' && selectedTrack.length) {
@@ -272,7 +284,7 @@
 			} else selectedTrack = [0];
 
 			lastSelectedIndex = 0;
-			focusRow(selectedTrack[selectedTrack.length - 1], { checkStickyOverlap: true });
+			focusRow(selectedTrack[selectedTrack.length - 1]);
 		}
 
 		if (e.key === 'End' && selectedTrack.length) {
@@ -338,7 +350,7 @@
 		}
 
 		lastSelectedIndex = next;
-		focusRow(next, { checkStickyOverlap: true });
+		focusRow(next);
 	}}
 	onkeyup={(e) => {
 		windowShiftDown = e.shiftKey;
@@ -356,27 +368,29 @@
 				<div class="flex flex-col gap-4">
 					<div class="flex flex-col gap-2">
 						<label for="track-artist" class="text-xs text-white">Artist</label>
-						<div class="input-flex flex rounded-md bg-zinc-800 px-2 py-1">
+						<div class="input-flex flex rounded-md bg-zinc-800 px-2 py-1.5">
 							<input
 								value={selectedTrack.length > 1
 									? (() => {
 											const values = selectedTrack.map(
-												(i) => trackList[i]?.artist ?? ''
+												(i) => $trackList[i]?.artist ?? ''
 											);
 											return values.every((v) => v === values[0])
 												? values[0]
 												: '<mixed>';
 										})()
-									: trackList[selectedTrack[0]]?.artist}
+									: $trackList[selectedTrack[0]]?.artist}
 								oninput={(e) => {
-									trackList.forEach((track, i) => {
-										if (selectedTrack.some((index) => index === i)) {
-											track.artist = e.currentTarget.value;
-										}
-									});
+									trackList.update((tracks) =>
+										tracks.map((track, i) =>
+											selectedTrack.some((_, index) => index === i)
+												? { ...track, artist: e.currentTarget.value }
+												: track
+										)
+									);
 								}}
 								id="track-artist"
-								class="w-full text-sm text-white"
+								class="w-full text-xs text-white"
 								type="text"
 								spellcheck="false"
 								autocomplete="off"
@@ -386,27 +400,29 @@
 					</div>
 					<div class="flex flex-col gap-2">
 						<label for="track-name" class="text-xs text-white">Name</label>
-						<div class="input-flex flex rounded-md bg-zinc-800 px-2 py-1">
+						<div class="input-flex flex rounded-md bg-zinc-800 px-2 py-1.5">
 							<input
 								value={selectedTrack.length > 1
 									? (() => {
 											const values = selectedTrack.map(
-												(i) => trackList[i]?.name ?? ''
+												(i) => $trackList[i]?.name ?? ''
 											);
 											return values.every((v) => v === values[0])
 												? values[0]
 												: '<mixed>';
 										})()
-									: trackList[selectedTrack[0]]?.name}
+									: $trackList[selectedTrack[0]]?.name}
 								oninput={(e) => {
-									trackList.forEach((track, i) => {
-										if (selectedTrack.some((index) => index === i)) {
-											track.name = e.currentTarget.value;
-										}
-									});
+									trackList.update((tracks) =>
+										tracks.map((track, i) =>
+											selectedTrack.some((_, index) => index === i)
+												? { ...track, name: e.currentTarget.value }
+												: track
+										)
+									);
 								}}
 								id="track-name"
-								class="w-full text-sm text-white"
+								class="w-full text-xs text-white"
 								type="text"
 								spellcheck="false"
 								autocomplete="off"
@@ -418,32 +434,29 @@
 				<div class="flex gap-4">
 					<div class="flex flex-1 flex-col gap-2">
 						<label for="track-number" class="text-xs text-white">Track #</label>
-						<div class="input-flex flex rounded-md bg-zinc-800 px-2 py-1">
+						<div class="input-flex flex rounded-md bg-zinc-800 px-2 py-1.5">
 							<input
 								value={selectedTrack.length > 1
 									? (() => {
 											const values = selectedTrack.map(
-												(i) => trackList[i]?.number ?? ''
+												(i) => $trackList[i]?.number ?? ''
 											);
 											return values.every((v) => v === values[0])
 												? values[0]
 												: '<mixed>';
 										})()
-									: trackList[selectedTrack[0]]?.number}
+									: $trackList[selectedTrack[0]]?.number}
 								oninput={(e) => {
-									e.currentTarget.value = e.currentTarget.value.replace(
-										/\D/g,
-										''
+									trackList.update((tracks) =>
+										tracks.map((track, i) =>
+											selectedTrack.some((_, index) => index === i)
+												? { ...track, number: e.currentTarget.value }
+												: track
+										)
 									);
-
-									trackList.forEach((track, i) => {
-										if (selectedTrack.some((index) => index === i)) {
-											track.number = e.currentTarget.value;
-										}
-									});
 								}}
 								id="track-number"
-								class="w-full text-sm text-white"
+								class="w-full text-xs text-white"
 								type="text"
 								spellcheck="false"
 								autocomplete="off"
@@ -453,32 +466,29 @@
 					</div>
 					<div class="flex flex-1 flex-col gap-2">
 						<label for="track-year" class="text-xs text-white">Year</label>
-						<div class="input-flex flex rounded-md bg-zinc-800 px-2 py-1">
+						<div class="input-flex flex rounded-md bg-zinc-800 px-2 py-1.5">
 							<input
 								value={selectedTrack.length > 1
 									? (() => {
 											const values = selectedTrack.map(
-												(i) => trackList[i]?.year ?? ''
+												(i) => $trackList[i]?.year ?? ''
 											);
 											return values.every((v) => v === values[0])
 												? values[0]
 												: '<mixed>';
 										})()
-									: trackList[selectedTrack[0]]?.year}
+									: $trackList[selectedTrack[0]]?.year}
 								oninput={(e) => {
-									e.currentTarget.value = e.currentTarget.value.replace(
-										/\D/g,
-										''
+									trackList.update((tracks) =>
+										tracks.map((track, i) =>
+											selectedTrack.some((_, index) => index === i)
+												? { ...track, year: e.currentTarget.value }
+												: track
+										)
 									);
-
-									trackList.forEach((track, i) => {
-										if (selectedTrack.some((index) => index === i)) {
-											track.year = e.currentTarget.value;
-										}
-									});
 								}}
 								id="track-year"
-								class="w-full text-sm text-white"
+								class="w-full text-xs text-white"
 								type="text"
 								maxlength="4"
 								spellcheck="false"
@@ -489,20 +499,20 @@
 					</div>
 					<div class="flex flex-1 flex-col gap-2">
 						<label for="track-length" class="text-xs text-white">Length</label>
-						<div class="input-flex flex rounded-md bg-zinc-800 px-2 py-1">
+						<div class="input-flex flex rounded-md bg-zinc-800 px-2 py-1.5">
 							<input
 								value={selectedTrack.length > 1
 									? (() => {
 											const values = selectedTrack.map(
-												(i) => trackList[i]?.length ?? ''
+												(i) => $trackList[i]?.length ?? ''
 											);
 											return values.every((v) => v === values[0])
 												? values[0]
 												: '<mixed>';
 										})()
-									: trackList[selectedTrack[0]]?.length}
+									: $trackList[selectedTrack[0]]?.length}
 								id="track-length"
-								class="w-full text-sm text-white"
+								class="w-full text-xs text-white"
 								type="text"
 								spellcheck="false"
 								autocomplete="off"
@@ -517,11 +527,11 @@
 				<div class="flex gap-4">
 					<div class="flex-1 flex flex-col gap-2">
 						<label for="track-force" class="text-xs text-white">Force</label>
-						<div class="input-flex flex rounded-md bg-zinc-800 px-2 py-1">
+						<div class="input-flex flex rounded-md bg-zinc-800 px-2 py-1.5">
 							<input
 								value={selectedTrack.length && force.enable ? force.value : ''}
 								id="track-force"
-								class="w-full text-sm text-white"
+								class="w-full text-xs text-white"
 								type="text"
 								spellcheck="false"
 								autocomplete="off"
@@ -544,7 +554,7 @@
 							</div>
 						</div>
 						<div
-							class="input-flex flex rounded-md bg-zinc-800 px-2 py-1"
+							class="input-flex flex rounded-md bg-zinc-800 px-2 py-1.5"
 							title="Readonly"
 						>
 							<input
@@ -552,20 +562,22 @@
 									? selectedTrack.length > 1
 										? (() => {
 												const values = selectedTrack.map(
-													(i) => trackList[i]?.measured_volume
+													(i) => $trackList[i]?.measured_volume
 												);
 
 												if (values.every((v) => v === undefined))
 													return null;
 
 												return values.every((v) => v === values[0])
-													? (volume.value - Number(values[0])).toFixed(1)
+													? (
+															Number(volume.value) - Number(values[0])
+														).toFixed(1)
 													: '<mixed>';
 											})()
 										: trackGain
 									: null}
 								id="track-force"
-								class="w-full text-sm text-white"
+								class="w-full text-xs text-white"
 								type="text"
 								spellcheck="false"
 								autocomplete="off"
@@ -600,15 +612,10 @@
 						bind:this={audioDropArea}
 						onfocus={() => {
 							if (!selectedTrack.length) {
-								focusRow(0, { checkStickyOverlap: true });
+								focusRow(0);
 							} else if (selectedTrack.length > 1) {
-								focusRow(selectedTrack[selectedTrack.length - 1], {
-									checkStickyOverlap: true
-								});
-							} else
-								focusRow(selectedTrack[0], {
-									checkStickyOverlap: true
-								});
+								focusRow(selectedTrack[selectedTrack.length - 1]);
+							} else focusRow(selectedTrack[0]);
 						}}
 						tabindex="0"
 						id="track-table"
@@ -651,15 +658,17 @@
 															};
 														});
 
-														if (trackList.length) {
+														if ($trackList.length) {
 															const key = fieldMap[i];
 
-															trackList.sort((a, b) =>
-																compareTracks(
-																	a,
-																	b,
-																	key,
-																	!$tableState.ascending
+															trackList.update((tracks) =>
+																tracks.sort((a, b) =>
+																	compareTracks(
+																		a,
+																		b,
+																		key,
+																		!$tableState.ascending
+																	)
 																)
 															);
 														}
@@ -726,7 +735,7 @@
 
 												shiftAnchorIndex = null;
 
-												focusRow(i, { checkStickyOverlap: true });
+												focusRow(i);
 
 												if (windowCtrlDown) {
 													if (selectedTrack.includes(i)) {
@@ -768,7 +777,7 @@
 								</tbody>
 							{/if}
 						</table>
-						{#if !trackList.length}
+						{#if !$trackList.length}
 							<div
 								transition:fade={{ duration: 80 }}
 								class="absolute inset-0 flex flex-col items-center justify-center -z-1"
@@ -796,16 +805,16 @@
 							</button>
 							<button
 								onclick={() => {
-									trackList = trackList.map((track) => {
+									$trackList = $trackList.map((track) => {
 										track.number = Number(
-											trackList.indexOf(track) + 1
+											$trackList.indexOf(track) + 1
 										).toString();
 
 										return track;
 									});
 								}}
 								class="flex items-center gap-2 rounded-md bg-zinc-800 hover:bg-zinc-600 !border-1 !border-zinc-600 px-2 py-1 text-xs text-white"
-								disabled={trackList.length < 1}
+								disabled={$trackList.length < 1}
 							>
 								<NumberingIcon width="18" height="18" />
 								<span>Auto Number</span>
@@ -813,17 +822,21 @@
 							<button
 								onclick={async () => {
 									await measureVolume(
-										trackList,
+										$trackList,
 										(isLoading) => (loadingTracks = isLoading),
 										(measuredTrack) => {
-											trackList = trackList.map((t) =>
-												t.path === measuredTrack.path ? measuredTrack : t
+											trackList.update((tracks) =>
+												tracks.map((t) =>
+													t.path === measuredTrack.path
+														? measuredTrack
+														: t
+												)
 											);
 										}
 									);
 								}}
 								class="flex items-center gap-2 rounded-md bg-zinc-800 hover:bg-zinc-600 !border-1 !border-zinc-600 px-2 py-1 text-xs text-white"
-								disabled={trackList.length < 1}
+								disabled={$trackList.length < 1}
 							>
 								<AnalyzeIcon width="18" height="18" />
 								<span>Analyze Tracks</span>
@@ -840,7 +853,8 @@
 						<div class="flex items-center grow justify-end">
 							<div class="flex items-center gap-2">
 								<span class="text-xs text-zinc-400">Total Tracks:</span>
-								<span class="text-xs font-bold text-white">{trackList.length}</span>
+								<span class="text-xs font-bold text-white">{$trackList.length}</span
+								>
 							</div>
 							<i class="text-xs text-zinc-600 px-2">|</i>
 							<div class="flex items-center gap-2">
@@ -853,15 +867,15 @@
 					</div>
 					<div class="flex flex-1 items-center grow gap-2">
 						<label for="track-filter" class="text-xs text-white">Filter:</label>
-						<div class="input-flex w-full flex rounded-md bg-zinc-800 px-2 py-1">
+						<div class="input-flex w-full flex rounded-md bg-zinc-800 px-2 py-1.5">
 							<input
 								bind:value={trackFilter}
 								id="track-filter"
-								class="w-full text-sm text-white"
+								class="w-full text-xs text-white"
 								type="text"
 								spellcheck="false"
 								autocomplete="off"
-								disabled={!trackList.length}
+								disabled={!$trackList.length}
 							/>
 						</div>
 					</div>

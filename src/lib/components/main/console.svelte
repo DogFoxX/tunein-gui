@@ -1,11 +1,9 @@
 <script lang="ts">
-	import logger from '$lib/stores/logger';
 	import { openPath } from '@tauri-apps/plugin-opener';
-	import { open } from 'tauri-plugin-shellx-api';
+	import logger from '$lib/stores/logger';
 
 	let console = $state<HTMLElement>();
 
-	// ✅ Matches Windows and Unix paths, including files and folders
 	const pathRegex = /(?:[A-Z]:\\(?:[^\\\r\n]+\\?)*[^\\\r\n]*|\/(?:[^\/\r\n]+\/?)*[^\/\r\n]*)/;
 
 	const logLevels = [
@@ -42,27 +40,34 @@
 	});
 </script>
 
-<div class="relative h-44 w-full bg-[#181818]">
-	<div
-		bind:this={console}
-		class="absolute top-2 bottom-2 left-2 right-0 overflow-auto"
-		tabindex="-1"
-	>
-		<code class="text-xs text-zinc-300">
-			{#each $logger as line}
-				{@const parts = extractPath(line)}
-				{@const first = parts ? splitLogLevels(parts.before) : splitLogLevels(line)}
+<div class="flex relative flex-col bg-[#181818]">
+	<div class="flex items-center gap-2 p-2">
+		<span class="text-xs text-white">Console</span>
+	</div>
+	<div class="relative h-42 w-full">
+		<div
+			bind:this={console}
+			class="absolute top-0 bottom-2 left-2 right-0 overflow-auto cursor-text"
+			tabindex="-1"
+		>
+			<code class="text-xs text-zinc-300">
+				{#each $logger as line}
+					{@const parts = extractPath(line)}
+					{@const first = parts ? splitLogLevels(parts.before) : splitLogLevels(line)}
 
-				<div class="whitespace-pre">
-					{first.before}{#if first.level}<span class="{first.level.color} inline-block">
-							{first.level.level}
-						</span>{/if}{#if parts}{#if first.after}{first.after}{/if}<button
-							class="text-sky-200 underline cursor-pointer"
-							onclick={() => openPath(parts.path)}>{parts.path}</button
-						>{parts.after}{:else}{first.after}{/if}
-				</div>
-			{/each}
-		</code>
+					<div class="whitespace-pre">
+						{first.before}{#if first.level}<span
+								class="{first.level.color} inline-block"
+							>
+								{first.level.level}
+							</span>{/if}{#if parts}{#if first.after}{first.after}{/if}<button
+								class="text-sky-200 underline cursor-pointer"
+								onclick={() => openPath(parts.path)}>{parts.path}</button
+							>{parts.after}{:else}{first.after}{/if}
+					</div>
+				{/each}
+			</code>
+		</div>
 	</div>
 </div>
 

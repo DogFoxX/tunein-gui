@@ -1,32 +1,43 @@
 <script lang="ts">
+	// Svelte Imports
 	import { onMount } from 'svelte';
-	import { settings, settingsOpen, tableState } from '$lib/stores/settings.store';
-	import { register } from '@tauri-apps/plugin-global-shortcut';
-	import { settStore, tableStore } from '$lib/utils/settings';
-	import { getTuneinCrewLatest, guiUpdate } from '$lib/utils/updates';
+
+	// Tauri Imports
 	import { check } from '@tauri-apps/plugin-updater';
-	import { openXML } from '$lib/utils/dialog';
+	import { exists } from '@tauri-apps/plugin-fs';
+	import { extname, join } from '@tauri-apps/api/path';
+	import { listen } from '@tauri-apps/api/event';
+
+	// Utils
+	import { settStore, tableStore } from '$lib/utils/settings';
+	import { openProfile } from '$lib/utils/dialog';
+	import { getTuneinCrewLatest, guiUpdate } from '$lib/utils/updates';
+
+	// Stores
+	import { settings, settingsOpen, tableState } from '$lib/stores/settings.store';
 	import logger from '$lib/stores/logger';
+	import { profileData } from '$lib/stores/global';
+
+	// Components
 	import Main from '$lib/components/main';
 	import Settings from '$lib/components/settings.svelte';
 	import Titlebar from '$lib/components/titlebar.svelte';
 	import Modal from '$lib/components/modal.svelte';
-	import { exists } from '@tauri-apps/plugin-fs';
-	import { extname, join } from '@tauri-apps/api/path';
 
-	// import { listen } from '@tauri-apps/api/event';
-
-	// listen<string>('open-tuneingui', (event) => {
-	// 	const filePath = event.payload;
-	// 	logger.info(`Received .tuneingui file: ${filePath}`);
-	// 	// handle logic here
-	// });
-
-	// logger.info(`Received .tuneingui file: ${window.openedFile}`);
+	listen<string>('open-tuneingui', async (event) => {
+		const filePath = event.payload;
+		logger.info(`Loaded Profile: "${filePath.split(/[/\\]/).pop()}"`);
+		$profileData = await openProfile(filePath);
+	});
 
 	onMount(async () => {
 		settings.set(await settStore.init());
 		tableState.set(await tableStore.init());
+
+		if (window.openedFile) {
+			logger.info(`Loaded Profile: "${window.openedFile.split(/[/\\]/).pop()}"`);
+			$profileData = await openProfile(window.openedFile);
+		}
 
 		if ($settings.autoUpdate.gui) {
 			const update = await check();
@@ -67,11 +78,6 @@
 				}
 			}
 		}
-	});
-
-	register('CommandOrControl+I', async ({ state }) => {
-		if (state === 'Released') await openXML();
-		return;
 	});
 </script>
 

@@ -31,7 +31,7 @@ fn emit_opened_file(app: &AppHandle, file: Option<PathBuf>) {
         if let Some(window) = app.get_webview_window("main") {
             let _ = window.eval(&script);
         } else {
-            tauri::WebviewWindowBuilder::new(app, "main", Default::default())
+            WebviewWindowBuilder::new(app, "main", Default::default())
                 .initialization_script(&script)
                 .build()
                 .expect("failed to create window");
@@ -44,7 +44,6 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_shellx::init(true))
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_http::init())
@@ -53,6 +52,13 @@ pub fn run() {
                 .get_webview_window("main")
                 .expect("no main window")
                 .set_focus();
+
+            for arg in args.into_iter().skip(1) {
+                if let Some(path) = normalize_arg_to_path(&arg) {
+                    let _ = app.emit("open-tuneingui", path.to_string_lossy().to_string());
+                    break;
+                }
+            }
             
         }))
         .plugin(tauri_plugin_window_state::Builder::new().build())

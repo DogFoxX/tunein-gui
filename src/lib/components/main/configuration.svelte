@@ -14,7 +14,7 @@
 	import { showDDSImage } from '$lib/utils/dds-parse';
 
 	// Stores
-	import { logoPath } from '$lib/stores/global';
+	import { logoPath, profileData } from '$lib/stores/global';
 	import { xmlData, resetForce } from '$lib/stores/xml-obj.store';
 
 	// Icons
@@ -37,12 +37,8 @@
 
 	// Input States
 	let logoSrc = $state<string>();
-	let forceEnable = $state(false);
-	let forceGlobVal = $state('80');
-	let volumeEnable = $state(false);
-	let volumeVal = $state<number>(95);
-	let radioId = $state<string>();
-	let radioName = $state<string>();
+	let radioId = $derived($xmlData.project.radio.id);
+	let radioName = $derived($xmlData.project.radio.name);
 
 	listen<DragDropEventPayload>('tauri://drag-drop', async (event) => {
 		const { x, y } = event.payload.position;
@@ -143,12 +139,12 @@
 				<div class="flex flex-col gap-2">
 					<label for="radio-id" class="text-xs text-white">ID (Unique)</label>
 					<div
-						class="flex input-flex items-center gap-2 rounded-md bg-zinc-800 px-2 py-1"
+						class="flex input-flex items-center gap-2 rounded-md bg-zinc-800 px-2 py-1.5"
 					>
 						<input
 							bind:value={radioId}
 							id="radio-id"
-							class="w-[8ch] text-sm text-white"
+							class="w-[8ch] text-xs text-white"
 							type="text"
 							maxlength="4"
 							spellcheck="false"
@@ -159,17 +155,17 @@
 							class="rounded-md text-white"
 							title="Generate Random ID"
 						>
-							<GenIdIcon width="20" height="20" />
+							<GenIdIcon width="16" height="16" />
 						</button>
 					</div>
 				</div>
 				<div class="flex flex-col gap-2">
 					<label for="radio-name" class="text-xs text-white">Radio Station Name</label>
-					<div class="flex input-flex rounded-md bg-zinc-800 px-2 py-1">
+					<div class="flex input-flex rounded-md bg-zinc-800 px-2 py-1.5">
 						<input
 							bind:value={radioName}
 							id="radio-name"
-							class="w-[35ch] text-sm text-white"
+							class="w-[35ch] text-xs text-white"
 							type="text"
 							spellcheck="false"
 							placeholder="eg. My Custom Radio"
@@ -180,11 +176,11 @@
 			</div>
 			<div class="flex flex-col gap-2">
 				<label for="logo-src" class="text-xs text-white">Logo</label>
-				<div class="flex input-flex items-center gap-2 rounded-md bg-zinc-800 px-2 py-1">
+				<div class="flex input-flex items-center gap-2 rounded-md bg-zinc-800 px-2 py-1.5">
 					<input
 						bind:value={$logoPath}
 						id="logo-src"
-						class="w-full text-sm text-white"
+						class="w-full text-xs text-white"
 						type="text"
 						spellcheck="false"
 						placeholder="Click browse to choose a logo file..."
@@ -202,7 +198,7 @@
 						}}
 						class="rounded-md text-white"
 					>
-						<OpenFolderIcon width="20" height="20" />
+						<OpenFolderIcon width="16" height="16" />
 					</button>
 				</div>
 			</div>
@@ -211,13 +207,13 @@
 			<div class="flex flex-col gap-2">
 				<div class="flex items-center gap-2">
 					<div class="flex gap-4">
-						<div class="flex gap-2">
+						<div class="checkbox-flex flex items-center gap-2">
 							<input
-								bind:checked={forceEnable}
+								bind:checked={$profileData.force.enable}
 								onchange={resetForce}
 								type="checkbox"
+								class="h-3 w-3 rounded-xs bg-white checked:text-sky-500"
 								id="force"
-								value="0"
 							/>
 							<label for="force" class="text-xs text-white">Global Force</label>
 						</div>
@@ -229,21 +225,20 @@
 						<InfoIcon width="16" height="16" />
 					</i>
 				</div>
-				<div class="input-flex flex rounded-md bg-zinc-800 px-2 py-1">
+				<div class="input-flex flex rounded-md bg-zinc-800 px-2 py-1.5">
 					<input
-						bind:value={forceGlobVal}
+						bind:value={$profileData.force.value}
 						oninput={(e) => {
-							forceGlobVal = forceGlobVal.replace(/\D/g, '');
-							forceGlobVal = forceGlobVal.replace(/^0+/, '');
-							if (forceGlobVal === '') forceGlobVal = '0';
+							e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '');
+							e.currentTarget.value = e.currentTarget.value.replace(/^0+/, '');
+							if (e.currentTarget.value === '') e.currentTarget.value = '0';
 						}}
 						id="force-val"
-						class="w-full text-sm text-white"
+						class="w-full text-xs text-white"
 						type="text"
 						maxlength="3"
 						spellcheck="false"
-						placeholder="eg. 200"
-						disabled={!forceEnable}
+						disabled={!$profileData.force.enable}
 						autocomplete="off"
 					/>
 				</div>
@@ -251,13 +246,13 @@
 			<div class="flex flex-col gap-2">
 				<div class="flex items-center gap-2">
 					<div class="flex gap-4">
-						<div class="flex gap-2">
+						<div class="flex items-center gap-2">
 							<input
-								bind:checked={volumeEnable}
+								bind:checked={$profileData.targetVolume.enable}
 								onchange={resetForce}
+								class="h-3 w-3 rounded-xs bg-white checked:text-sky-500"
 								type="checkbox"
 								id="volume"
-								value="0"
 							/>
 							<label for="volume" class="text-xs text-white">Target Volume</label>
 						</div>
@@ -269,21 +264,20 @@
 						<InfoIcon width="16" height="16" />
 					</i>
 				</div>
-				<div class="input-flex flex rounded-md bg-zinc-800 px-2 py-1">
+				<div class="input-flex flex rounded-md bg-zinc-800 px-2 py-1.5">
 					<input
-						bind:value={volumeVal}
+						bind:value={$profileData.targetVolume.value}
 						oninput={(e) => {
-							forceGlobVal = forceGlobVal.replace(/\D/g, '');
-							forceGlobVal = forceGlobVal.replace(/^0+/, '');
-							if (forceGlobVal === '') forceGlobVal = '0';
+							e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '');
+							e.currentTarget.value = e.currentTarget.value.replace(/^0+/, '');
+							if (e.currentTarget.value === '') e.currentTarget.value = '0';
 						}}
 						id="force-val"
-						class="w-full text-sm text-white"
+						class="w-full text-xs text-white"
 						type="text"
 						maxlength="3"
 						spellcheck="false"
-						placeholder="eg. 200"
-						disabled={!volumeEnable}
+						disabled={!$profileData.targetVolume.enable}
 						autocomplete="off"
 					/>
 				</div>
@@ -291,7 +285,10 @@
 		</div>
 	</div>
 	<TrackTable
-		force={{ enable: forceEnable, value: forceGlobVal }}
-		volume={{ enable: volumeEnable, value: volumeVal }}
+		force={{ enable: $profileData.force.enable, value: $profileData.force.value }}
+		volume={{
+			enable: $profileData.targetVolume.enable,
+			value: $profileData.targetVolume.value
+		}}
 	/>
 </div>

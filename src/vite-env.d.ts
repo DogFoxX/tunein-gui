@@ -28,13 +28,13 @@ interface TableState {
 }
 
 interface TrackXMLData {
-	file?: string | null;
-	name?: string | null;
-	artist?: string | null;
-	year?: string | null;
-	length?: string | null;
-	force?: string | null;
-	volume?: string | null;
+	file?: string;
+	name?: string;
+	artist?: string;
+	year?: string;
+	length?: string;
+	force?: string;
+	volume?: string;
 }
 
 interface TrackTableInfo {
@@ -46,7 +46,7 @@ interface TrackTableInfo {
 	name?: string;
 	year?: string;
 	length?: string;
-	path: string;
+	path?: string;
 }
 
 interface XmlData {
@@ -57,10 +57,29 @@ interface XmlData {
 			name?: string;
 			logo?: string;
 			songs?: {
-				song: TrackData;
+				song: TrackXMLData;
 			}[];
 		};
 	};
+}
+
+interface ProfileData {
+	name?: string;
+	radioData?: string;
+	force: {
+		enable: boolean;
+		value: string;
+	};
+	targetVolume: {
+		enable: boolean;
+		value: string;
+	};
+	trackData?: {
+		track: {
+			number: string;
+			volume: string;
+		};
+	}[];
 }
 
 interface DragDropEventPayload {

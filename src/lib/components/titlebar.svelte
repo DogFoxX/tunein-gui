@@ -1,9 +1,16 @@
 <script lang="ts">
-	import { settingsOpen } from '$lib/stores/settings.store';
-	import { getCurrentWindow } from '@tauri-apps/api/window';
+	// Svelte Imports
 	import { onMount } from 'svelte';
-	import { updateAvailable } from '$lib/stores/global';
+
+	// Tauri Imports
+	import { getCurrentWindow } from '@tauri-apps/api/window';
+
+	// Utils
 	import { guiUpdate } from '$lib/utils/updates';
+
+	// Stores
+	import { settingsOpen } from '$lib/stores/settings.store';
+	import { updateAvailable } from '$lib/stores/global';
 
 	// Icons
 	import SettingsIcon from '~icons/solar/settings-linear';
