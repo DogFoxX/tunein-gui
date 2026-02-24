@@ -383,7 +383,7 @@
 								oninput={(e) => {
 									trackList.update((tracks) =>
 										tracks.map((track, i) =>
-											selectedTrack.some((_, index) => index === i)
+											selectedTrack.some((selected) => selected === i)
 												? { ...track, artist: e.currentTarget.value }
 												: track
 										)
@@ -415,7 +415,7 @@
 								oninput={(e) => {
 									trackList.update((tracks) =>
 										tracks.map((track, i) =>
-											selectedTrack.some((_, index) => index === i)
+											selectedTrack.some((selected) => selected === i)
 												? { ...track, name: e.currentTarget.value }
 												: track
 										)
@@ -449,7 +449,7 @@
 								oninput={(e) => {
 									trackList.update((tracks) =>
 										tracks.map((track, i) =>
-											selectedTrack.some((_, index) => index === i)
+											selectedTrack.some((selected) => selected === i)
 												? { ...track, number: e.currentTarget.value }
 												: track
 										)
@@ -481,7 +481,7 @@
 								oninput={(e) => {
 									trackList.update((tracks) =>
 										tracks.map((track, i) =>
-											selectedTrack.some((_, index) => index === i)
+											selectedTrack.some((selected) => selected === i)
 												? { ...track, year: e.currentTarget.value }
 												: track
 										)
