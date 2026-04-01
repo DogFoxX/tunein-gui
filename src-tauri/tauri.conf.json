@@ -1,0 +1,74 @@
+{
+	"$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+	"productName": "Tunein GUI",
+	"mainBinaryName": "tunein-gui",
+	"version": "0.9.1",
+	"identifier": "tunein-gui",
+	"build": {
+		"frontendDist": "../dist",
+		"devUrl": "http://localhost:5173",
+		"beforeDevCommand": "npm run vite:dev",
+		"beforeBuildCommand": "npm run vite:build"
+	},
+	"app": {
+		"windows": [
+			{
+				"label": "main",
+				"title": "Tunein GUI",
+				"width": 1384,
+				"minWidth": 1026,
+				"height": 850,
+				"minHeight": 753,
+				"resizable": true,
+				"fullscreen": false,
+				"backgroundColor": "#23262d",
+				"decorations": false,
+				"dragDropEnabled": true,
+				"visible": false
+			}
+		],
+		"security": {
+			"csp": "default-src 'self' tauri://localhost asset://localhost http://asset.localhost; script-src 'self' 'unsafe-inline' tauri://localhost; style-src 'self' 'unsafe-inline' tauri://localhost; img-src 'self' data: tauri://localhost asset://localhost http://asset.localhost; connect-src 'self' ipc://localhost http://ipc.localhost tauri://localhost asset://localhost;",
+			"assetProtocol": {
+				"enable": true,
+				"scope": ["*/**"]
+			}
+		}
+	},
+	"bundle": {
+		"active": true,
+		"createUpdaterArtifacts": true,
+		"targets": ["app", "appimage", "nsis"],
+		"windows": {
+			"nsis": { "installMode": "currentUser", "installerIcon": "icons/icon.ico" },
+			"webviewInstallMode": {
+				"silent": true,
+				"type": "embedBootstrapper"
+			}
+		},
+		"fileAssociations": [
+			{
+				"ext": ["tuneingui"],
+				"description": "Tunein GUI Profile Datafile",
+				"mimeType": "text/xml",
+				"name": "Tunein.GUI.Profile",
+				"role": "Editor"
+			}
+		],
+		"icon": [
+			"icons/32x32.png",
+			"icons/128x128.png",
+			"icons/128x128@2x.png",
+			"icons/icon.png",
+			"icons/icon.ico"
+		]
+	},
+	"plugins": {
+		"updater": {
+			"pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDE1QkYzMkZENDY4NTNDQTUKUldTbFBJVkcvVEsvRmIxNlltR1Zzb2FwajhoOHo3ckpoODdIeXVqV29VaTFYa2hhdmJrNi83ZFkK",
+			"endpoints": [
+				"https://github.com/DogFoxX/tunein-gui/releases/latest/download/latest.json"
+			]
+		}
+	}
+}

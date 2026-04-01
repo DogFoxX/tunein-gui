@@ -1,0 +1,380 @@
+<script lang="ts">
+	// Svelte Imports
+	import { onMount, tick } from 'svelte';
+
+	// Tauri Imports
+	import { getCurrentWindow } from '@tauri-apps/api/window';
+
+	// Stores
+	import { tabState, tabStore } from '$lib/stores/tabs';
+	import type { TabType } from '$lib/stores/tabs/types';
+
+	// Utils
+	import { tgSlide } from '$lib/utils';
+
+	// Icons
+	import { DownloadMinimalistic, Home2, Settings } from '@solar-icons/svelte/Outline';
+	import { Close, Plus } from '$assets/tg-icons';
+
+	const mainWindow = getCurrentWindow();
+	let isMax = $state<boolean>();
+	let focused = $state<boolean>();
+	let tabs = $derived<TabType[]>([
+		{
+			active: !$tabStore?.some(({ active }) => active),
+			id: 'home'
+		},
+		...$tabStore
+	]);
+	let ready = $state(false);
+
+	onMount(async () => {
+		await mainWindow.onFocusChanged(({ payload: focus }) => {
+			focused = focus;
+		});
+
+		isMax = await mainWindow.isMaximized();
+
+		await mainWindow.onResized(async () => {
+			isMax = await mainWindow.isMaximized();
+		});
+
+		(await tabState()).init();
+
+		await tick();
+
+		ready = true;
+	});
+
+	// Tab Functions
+	function activateTab(id: string) {
+		if (id === 'home') {
+			tabStore?.update((tabs) => tabs.map((t) => ({ ...t, active: false })));
+			return;
+		}
+
+		tabStore?.update((tabs) =>
+			tabs.map((t) => ({
+				...t,
+				active: t.id === id
+			}))
+		);
+	}
+
+	async function addTab() {
+		tabStore.update((tabs) => [...tabs.map((t) => ({ ...t, active: false }))]);
+
+		tabStore?.update((tabs) => [
+			...tabs,
+			{
+				title: `Untitled Radio ${tabs.length + 1}`,
+				id: crypto.randomUUID(),
+				active: true
+			}
+		]);
+	}
+
+	function closeTab(id: string) {
+		tabStore?.update((tabs) => {
+			const index = tabs.findIndex((t) => t.id === id);
+			if (index === -1) return tabs;
+
+			const wasActive = tabs[index].active;
+			const newTabs = tabs.filter((t) => t.id !== id);
+
+			// If closed tab was NOT active → do nothing else
+			if (!wasActive) return newTabs;
+
+			// If it WAS active → activate previous sibling
+			const newActiveIndex = Math.max(0, index - 1);
+
+			return newTabs.map((t, i) => ({
+				...t,
+				active: i === newActiveIndex
+			}));
+		});
+	}
+</script>
+
+<!-- Tab snippets -->
+{#snippet tgHomeTab({ active }: { active: boolean })}
+	<li class="relative flex items-center h-full shrink min-w-20.5" class:active role="tab">
+		<button
+			onmousedown={() => {
+				activateTab('home');
+			}}
+			class="flex gap-2 items-center justify-center size-full text-xs text-primary-300"
+			class:text-white!={active}
+		>
+			<Home2 size={18} />
+			<span>Home</span>
+		</button>
+		<div
+			class="absolute top-1.5 bottom-1.5 left-0.75 right-0.75 text-primary-700 rounded-t-[10px] -z-1"
+			class:bottom-0!={active}
+			class:rounded-b-[10px]={!active}
+			class:bg-primary-700={active}
+		>
+			{#if active}
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					width="12"
+					height="12"
+					class="absolute bottom-0 -right-3"
+					viewBox="0 0 12 12"
+					fill="none"
+				>
+					<path d="M0 0C0 6.62742 5.37258 12 12 12H0V0Z" fill="currentColor" />
+				</svg>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					width="12"
+					height="12"
+					class="absolute bottom-0 -left-3"
+					transform="scale(-1, 1)"
+					viewBox="0 0 12 12"
+					fill="none"
+				>
+					<path d="M0 0C0 6.62742 5.37258 12 12 12H0V0Z" fill="currentColor" />
+				</svg>
+			{/if}
+		</div>
+	</li>
+{/snippet}
+
+{#snippet tgTab({
+	active,
+	id,
+	title
+}: {
+	active: boolean;
+	id: string;
+	index: number;
+	title?: string;
+})}
+	<li
+		in:tgSlide={ready ? { duration: 120 } : undefined}
+		out:tgSlide={{ duration: 150 }}
+		class="relative flex items-center h-full shrink min-w-0"
+		class:active
+		role="tab"
+	>
+		<button
+			onmousedown={() => {
+				activateTab(id);
+			}}
+			class="flex gap-2 items-center h-full w-48 text-xs text-primary-300 pl-3 pr-6 overflow-hidden"
+			class:text-white!={active}
+			{title}
+		>
+			<span class="truncate">{title}</span>
+		</button>
+		<div
+			class="absolute top-1.5 bottom-1.5 left-0.75 right-0.75 text-primary-700 rounded-t-[10px] -z-1"
+			class:bottom-0!={active}
+			class:rounded-b-[10px]={!active}
+			class:bg-primary-700={active}
+		>
+			{#if active}
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					width="12"
+					height="12"
+					class="absolute bottom-0 -right-3"
+					viewBox="0 0 12 12"
+					fill="none"
+				>
+					<path d="M0 0C0 6.62742 5.37258 12 12 12H0V0Z" fill="currentColor" />
+				</svg>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					width="12"
+					height="12"
+					class="absolute bottom-0 -left-3"
+					transform="scale(-1, 1)"
+					viewBox="0 0 12 12"
+					fill="none"
+				>
+					<path d="M0 0C0 6.62742 5.37258 12 12 12H0V0Z" fill="currentColor" />
+				</svg>
+			{/if}
+		</div>
+		<button
+			onclick={() => closeTab(id)}
+			class="absolute right-2.25 text-zinc-300 hover:text-white hover:bg-slate-500 p-0.5 rounded-full transition-colors"
+		>
+			<Close size={13} />
+		</button>
+	</li>
+{/snippet}
+
+<div class="fixed flex top-0 left-0 right-0 h-10">
+	<div
+		class="absolute inset-0 flex items-center text-primary-400 -z-1"
+		class:text-white!={focused}
+		data-tauri-drag-region
+	>
+		<div class="flex items-center justify-center size-9.25 pointer-events-none">
+			<svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+				<path
+					fill-rule="evenodd"
+					clip-rule="evenodd"
+					d="M13.7957 4.43944C13.9809 4.47494 14.1454 4.49239 14.2888 4.49239C14.492 4.49239 14.6531 4.45147 14.7728 4.36874C14.8921 4.2866 14.9522 4.17437 14.9522 4.03297C14.9522 3.92706 14.9043 3.84131 14.8088 3.77663C14.713 3.71194 14.5814 3.67945 14.4142 3.67945C14.3068 3.67945 14.2082 3.68546 14.1185 3.6972C14.0288 3.70893 13.9419 3.7324 13.8585 3.7676C13.7389 3.81514 13.6166 3.87682 13.4908 3.95324C13.3654 4.02996 13.2248 4.13316 13.0697 4.26283C13.3682 4.34527 13.6102 4.40424 13.7957 4.43944ZM12.4421 5.5355C12.4302 5.5355 12.3883 5.52648 12.3166 5.50903C12.2449 5.49127 12.1613 5.47653 12.0658 5.4648C12.0057 5.5707 11.952 5.66819 11.9044 5.75634C11.8565 5.84479 11.8086 5.93626 11.761 6.03043C11.7009 6.16041 11.6444 6.29279 11.5907 6.42818C11.5367 6.56387 11.4857 6.714 11.4381 6.87888C11.3783 7.07926 11.3127 7.31815 11.241 7.59495C11.1693 7.87174 11.0915 8.2045 11.0079 8.59353C10.8046 9.47748 10.6344 10.1932 10.497 10.7411C10.3594 11.2893 10.231 11.74 10.1113 12.0935C10.0155 12.3529 9.91697 12.5737 9.81566 12.7563C9.71404 12.9393 9.60327 13.1189 9.48396 13.2955C9.43605 13.3545 9.38815 13.4134 9.34054 13.4724C9.29264 13.5314 9.24473 13.59 9.19712 13.649C8.58744 14.3798 7.83159 14.9542 6.92927 15.3727C6.02665 15.7906 5.06757 16 4.05174 16C2.85648 16 1.88245 15.6699 1.12935 15.0101C0.376551 14.35 0 13.4962 0 12.447C0 11.7165 0.203228 11.036 0.609683 10.4054C1.01583 9.77534 1.56571 9.28913 2.259 8.94705C2.43812 8.86491 2.62335 8.78819 2.81467 8.71718C3.0057 8.64648 3.20282 8.58209 3.40635 8.52282C3.64528 8.45212 3.88421 8.39917 4.12345 8.36366C4.36238 8.32846 4.57751 8.31071 4.76883 8.31071C5.07947 8.31071 5.3184 8.34892 5.48593 8.42564C5.65315 8.50236 5.73706 8.62331 5.73706 8.78819C5.73706 8.81196 5.73706 8.83512 5.73706 8.85859C5.73706 8.88236 5.73096 8.90583 5.71906 8.9293C5.70716 8.97683 5.68611 9.02377 5.6562 9.0707C5.6263 9.11794 5.57564 9.18293 5.50393 9.26537C5.44412 9.3478 5.39011 9.42723 5.34251 9.50395C5.2946 9.58068 5.2647 9.65409 5.2528 9.72479C5.2409 9.76029 5.23205 9.7985 5.22594 9.83972C5.21984 9.88124 5.21709 9.91915 5.21709 9.95466C5.21709 10.1788 5.32481 10.3819 5.53994 10.5645C5.75507 10.7474 5.994 10.8386 6.25704 10.8386C6.28084 10.8386 6.30189 10.8386 6.31959 10.8386C6.33759 10.8386 6.35834 10.8386 6.38245 10.8386C6.71689 10.8148 7.04279 10.7089 7.35953 10.5203C7.67597 10.3319 7.93595 10.0846 8.13949 9.77774C8.21119 9.67184 8.27985 9.55992 8.34546 9.44198C8.41107 9.32434 8.47393 9.19436 8.53374 9.05325C8.62925 8.85287 8.72781 8.6173 8.82973 8.34591C8.93104 8.07513 9.04181 7.7511 9.16142 7.37381C9.22093 7.18546 9.27463 7.0233 9.32254 6.8876C9.37014 6.75251 9.41225 6.62555 9.44826 6.50791C9.47206 6.44894 9.49586 6.39298 9.51997 6.33972C9.54377 6.28677 9.56757 6.23111 9.59168 6.17184C9.66339 6.00696 9.75585 5.82434 9.86936 5.62366C9.98288 5.42358 10.1412 5.1528 10.3445 4.81071C9.91422 4.69307 9.58527 4.60732 9.35855 4.55437C9.13121 4.50142 8.92829 4.46923 8.74886 4.45719C8.70096 4.44546 8.65305 4.43944 8.60545 4.43944C8.55754 4.43944 8.50963 4.43944 8.46203 4.43944C8.12728 4.43944 7.84624 4.51616 7.61952 4.6693C7.39218 4.82275 7.27897 5.01711 7.27897 5.25269C7.27897 5.4293 7.32047 5.54423 7.40439 5.59748C7.48769 5.65043 7.66132 5.68293 7.92436 5.69436C7.99607 5.69436 8.05252 5.71813 8.09463 5.76506C8.13643 5.8126 8.15718 5.87729 8.15718 5.95973C8.15718 6.07767 8.11538 6.20132 8.03177 6.331C7.94816 6.46067 7.81664 6.6078 7.63752 6.77267C7.23106 7.12649 6.82156 7.38885 6.4093 7.55944C5.99705 7.73034 5.55764 7.81578 5.09168 7.81578C4.36238 7.81578 3.74964 7.5802 3.25409 7.10874C2.75792 6.63758 2.50983 6.04216 2.50983 5.32339C2.50983 4.41597 2.90439 3.63522 3.69319 2.98113C4.482 2.32704 5.42032 2 6.50787 2C6.61558 2 6.72299 2.00331 6.83071 2.00903C6.93812 2.01504 7.04584 2.02377 7.15325 2.0355C7.5118 2.0707 7.8911 2.15013 8.29175 2.27409C8.69211 2.39775 9.21513 2.59542 9.86051 2.8662C10.0994 2.96067 10.2935 3.04281 10.443 3.11351C10.5926 3.18452 10.7329 3.2492 10.8644 3.30817C10.8763 3.30817 10.8882 3.31118 10.9005 3.3172C10.912 3.32322 10.9243 3.33194 10.9362 3.34338C11.0079 3.37888 11.0823 3.41408 11.1604 3.44958C11.2379 3.48509 11.3243 3.5263 11.4201 3.57324C11.9581 3.09035 12.5345 2.72479 13.1503 2.47748C13.7658 2.22986 14.4203 2.10621 15.1136 2.10621C15.914 2.10621 16.5951 2.29184 17.1572 2.66311C17.719 3.03408 18 3.4908 18 4.03297C18 4.61033 17.7458 5.08209 17.238 5.44705C16.7297 5.8126 16.0696 5.99493 15.2567 5.99493C14.994 5.99493 14.7487 5.9835 14.5219 5.95973C14.2946 5.93626 14.0737 5.90076 13.8585 5.85352L13.3923 5.74761L12.9083 5.64141L12.4421 5.5355Z"
+					fill="currentColor"
+				/>
+			</svg>
+		</div>
+	</div>
+
+	<!-- Tabs -->
+	<nav class="relative flex items-center gap-1.5 h-full min-w-0 ml-9.25 max-w-[calc(100%-268px)]">
+		<ul class="flex size-full min-w-0" style="max-width: calc({82 + 192 * 8}px);">
+			{@render tgHomeTab({ active: tabs[0].active })}
+			{#if ready}
+				{#each $tabStore as { active, id, title }, i (id)}
+					{@render tgTab({ active, id, index: i, title })}
+				{/each}
+			{/if}
+		</ul>
+		<button
+			onclick={addTab}
+			class="flex items-center justify-center shrink-0 size-7 text-zinc-300 hover:text-white hover:bg-primary-600 rounded-full transition-colors"
+			title="Create New"
+			disabled={$tabStore?.length == 18}
+		>
+			<Plus />
+		</button>
+	</nav>
+
+	<!-- Settings, Close, Min, Max -->
+	<div class="absolute top-0 bottom-0 right-0 flex">
+		<div class="py-1.5 flex gap-1">
+			<button
+				class="h-full px-2 rounded-md text-green-400 hover:bg-primary-600 animate-pulse hover:animate-none transition-[background-color]"
+				title="Apply Update"
+			>
+				<DownloadMinimalistic size={18} />
+			</button>
+			<button
+				class="h-full px-2 rounded-lg text-primary-400 hover:text-white hover:bg-primary-600 transition-[background-color]"
+				class:text-white!={focused}
+				title="Settings"
+			>
+				<Settings size={18} />
+			</button>
+		</div>
+		<div class="flex h-full">
+			<button
+				onclick={mainWindow.minimize}
+				class="w-11.5 h-full flex items-center justify-center text-primary-400 hover:text-white hover:bg-primary-700 transition-[background-color]"
+				class:text-white!={focused}
+				aria-label="minimze"
+				title="Minimize"
+				tabindex="-1"
+			>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					width="10"
+					height="2"
+					viewBox="0 0 10 2"
+					fill="none"
+				>
+					<path
+						d="M0.498047 1C0.429688 1 0.364583 0.986979 0.302734 0.960938C0.244141 0.934896 0.192057 0.899089 0.146484 0.853516C0.100911 0.807943 0.0651042 0.755859 0.0390625 0.697266C0.0130208 0.635417 0 0.570312 0 0.501953C0 0.433594 0.0130208 0.370117 0.0390625 0.311523C0.0651042 0.249674 0.100911 0.195964 0.146484 0.150391C0.192057 0.101562 0.244141 0.0641276 0.302734 0.0380859C0.364583 0.0120443 0.429688 -0.000976562 0.498047 -0.000976562H9.50195C9.57031 -0.000976562 9.63379 0.0120443 9.69238 0.0380859C9.75423 0.0641276 9.80794 0.101562 9.85352 0.150391C9.89909 0.195964 9.9349 0.249674 9.96094 0.311523C9.98698 0.370117 10 0.433594 10 0.501953C10 0.570312 9.98698 0.635417 9.96094 0.697266C9.9349 0.755859 9.89909 0.807943 9.85352 0.853516C9.80794 0.899089 9.75423 0.934896 9.69238 0.960938C9.63379 0.986979 9.57031 1 9.50195 1H0.498047Z"
+						fill="currentColor"
+					/>
+				</svg>
+			</button>
+			<button
+				onclick={mainWindow.toggleMaximize}
+				class="w-11.5 h-full flex items-center justify-center text-primary-400 hover:text-white hover:bg-primary-700 transition-[background-color]"
+				class:text-white!={focused}
+				aria-label="maximize"
+				title={isMax ? 'Restore' : 'Maximize'}
+				tabindex="-1"
+			>
+				{#if !isMax}
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="10"
+						height="10"
+						viewBox="0 0 10 10"
+						fill="none"
+					>
+						<path
+							d="M1.47461 10C1.2793 10 1.09212 9.96094 0.913086 9.88281C0.734049 9.80143 0.576172 9.69401 0.439453 9.56055C0.30599 9.42383 0.198568 9.26595 0.117188 9.08691C0.0390625 8.90788 0 8.7207 0 8.52539V1.47461C0 1.2793 0.0390625 1.09212 0.117188 0.913086C0.198568 0.734049 0.30599 0.577799 0.439453 0.444336C0.576172 0.307617 0.734049 0.200195 0.913086 0.12207C1.09212 0.0406901 1.2793 0 1.47461 0H8.52539C8.7207 0 8.90788 0.0406901 9.08691 0.12207C9.26595 0.200195 9.4222 0.307617 9.55566 0.444336C9.69238 0.577799 9.7998 0.734049 9.87793 0.913086C9.95931 1.09212 10 1.2793 10 1.47461V8.52539C10 8.7207 9.95931 8.90788 9.87793 9.08691C9.7998 9.26595 9.69238 9.42383 9.55566 9.56055C9.4222 9.69401 9.26595 9.80143 9.08691 9.88281C8.90788 9.96094 8.7207 10 8.52539 10H1.47461ZM8.50098 8.99902C8.56934 8.99902 8.63281 8.986 8.69141 8.95996C8.75326 8.93392 8.80697 8.89811 8.85254 8.85254C8.89811 8.80697 8.93392 8.75488 8.95996 8.69629C8.986 8.63444 8.99902 8.56934 8.99902 8.50098V1.49902C8.99902 1.43066 8.986 1.36719 8.95996 1.30859C8.93392 1.24674 8.89811 1.19303 8.85254 1.14746C8.80697 1.10189 8.75326 1.06608 8.69141 1.04004C8.63281 1.014 8.56934 1.00098 8.50098 1.00098H1.49902C1.43066 1.00098 1.36556 1.014 1.30371 1.04004C1.24512 1.06608 1.19303 1.10189 1.14746 1.14746C1.10189 1.19303 1.06608 1.24674 1.04004 1.30859C1.014 1.36719 1.00098 1.43066 1.00098 1.49902V8.50098C1.00098 8.56934 1.014 8.63444 1.04004 8.69629C1.06608 8.75488 1.10189 8.80697 1.14746 8.85254C1.19303 8.89811 1.24512 8.93392 1.30371 8.95996C1.36556 8.986 1.43066 8.99902 1.49902 8.99902H8.50098Z"
+							fill="currentColor"
+						/>
+					</svg>
+				{:else}
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="10"
+						height="10"
+						viewBox="0 0 10 10"
+						fill="none"
+					>
+						<path
+							d="M8.99902 2.96387C8.99902 2.69368 8.94531 2.43978 8.83789 2.20215C8.73047 1.96126 8.58398 1.75293 8.39844 1.57715C8.21615 1.39811 8.00293 1.25814 7.75879 1.15723C7.5179 1.05306 7.264 1.00098 6.99707 1.00098H2.08496C2.13704 0.851237 2.21029 0.714518 2.30469 0.59082C2.39909 0.467122 2.50814 0.361328 2.63184 0.273438C2.75553 0.185547 2.89062 0.118815 3.03711 0.0732422C3.18685 0.0244141 3.34147 0 3.50098 0H6.99707C7.41048 0 7.79948 0.0797526 8.16406 0.239258C8.52865 0.395508 8.84603 0.608724 9.11621 0.878906C9.38965 1.14909 9.60449 1.46647 9.76074 1.83105C9.92025 2.19564 10 2.58464 10 2.99805V6.49902C10 6.65853 9.97559 6.81315 9.92676 6.96289C9.88118 7.10938 9.81445 7.24447 9.72656 7.36816C9.63867 7.49186 9.53288 7.60091 9.40918 7.69531C9.28548 7.78971 9.14876 7.86296 8.99902 7.91504V2.96387ZM1.47461 10C1.2793 10 1.09212 9.96094 0.913086 9.88281C0.734049 9.80143 0.576172 9.69401 0.439453 9.56055C0.30599 9.42383 0.198568 9.26595 0.117188 9.08691C0.0390625 8.90788 0 8.7207 0 8.52539V3.47656C0 3.27799 0.0390625 3.09082 0.117188 2.91504C0.198568 2.736 0.30599 2.57975 0.439453 2.44629C0.576172 2.30957 0.732422 2.20215 0.908203 2.12402C1.08724 2.04264 1.27604 2.00195 1.47461 2.00195H6.52344C6.72201 2.00195 6.91081 2.04264 7.08984 2.12402C7.26888 2.20215 7.42513 2.30794 7.55859 2.44141C7.69206 2.57487 7.79785 2.73112 7.87598 2.91016C7.95736 3.08919 7.99805 3.27799 7.99805 3.47656V8.52539C7.99805 8.72396 7.95736 8.91276 7.87598 9.0918C7.79785 9.26758 7.69043 9.42383 7.55371 9.56055C7.42025 9.69401 7.264 9.80143 7.08496 9.88281C6.90918 9.96094 6.72201 10 6.52344 10H1.47461ZM6.49902 8.99902C6.56738 8.99902 6.63086 8.986 6.68945 8.95996C6.7513 8.93392 6.80501 8.89811 6.85059 8.85254C6.89941 8.80697 6.93685 8.75488 6.96289 8.69629C6.98893 8.63444 7.00195 8.56934 7.00195 8.50098V3.50098C7.00195 3.43262 6.98893 3.36751 6.96289 3.30566C6.93685 3.24382 6.90104 3.1901 6.85547 3.14453C6.8099 3.09896 6.75618 3.06315 6.69434 3.03711C6.63249 3.01107 6.56738 2.99805 6.49902 2.99805H1.49902C1.43066 2.99805 1.36556 3.01107 1.30371 3.03711C1.24512 3.06315 1.19303 3.10059 1.14746 3.14941C1.10189 3.19499 1.06608 3.2487 1.04004 3.31055C1.014 3.36914 1.00098 3.43262 1.00098 3.50098V8.50098C1.00098 8.56934 1.014 8.63444 1.04004 8.69629C1.06608 8.75488 1.10189 8.80697 1.14746 8.85254C1.19303 8.89811 1.24512 8.93392 1.30371 8.95996C1.36556 8.986 1.43066 8.99902 1.49902 8.99902H6.49902Z"
+							fill="currentColor"
+						/>
+					</svg>
+				{/if}
+			</button>
+			<button
+				onclick={mainWindow.close}
+				class="w-11.5 h-full flex items-center justify-center text-primary-400 hover:text-white hover:bg-close transition-[background-color]"
+				class:text-white!={focused}
+				aria-label="close"
+				title="Close"
+				tabindex="-1"
+			>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					width="10"
+					height="10"
+					viewBox="0 0 10 10"
+					fill="none"
+				>
+					<path
+						d="M5 5.70801L0.854492 9.85352C0.756836 9.95117 0.639648 10 0.50293 10C0.359701 10 0.239258 9.9528 0.141602 9.8584C0.0472005 9.76074 0 9.6403 0 9.49707C0 9.36035 0.0488281 9.24316 0.146484 9.14551L4.29199 5L0.146484 0.854492C0.0488281 0.756836 0 0.638021 0 0.498047C0 0.429688 0.0130208 0.364583 0.0390625 0.302734C0.0651042 0.240885 0.100911 0.188802 0.146484 0.146484C0.192057 0.100911 0.245768 0.0651042 0.307617 0.0390625C0.369466 0.0130208 0.43457 0 0.50293 0C0.639648 0 0.756836 0.0488281 0.854492 0.146484L5 4.29199L9.14551 0.146484C9.24316 0.0488281 9.36198 0 9.50195 0C9.57031 0 9.63379 0.0130208 9.69238 0.0390625C9.75423 0.0651042 9.80794 0.100911 9.85352 0.146484C9.89909 0.192057 9.9349 0.245768 9.96094 0.307617C9.98698 0.366211 10 0.429688 10 0.498047C10 0.638021 9.95117 0.756836 9.85352 0.854492L5.70801 5L9.85352 9.14551C9.95117 9.24316 10 9.36035 10 9.49707C10 9.56543 9.98698 9.63053 9.96094 9.69238C9.9349 9.75423 9.89909 9.80794 9.85352 9.85352C9.8112 9.89909 9.75911 9.9349 9.69727 9.96094C9.63542 9.98698 9.57031 10 9.50195 10C9.36198 10 9.24316 9.95117 9.14551 9.85352L5 5.70801Z"
+						fill="currentColor"
+					/>
+				</svg>
+			</button>
+		</div>
+	</div>
+</div>
+
+<style>
+	li {
+		&:not(.active):hover {
+			> div {
+				background-color: var(--color-slate-600);
+				transition: background-color 150ms;
+			}
+
+			&::after {
+				opacity: 0;
+			}
+		}
+
+		&:has(+ li:hover)::after {
+			opacity: 0;
+		}
+		&:has(+ li.active)::after {
+			display: none;
+		}
+
+		&:not(.active)::after {
+			content: '';
+			position: absolute;
+			top: 12px;
+			bottom: 12px;
+			right: -1px;
+			background-color: var(--color-primary-700);
+			width: 2px;
+			transition: opacity 140ms ease-in-out;
+		}
+	}
+</style>

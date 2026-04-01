@@ -1,0 +1,57 @@
+/* --color-primary: #1e1e1e;
+	--color-secondary: #282b30; */
+
+body {
+	background-color: var(--color-primary-800);
+}
+
+::-webkit-scrollbar {
+	width: 16px;
+	height: 16px;
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+	border: 6px solid transparent;
+	background-color: var(--color-primary-400);
+	border-radius: 8px;
+	background-clip: content-box;
+}
+
+::-webkit-scrollbar-corner {
+	background: transparent;
+}
+
+#app {
+	display: contents;
+	position: relative;
+
+	> * {
+		user-select: none;
+	}
+}
+
+img,
+svg {
+	user-select: none;
+	pointer-events: none;
+}
+
+/* hljs xml highlighting */
+.language-xml {
+	color: var(--color-orange-300);
+	* {
+		user-select: unset !important;
+	}
+}
+
+.hljs-tag {
+	color: var(--color-zinc-500);
+}
+
+.hljs-name {
+	color: var(--color-slate-300);
+}
