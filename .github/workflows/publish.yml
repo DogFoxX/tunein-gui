@@ -1,0 +1,44 @@
+name: 'publish'
+
+on:
+    workflow_dispatch:
+        inputs:
+            keyPassword:
+                description: 'Key Password'
+                required: true
+                type: string
+
+jobs:
+    build-tauri:
+        permissions:
+            contents: write
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - platform: 'windows-latest'
+                      args: ''
+
+        runs-on: ${{ matrix.platform }}
+        steps:
+            - uses: nschloe/action-cached-lfs-checkout@v1.2.3
+            - name: setup node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: lts/*
+            - name: install Rust stable
+              uses: dtolnay/rust-toolchain@stable
+            - name: install frontend dependencies
+              run: npm install
+            - uses: tauri-apps/tauri-action@v0
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+                  TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ inputs.keyPassword }}
+              with:
+                  tagName: v__VERSION__
+                  releaseName: 'Tunein GUI v__VERSION__'
+                  releaseBody: 'See the assets to download this version and install.'
+                  releaseDraft: true
+                  prerelease: false
+                  args: ${{ matrix.args }}

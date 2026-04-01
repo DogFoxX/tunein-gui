@@ -3,6 +3,15 @@
 	"private": true,
 	"version": "0.0.0",
 	"type": "module",
+	"author": {
+		"name": "DogFoxX"
+	},
+	"repository": {
+		"url": "https://github.com/DogFoxX/tunein-gui",
+		"type": "git"
+	},
+	"description": "An unofficial GUI for TuneinCrew by FTIW",
+	"license": "GPL-3.0-only",
 	"scripts": {
 		"dev": "tauri dev",
 		"tauri": "tauri",
