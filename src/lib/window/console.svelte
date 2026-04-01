@@ -10,8 +10,9 @@
 
 	// Icons
 	import { AltArrowUp } from '@solar-icons/svelte/Outline';
+	import { Upload, TrashBinTrash } from '@solar-icons/svelte/Bold';
 
-	let console = $state<HTMLElement>();
+	let consoleComp = $state<HTMLElement>();
 	let consoleOpen = $state(false);
 
 	let errorCount = $derived($logger.filter((l) => l.includes('ERR')).length);
@@ -49,31 +50,33 @@
 	}
 
 	$effect(() => {
-		if (console && $logger) console.scrollTop = console.scrollHeight;
+		if (consoleComp && $logger) consoleComp.scrollTop = consoleComp.scrollHeight;
 	});
 </script>
 
 <div class="flex relative flex-col">
 	<div class="flex items-center gap-4 p-2">
 		<span class="text-xs text-white">Logs</span>
-		<div class="flex gap-2">
-			{#if errorCount > 0}
-				<div
-					class="flex items-center justify-center size-5 bg-red-600 rounded-full"
-					title="{errorCount} errors found"
-				>
-					<span class="text-xs text-white font-semibold">{errorCount}</span>
-				</div>
-			{/if}
-			{#if warnCount > 0}
-				<div
-					class="flex items-center justify-center size-5 bg-orange-400 rounded-full"
-					title="{warnCount} errors found"
-				>
-					<span class="text-xs text-white font-semibold">{warnCount}</span>
-				</div>
-			{/if}
-		</div>
+		{#if errorCount > 0 || warnCount > 0}
+			<div class="flex gap-2">
+				{#if errorCount > 0}
+					<div
+						class="flex items-center justify-center size-5 bg-red-600 rounded-full animate-pulse"
+						title="{errorCount} errors found"
+					>
+						<span class="text-xs text-white font-semibold">{errorCount}</span>
+					</div>
+				{/if}
+				{#if warnCount > 0}
+					<div
+						class="flex items-center justify-center size-5 bg-orange-400 rounded-full"
+						title="{warnCount} errors found"
+					>
+						<span class="text-xs text-white font-semibold">{warnCount}</span>
+					</div>
+				{/if}
+			</div>
+		{/if}
 		<button
 			onclick={() => (consoleOpen = !consoleOpen)}
 			class="h-full px-2 py-1 text-primary-400 hover:text-white hover:bg-primary-600 rounded-md transition-colors"
@@ -81,12 +84,26 @@
 		>
 			<AltArrowUp class="transition-all {consoleOpen && 'rotate-180'}" />
 		</button>
+		<button
+			onclick={logger.export}
+			class="flex items-center gap-1.5 h-full px-2 py-1 text-primary-400 hover:text-white hover:bg-primary-600 rounded-md transition-colors"
+		>
+			<Upload />
+			<span class="text-xs">Export Logs</span>
+		</button>
+		<button
+			onclick={logger.clear}
+			class="flex items-center gap-1.5 h-full px-2 py-1 text-primary-400 hover:text-white hover:bg-primary-600 rounded-md transition-colors"
+		>
+			<TrashBinTrash />
+			<span class="text-xs">Clear Logs</span>
+		</button>
 	</div>
 	{#if consoleOpen}
-		<div transition:slide class="relative h-42 w-full">
+		<div transition:slide class="relative flex flex-col h-42 w-full">
 			<div
-				bind:this={console}
-				class="absolute top-0 bottom-2 left-2 right-0 overflow-auto cursor-text select-text"
+				bind:this={consoleComp}
+				class="size-full p-2 overflow-y-scroll cursor-text select-text"
 				tabindex="-1"
 			>
 				<code class="text-xs text-zinc-300">

@@ -1,5 +1,8 @@
 import { writable } from 'svelte/store';
 
+import { save } from '@tauri-apps/plugin-dialog';
+import { writeTextFile } from '@tauri-apps/plugin-fs';
+
 function getTime() {
 	const now = new Date();
 	return `[${now.toTimeString().slice(0, 8)}]`;
@@ -44,11 +47,29 @@ function createLogger() {
 		});
 	}
 
+	let currentLogs: string;
+
+	subscribe((logs) => {
+		currentLogs = logs.join('\n');
+	});
+
 	return {
 		subscribe,
 		clear() {
 			set([]);
 			lastIndex = null;
+		},
+		async export() {
+			const saveLoc = await save({
+				canCreateDirectories: true,
+				defaultPath: 'tunein-gui.log',
+				filters: [{ extensions: ['log'], name: 'Log File' }],
+				title: 'Save Logs As'
+			});
+
+			if (!saveLoc || !currentLogs) return;
+
+			await writeTextFile(saveLoc, currentLogs);
 		},
 		info(...msgs: MessageInput[]) {
 			push('INFO', ...msgs);

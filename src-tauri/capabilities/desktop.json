@@ -10,6 +10,7 @@
 		"fs:allow-copy-file",
 		"fs:allow-read-file",
 		"fs:allow-write-file",
+		"fs:allow-write-text-file",
 		"fs:allow-temp-read",
 		"fs:allow-temp-write",
 		"fs:allow-app-write",
