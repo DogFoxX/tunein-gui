@@ -5,7 +5,13 @@ interface Window {
 	openedFile?: string;
 }
 
-interface NexusModType {
+interface TgTabs {
+	active: boolean;
+	id: string;
+	title?: string;
+}
+
+interface NexusMods {
 	modId: number;
 	name: string;
 	pictureUrl: string;
@@ -34,4 +40,18 @@ interface XMLData {
 			};
 		};
 	};
+}
+
+interface TgSettings {
+	tuneinCrew?: {
+		version: string;
+		dir: string;
+	};
+	fmodDir?: string;
+	autoUpdate: {
+		gui: boolean;
+		tuneinCrew: boolean;
+	};
+	keepTabs: boolean;
+	logsDefaultOpen: boolean;
 }

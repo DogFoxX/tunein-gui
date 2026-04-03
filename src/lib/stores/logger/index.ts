@@ -3,20 +3,17 @@ import { writable } from 'svelte/store';
 import { save } from '@tauri-apps/plugin-dialog';
 import { writeTextFile } from '@tauri-apps/plugin-fs';
 
+import type { MessageInput } from './types';
+
 function getTime() {
 	const now = new Date();
 	return `[${now.toTimeString().slice(0, 8)}]`;
 }
 
-// Accept strings and arrays of strings
-type MessageInput = string | string[];
-
 function format(level: string | null, ...msgs: MessageInput[]) {
-	// Flatten and normalize
 	const flattened: string[] = msgs.flat(Infinity).map(String);
 
 	if (!level) {
-		// plain log — no timestamp or prefix
 		return flattened.join('\n');
 	}
 
@@ -67,7 +64,7 @@ function createLogger() {
 				title: 'Save Logs As'
 			});
 
-			if (!saveLoc || !currentLogs) return;
+			if (!saveLoc) return;
 
 			await writeTextFile(saveLoc, currentLogs);
 		},

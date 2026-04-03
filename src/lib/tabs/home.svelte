@@ -7,7 +7,7 @@
 	import { openUrl } from '@tauri-apps/plugin-opener';
 
 	// Components
-	import { Sonar } from '$assets/tg-icons/loaders';
+	import { Sonar } from '$assets/loaders';
 
 	// Utils
 	import { fetchMods } from '$lib/utils';
@@ -27,25 +27,25 @@
 	<div class="flex grow gap-10 overflow-hidden">
 		<div class="flex flex-col gap-4 grow">
 			<header class="text-4xl text-white font-semibold">Get Started</header>
-			<ul class="flex flex-col">
+			<ul class="flex flex-col gap-2 px-1">
 				<li>
 					<button
-						class="flex w-full py-2 text-zinc-400 hover:text-white transition-colors"
+						class="flex w-full py-1 text-zinc-400 hover:text-white rounded-lg transition-colors"
 						>Open File...</button
 					>
 				</li>
 				<li>
 					<button
 						onclick={importXML}
-						class="flex w-full py-2 text-zinc-400 hover:text-white transition-colors"
+						class="flex w-full py-1 text-zinc-400 hover:text-white rounded-lg transition-colors"
 						>Import XML...</button
 					>
 				</li>
 			</ul>
 		</div>
 		<hr class="w-px h-full bg-primary-500" />
-		<div id="tg-profiles" class="grid grid-cols-4 gap-1 h-full overflow-y-scroll">
-			<button class="flex flex-col gap-2 h-36 w-36 px-4 py-2">
+		<div id="tg-profiles" class="grid grid-cols-4 gap-1 h-full p-1 overflow-y-scroll">
+			<button class="flex flex-col gap-2 h-34 w-34 px-4 py-2 rounded-lg">
 				<span
 					class="tg-profile-tile flex items-center justify-center grow w-full text-sky-500 bg-sky-900 border border-sky-600 rounded-xl transition-colors"
 				>
@@ -66,7 +66,7 @@
 			{:then data}
 				{@const nexusUrl = 'https://www.nexusmods.com/games/thecrew/mods?tag=Music'}
 
-				<div class="flex gap-4 h-full py-2 overflow-x-scroll">
+				<div class="flex gap-4 h-full p-1 overflow-x-scroll">
 					{#each data as { author, endorsements, modId, name, pictureUrl }}
 						{@const modUrl = `https://www.nexusmods.com/thecrew/mods/${modId}`}
 

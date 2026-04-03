@@ -6,8 +6,7 @@
 	import { getCurrentWindow } from '@tauri-apps/api/window';
 
 	// Stores
-	import { tabState, tabStore } from '$lib/stores/tabs';
-	import type { TabType } from '$lib/stores/tabs/types';
+	import { settings, tabStore } from '$lib/stores';
 
 	// Utils
 	import { tgSlide } from '$lib/utils';
@@ -19,14 +18,14 @@
 	const mainWindow = getCurrentWindow();
 	let isMax = $state<boolean>();
 	let focused = $state<boolean>();
-	let tabs = $derived<TabType[]>([
+	let tabs = $derived<TgTabs[]>([
 		{
 			active: !$tabStore?.some(({ active }) => active),
 			id: 'home'
 		},
 		...$tabStore
 	]);
-	let ready = $state(false);
+	const { isOpen } = settings;
 
 	onMount(async () => {
 		await mainWindow.onFocusChanged(({ payload: focus }) => {
@@ -38,62 +37,7 @@
 		await mainWindow.onResized(async () => {
 			isMax = await mainWindow.isMaximized();
 		});
-
-		(await tabState()).init();
-
-		await tick();
-
-		ready = true;
 	});
-
-	// Tab Functions
-	function activateTab(id: string) {
-		if (id === 'home') {
-			tabStore?.update((tabs) => tabs.map((t) => ({ ...t, active: false })));
-			return;
-		}
-
-		tabStore?.update((tabs) =>
-			tabs.map((t) => ({
-				...t,
-				active: t.id === id
-			}))
-		);
-	}
-
-	async function addTab() {
-		tabStore.update((tabs) => [...tabs.map((t) => ({ ...t, active: false }))]);
-
-		tabStore?.update((tabs) => [
-			...tabs,
-			{
-				title: `Untitled Radio ${tabs.length + 1}`,
-				id: crypto.randomUUID(),
-				active: true
-			}
-		]);
-	}
-
-	function closeTab(id: string) {
-		tabStore?.update((tabs) => {
-			const index = tabs.findIndex((t) => t.id === id);
-			if (index === -1) return tabs;
-
-			const wasActive = tabs[index].active;
-			const newTabs = tabs.filter((t) => t.id !== id);
-
-			// If closed tab was NOT active → do nothing else
-			if (!wasActive) return newTabs;
-
-			// If it WAS active → activate previous sibling
-			const newActiveIndex = Math.max(0, index - 1);
-
-			return newTabs.map((t, i) => ({
-				...t,
-				active: i === newActiveIndex
-			}));
-		});
-	}
 </script>
 
 <!-- Tab snippets -->
@@ -101,10 +45,12 @@
 	<li class="relative flex items-center h-full shrink min-w-20.5" class:active role="tab">
 		<button
 			onmousedown={() => {
-				activateTab('home');
+				tabStore.activate('home');
 			}}
 			class="flex gap-2 items-center justify-center size-full text-xs text-primary-300"
 			class:text-white!={active}
+			disabled={$isOpen}
+			tabIndex="-1"
 		>
 			<Home2 size={18} />
 			<span>Home</span>
@@ -145,7 +91,7 @@
 {#snippet tgTab({
 	active,
 	id,
-	title
+	title = 'Untitled'
 }: {
 	active: boolean;
 	id: string;
@@ -153,7 +99,7 @@
 	title?: string;
 })}
 	<li
-		in:tgSlide={ready ? { duration: 120 } : undefined}
+		in:tgSlide={{ duration: 120 }}
 		out:tgSlide={{ duration: 150 }}
 		class="relative flex items-center h-full shrink min-w-0"
 		class:active
@@ -161,11 +107,13 @@
 	>
 		<button
 			onmousedown={() => {
-				activateTab(id);
+				tabStore.activate(id);
 			}}
 			class="flex gap-2 items-center h-full w-48 text-xs text-primary-300 pl-3 pr-6 overflow-hidden"
 			class:text-white!={active}
 			{title}
+			disabled={$isOpen}
+			tabIndex="-1"
 		>
 			<span class="truncate">{title}</span>
 		</button>
@@ -200,8 +148,9 @@
 			{/if}
 		</div>
 		<button
-			onclick={() => closeTab(id)}
+			onclick={() => tabStore.close(id)}
 			class="absolute right-2.25 text-zinc-300 hover:text-white hover:bg-slate-500 p-0.5 rounded-full transition-colors"
+			tabIndex="-1"
 		>
 			<Close size={13} />
 		</button>
@@ -229,18 +178,18 @@
 	<!-- Tabs -->
 	<nav class="relative flex items-center gap-1.5 h-full min-w-0 ml-9.25 max-w-[calc(100%-268px)]">
 		<ul class="flex size-full min-w-0" style="max-width: calc({82 + 192 * 8}px);">
-			{@render tgHomeTab({ active: tabs[0].active })}
-			{#if ready}
+			{#await tabStore.init() then _}
+				{@render tgHomeTab({ active: tabs[0].active })}
 				{#each $tabStore as { active, id, title }, i (id)}
 					{@render tgTab({ active, id, index: i, title })}
 				{/each}
-			{/if}
+			{/await}
 		</ul>
 		<button
-			onclick={addTab}
-			class="flex items-center justify-center shrink-0 size-7 text-zinc-300 hover:text-white hover:bg-primary-600 rounded-full transition-colors"
+			onclick={tabStore.add}
+			class="flex items-center justify-center shrink-0 size-7 text-primary-300 hover:text-white hover:bg-primary-600 rounded-full transition-colors"
 			title="Create New"
-			disabled={$tabStore?.length == 18}
+			disabled={$tabStore?.length == 18 || $isOpen}
 		>
 			<Plus />
 		</button>
@@ -250,15 +199,17 @@
 	<div class="absolute top-0 bottom-0 right-0 flex">
 		<div class="py-1.5 flex gap-1">
 			<button
-				class="h-full px-2 rounded-md text-green-400 hover:bg-primary-600 animate-pulse hover:animate-none transition-[background-color]"
+				class="h-full px-2 rounded-md text-green-400 hover:bg-primary-700 hover:animate-none transition-[background-color]"
 				title="Apply Update"
 			>
-				<DownloadMinimalistic size={18} />
+				<DownloadMinimalistic size={18} class="animate-pulse" />
 			</button>
 			<button
-				class="h-full px-2 rounded-lg text-primary-400 hover:text-white hover:bg-primary-600 transition-[background-color]"
+				onclick={settings.open}
+				class="h-full px-2 rounded-lg text-primary-400 hover:text-white hover:bg-primary-700 transition-[background-color]"
 				class:text-white!={focused}
 				title="Settings"
+				disabled={$isOpen}
 			>
 				<Settings size={18} />
 			</button>

@@ -5,15 +5,18 @@
 	// Tauri Imports
 	import { openPath } from '@tauri-apps/plugin-opener';
 
-	// Logger Store
-	import { logger } from '$lib/utils';
+	// Stores
+	import logger from '$lib/stores/logger';
+	import { settings } from '$lib/stores';
 
 	// Icons
 	import { AltArrowUp } from '@solar-icons/svelte/Outline';
 	import { Upload, TrashBinTrash } from '@solar-icons/svelte/Bold';
 
+	let { consoleDefaultOpen }: { consoleDefaultOpen: boolean } = $props();
+
 	let consoleComp = $state<HTMLElement>();
-	let consoleOpen = $state(false);
+	let consoleOpen = $derived($settings.logsDefaultOpen ?? consoleDefaultOpen);
 
 	let errorCount = $derived($logger.filter((l) => l.includes('ERR')).length);
 	let warnCount = $derived($logger.filter((l) => l.includes('WARN')).length);
@@ -61,7 +64,7 @@
 			<div class="flex gap-2">
 				{#if errorCount > 0}
 					<div
-						class="flex items-center justify-center size-5 bg-red-600 rounded-full animate-pulse"
+						class="flex items-center justify-center size-5 bg-red-600 rounded-full"
 						title="{errorCount} errors found"
 					>
 						<span class="text-xs text-white font-semibold">{errorCount}</span>
@@ -87,6 +90,7 @@
 		<button
 			onclick={logger.export}
 			class="flex items-center gap-1.5 h-full px-2 py-1 text-primary-400 hover:text-white hover:bg-primary-600 rounded-md transition-colors"
+			disabled={!$logger.length}
 		>
 			<Upload />
 			<span class="text-xs">Export Logs</span>
@@ -94,6 +98,7 @@
 		<button
 			onclick={logger.clear}
 			class="flex items-center gap-1.5 h-full px-2 py-1 text-primary-400 hover:text-white hover:bg-primary-600 rounded-md transition-colors"
+			disabled={!$logger.length}
 		>
 			<TrashBinTrash />
 			<span class="text-xs">Clear Logs</span>

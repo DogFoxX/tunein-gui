@@ -16,7 +16,7 @@ body {
 
 ::-webkit-scrollbar-thumb {
 	border: 6px solid transparent;
-	background-color: var(--color-primary-400);
+	background-color: var(--color-primary-500);
 	border-radius: 8px;
 	background-clip: content-box;
 }
@@ -38,6 +38,22 @@ img,
 svg {
 	user-select: none;
 	pointer-events: none;
+}
+
+button:disabled {
+	opacity: 0.6;
+	pointer-events: none;
+}
+
+button:focus-visible {
+	outline: 2px white solid;
+	outline-offset: 2px;
+	transition: none;
+}
+
+input,
+button {
+	outline: none;
 }
 
 /* hljs xml highlighting */

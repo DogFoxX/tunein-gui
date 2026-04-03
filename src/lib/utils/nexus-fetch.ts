@@ -1,4 +1,4 @@
-let nexusMods: NexusModType[];
+let nexusMods: NexusMods[];
 
 const query = `query {
     mods(
@@ -35,7 +35,7 @@ async function fetchMods() {
 
 		const json = await res.json();
 
-		const mods: NexusModType[] = json.data.mods.nodes;
+		const mods: NexusMods[] = json.data.mods.nodes;
 
 		nexusMods = mods;
 	}

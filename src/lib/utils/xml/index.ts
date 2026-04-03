@@ -2,7 +2,7 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { readTextFile } from '@tauri-apps/plugin-fs';
 import { XMLParser } from 'fast-xml-parser';
 import z, { any, array, object, number, string, ZodIssueCode } from 'zod';
-import { logger } from '$lib/utils';
+import logger from '$lib/stores/logger';
 
 const SongSchema = object({
 	file: string(),

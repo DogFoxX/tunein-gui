@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 @theme {
-	--font-fluent-icons: 'Segoe Fluent Icons', 'Segoe MDL2 Assets';
+	--ease-in-out-expo: cubic-bezier(0.87, 0, 0.13, 1);
 
 	--color-primary-50: #fafafa;
 	--color-primary-100: #f3f4f6;
