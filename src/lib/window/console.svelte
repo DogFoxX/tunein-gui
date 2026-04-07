@@ -60,26 +60,6 @@
 <div class="flex relative flex-col">
 	<div class="flex items-center gap-4 p-2">
 		<span class="text-xs text-white">Logs</span>
-		{#if errorCount > 0 || warnCount > 0}
-			<div class="flex gap-2">
-				{#if errorCount > 0}
-					<div
-						class="flex items-center justify-center size-5 bg-red-600 rounded-full"
-						title="{errorCount} errors found"
-					>
-						<span class="text-xs text-white font-semibold">{errorCount}</span>
-					</div>
-				{/if}
-				{#if warnCount > 0}
-					<div
-						class="flex items-center justify-center size-5 bg-orange-400 rounded-full"
-						title="{warnCount} errors found"
-					>
-						<span class="text-xs text-white font-semibold">{warnCount}</span>
-					</div>
-				{/if}
-			</div>
-		{/if}
 		<button
 			onclick={() => (consoleOpen = !consoleOpen)}
 			class="h-full px-2 py-1 text-primary-400 hover:text-white hover:bg-primary-600 rounded-md transition-colors"
@@ -87,6 +67,22 @@
 		>
 			<AltArrowUp class="transition-all {consoleOpen && 'rotate-180'}" />
 		</button>
+		<div class="flex gap-2">
+			<div
+				class="flex items-center justify-center size-5 bg-red-600 rounded-full"
+				class:opacity-50={errorCount === 0}
+				title="{errorCount} error(s)"
+			>
+				<span class="text-xs text-white font-semibold">{errorCount}</span>
+			</div>
+			<div
+				class="flex items-center justify-center size-5 bg-orange-400 rounded-full"
+				class:opacity-50={warnCount === 0}
+				title="{warnCount} warning(s)"
+			>
+				<span class="text-xs text-white font-semibold">{warnCount}</span>
+			</div>
+		</div>
 		<button
 			onclick={logger.export}
 			class="flex items-center gap-1.5 h-full px-2 py-1 text-primary-400 hover:text-white hover:bg-primary-600 rounded-md transition-colors"

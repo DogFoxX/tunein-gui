@@ -2,8 +2,8 @@
 	"$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
 	"productName": "Tunein GUI",
 	"mainBinaryName": "tunein-gui",
-	"version": "0.9.1",
-	"identifier": "tunein-gui",
+	"version": "2.0.0",
+	"identifier": "com.tunein.gui",
 	"build": {
 		"frontendDist": "../dist",
 		"devUrl": "http://localhost:5173",
@@ -28,7 +28,7 @@
 			}
 		],
 		"security": {
-			"csp": "default-src 'self' tauri://localhost asset://localhost http://asset.localhost; script-src 'self' 'unsafe-inline' tauri://localhost; style-src 'self' 'unsafe-inline' tauri://localhost; img-src 'self' data: tauri://localhost asset://localhost http://asset.localhost; connect-src 'self' ipc://localhost http://ipc.localhost tauri://localhost asset://localhost;",
+			"csp": "default-src 'self' tauri://localhost asset://localhost http://asset.localhost; script-src 'self' 'unsafe-inline' tauri://localhost; style-src 'self' 'unsafe-inline' tauri://localhost; img-src 'self' data: https://* tauri://localhost asset://localhost http://asset.localhost; connect-src 'self' https://api.github.com ipc://localhost http://ipc.localhost tauri://localhost asset://localhost;",
 			"assetProtocol": {
 				"enable": true,
 				"scope": ["*/**"]
@@ -37,10 +37,18 @@
 	},
 	"bundle": {
 		"active": true,
+		"category": "Utility",
+		"homepage": "https://github.com/DogFoxX/tunein-gui",
+		"shortDescription": "An unofficial GUI for creating custom radio station mods for The Crew (2014)",
+		"license": "GPL-3.0",
 		"createUpdaterArtifacts": true,
 		"targets": ["app", "appimage", "nsis"],
 		"windows": {
-			"nsis": { "installMode": "currentUser", "installerIcon": "icons/icon.ico" },
+			"nsis": {
+				"installMode": "currentUser",
+				"installerIcon": "icons/icon.ico",
+				"installerHooks": "./windows/hooks.nsh"
+			},
 			"webviewInstallMode": {
 				"silent": true,
 				"type": "embedBootstrapper"
@@ -61,6 +69,10 @@
 			"icons/128x128@2x.png",
 			"icons/icon.png",
 			"icons/icon.ico"
+		],
+		"resources": [
+			"resources/FMOD_Designer_4.44.64_Minimal.zip",
+			"resources/dotnet-runtime-8.0.25-win-x64.exe"
 		]
 	},
 	"plugins": {

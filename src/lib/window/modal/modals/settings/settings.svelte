@@ -4,8 +4,12 @@
 
 	// Tauti Imports
 	import { open } from '@tauri-apps/plugin-dialog';
-	import { dirname, join } from '@tauri-apps/api/path';
-	import { exists } from '@tauri-apps/plugin-fs';
+	import { dirname, join, resolveResource } from '@tauri-apps/api/path';
+	import { exists, mkdir, readFile, writeFile } from '@tauri-apps/plugin-fs';
+
+	// Utils
+	import { unzipSync } from 'fflate';
+	import { tuneinCrewUpdater } from '$lib/utils/updates';
 
 	// Toggle Component Asset
 	import { Toggle } from '$assets';
@@ -16,11 +20,64 @@
 	// Icons
 	import { CheckCircle, CloseCircle, FolderOpen } from '@solar-icons/svelte/Bold';
 
+	// Loaders
+	import { Spinner } from '$assets/loaders';
+
 	let tempSettings = $state($settings);
 	let saved = $derived(JSON.stringify(tempSettings) === JSON.stringify($settings));
 
 	let tuneincrewInstalled = $state<boolean>();
+	let tuneinCrewInstalling = $state<Promise<string | null>>();
 	let fmodInstalled = $state<boolean>();
+	let fmodInstalling = $state<Promise<boolean>>();
+
+	async function installTuneinCrew() {
+		tuneinCrewInstalling = tuneinCrewUpdater.checkAndInstall(tempSettings.tuneinCrew.dir);
+
+		const version = await tuneinCrewInstalling;
+
+		if (version) {
+			$settings.tuneinCrew.version = version;
+			await settings.save($settings);
+		}
+
+		const tuneinCrewPath = await join(tempSettings.tuneinCrew.dir!, 'TuneinCrew.exe');
+
+		tuneincrewInstalled = await exists(tuneinCrewPath);
+	}
+
+	async function installFMOD() {
+		const fmodZipPath = await resolveResource('resources/FMOD_Designer_4.44.64_Minimal.zip');
+
+		const zipData = await readFile(fmodZipPath);
+
+		const files = unzipSync(zipData);
+
+		const entries = Object.keys(files);
+		const rootFolder = entries.every((p) => p.includes('/'))
+			? entries[0].split('/')[0] + '/'
+			: '';
+
+		for (const [path, data] of Object.entries(files)) {
+			if (!path.startsWith(rootFolder)) continue;
+
+			const relativePath = path.replace(rootFolder, '');
+			if (!relativePath) continue;
+
+			const outPath = await join(tempSettings.fmodDir!, relativePath);
+			const parentDir = await dirname(outPath);
+
+			await mkdir(parentDir, { recursive: true });
+
+			if (relativePath.endsWith('/')) continue;
+
+			await writeFile(outPath, data);
+		}
+
+		const fmodFilePath = await join(tempSettings.fmodDir!, 'fmod_designercl.exe');
+
+		return (fmodInstalled = await exists(fmodFilePath));
+	}
 
 	$effect(() => {
 		join(tempSettings.tuneinCrew!.dir, 'TuneinCrew.exe').then((exePath) => {
@@ -47,23 +104,50 @@
 		<!-- GUI Settings -->
 		<div class="flex flex-col gap-3">
 			<h1 class="text-white font-semibold">GUI Behaviour</h1>
-			<div class="flex flex-col gap-2 px-4">
-				<div class="flex items-center gap-20">
-					<div class="flex flex-col grow">
-						<button
-							onclick={() => (tempSettings.keepTabs = !tempSettings.keepTabs)}
-							class="text-sm text-white text-left py-1 cursor-pointer"
-							tabIndex="-1"
-						>
-							Restore Tabs
-						</button>
-						<span class="text-xs text-primary-400">
-							Restore previously open tabs when the app launches.
-						</span>
+			<div class="flex flex-col">
+				<div class="flex flex-col gap-2 p-3 border-t border-primary-750">
+					<div class="flex items-center gap-20">
+						<div class="flex flex-col grow">
+							<button
+								onclick={() => (tempSettings.autoUpdate = !tempSettings.autoUpdate)}
+								class="text-sm text-white text-left py-1 cursor-pointer"
+								tabIndex="-1"
+							>
+								Auto Update GUI
+							</button>
+							<span class="text-xs text-primary-400">
+								Automatically check for updates when the app launches.
+							</span>
+						</div>
+						<Toggle bind:toggled={tempSettings.autoUpdate} />
 					</div>
-					<Toggle bind:toggled={tempSettings.keepTabs} />
+					<button
+						class="w-max px-4 py-1 text-sm text-primary-300 hover:text-white bg-primary-750 border border-primary-600 hover:border-white rounded-lg transition-colors"
+						>Check For Updates</button
+					>
 				</div>
-				<div class="flex items-center gap-20">
+				<div class="flex flex-col gap-2 p-3 border-t border-primary-750">
+					<div class="flex items-center gap-20">
+						<div class="flex flex-col grow">
+							<button
+								onclick={() => (tempSettings.keepTabs = !tempSettings.keepTabs)}
+								class="text-sm text-white text-left py-1 cursor-pointer"
+								tabIndex="-1"
+							>
+								Restore Tabs
+							</button>
+							<span class="text-xs text-primary-400">
+								Restore previous opened tabs when the app launches.
+							</span>
+						</div>
+						<Toggle bind:toggled={tempSettings.keepTabs} />
+					</div>
+					<button
+						class="w-max px-4 py-1 text-sm text-primary-300 hover:text-white bg-primary-750 border border-primary-600 hover:border-white rounded-lg transition-colors"
+						disabled={!tempSettings.keepTabs}>Clear Tabs</button
+					>
+				</div>
+				<div class="flex items-center gap-20 p-3 border-t border-primary-750">
 					<div class="flex flex-col grow">
 						<button
 							onclick={() =>
@@ -79,46 +163,36 @@
 					</div>
 					<Toggle bind:toggled={tempSettings.logsDefaultOpen} />
 				</div>
-				<div class="flex items-center gap-20">
-					<div class="flex flex-col grow">
-						<button
-							onclick={() =>
-								(tempSettings.autoUpdate.gui = !tempSettings.autoUpdate.gui)}
-							class="text-sm text-white text-left py-1 cursor-pointer"
-							tabIndex="-1"
-						>
-							Auto Update GUI
-						</button>
-						<span class="text-xs text-primary-400">
-							Check for updates upon launch.
-						</span>
-					</div>
-					<Toggle bind:toggled={tempSettings.autoUpdate.gui} />
-				</div>
 			</div>
 		</div>
 		<!-- Tunein Crew Settings -->
 		<div class="flex flex-col gap-3">
 			<h1 class="text-white font-semibold">Tunein Crew</h1>
-			<div class="flex flex-col gap-2 px-4">
-				<div class="flex items-center gap-20">
-					<div class="flex flex-col grow">
-						<button
-							onclick={() =>
-								(tempSettings.autoUpdate.tuneinCrew =
-									!tempSettings.autoUpdate.tuneinCrew)}
-							class="text-sm text-white text-left py-1 cursor-pointer"
-							tabIndex="-1"
-						>
-							Auto Update Tunein Crew
-						</button>
-						<span class="text-xs text-primary-400">
-							Check for Tunein Crew updates upon launch.
-						</span>
+			<div class="flex flex-col">
+				<div class="flex flex-col gap-2 p-3 border-t border-primary-750">
+					<div class="flex items-center gap-20">
+						<div class="flex flex-col grow">
+							<button
+								onclick={() =>
+									(tempSettings.tuneinCrew.autoUpdate =
+										!tempSettings.tuneinCrew.autoUpdate)}
+								class="text-sm text-white text-left py-1 cursor-pointer"
+								tabIndex="-1"
+							>
+								Auto Update Tunein Crew
+							</button>
+							<span class="text-xs text-primary-400">
+								Automatically check for Tunein Crew updates when the app launches.
+							</span>
+						</div>
+						<Toggle bind:toggled={tempSettings.tuneinCrew.autoUpdate} />
 					</div>
-					<Toggle bind:toggled={tempSettings.autoUpdate.tuneinCrew} />
+					<button
+						class="w-max px-4 py-1 text-sm text-primary-300 hover:text-white bg-primary-750 border border-primary-600 hover:border-white rounded-lg transition-colors"
+						>Check For Updates</button
+					>
 				</div>
-				<div class="flex flex-col gap-2">
+				<div class="flex flex-col gap-2 p-3 border-t border-primary-750">
 					<div class="flex flex-col">
 						<label class="text-sm text-white text-left py-1" for="tuneincrewPath">
 							Directory
@@ -168,8 +242,9 @@
 					</div>
 					<div class="flex items-center gap-4">
 						<button
-							class="px-4 py-1 text-sm text-white bg-primary-750 hover:bg-primary-700 border border-primary-700 rounded-lg transition-colors"
-							disabled={tuneincrewInstalled}
+							onclick={installTuneinCrew}
+							class="px-4 py-1 text-sm text-primary-300 hover:text-white bg-primary-750 border border-primary-600 hover:border-white rounded-lg transition-colors"
+							disabled={tuneincrewInstalled || tuneinCrewInstalling !== undefined}
 						>
 							Install
 						</button>
@@ -184,9 +259,12 @@
 								<span class="text-xs text-white">Not Installed</span>
 							</div>
 						{/if}
+						{#await tuneinCrewInstalling}
+							<Spinner width={16} height={16} />
+						{/await}
 					</div>
 				</div>
-				<div class="flex flex-col gap-2">
+				<div class="flex flex-col gap-2 p-3 border-t border-primary-750">
 					<div class="flex flex-col">
 						<label class="text-sm text-white text-left py-1" for="fmodPath">
 							FMOD v4.44.64 Directory
@@ -237,8 +315,9 @@
 					</div>
 					<div class="flex items-center gap-4">
 						<button
-							class="px-4 py-1 text-sm text-white bg-primary-750 hover:bg-primary-700 border border-primary-700 rounded-lg transition-colors"
-							disabled={fmodInstalled}
+							onclick={() => (fmodInstalling = installFMOD())}
+							class="px-4 py-1 text-sm text-primary-300 hover:text-white bg-primary-750 border border-primary-600 hover:border-white rounded-lg transition-colors"
+							disabled={fmodInstalled || fmodInstalling !== undefined}
 						>
 							Install
 						</button>
@@ -253,6 +332,9 @@
 								<span class="text-xs text-white">Not Installed</span>
 							</div>
 						{/if}
+						{#await fmodInstalling}
+							<Spinner width={16} height={16} />
+						{/await}
 					</div>
 				</div>
 			</div>
@@ -275,29 +357,4 @@
 </div>
 
 <style>
-	.sett-head-btn {
-		&:hover::after {
-			opacity: 100;
-		}
-
-		&.active {
-			color: white;
-
-			&::after {
-				opacity: 100;
-			}
-		}
-
-		&::after {
-			content: '';
-			position: absolute;
-			bottom: 0;
-			left: 0;
-			right: 0;
-			height: 1px;
-			background-color: white;
-			opacity: 0;
-			transition: 150ms ease-in-out;
-		}
-	}
 </style>

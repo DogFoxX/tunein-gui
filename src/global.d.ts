@@ -42,16 +42,34 @@ interface XMLData {
 	};
 }
 
+enum NexusDirectionEnum {
+	ASC,
+	DESC
+}
+
 interface TgSettings {
-	tuneinCrew?: {
-		version: string;
-		dir: string;
-	};
-	fmodDir?: string;
-	autoUpdate: {
-		gui: boolean;
-		tuneinCrew: boolean;
-	};
+	autoUpdate: boolean;
+	fmodDir: string;
 	keepTabs: boolean;
 	logsDefaultOpen: boolean;
+	nexusMods: {
+		enabled: boolean;
+		sort: [
+			{
+				createdAt?: { direction: NexusDirectionEnum };
+				downloads?: { direction: NexusDirectionEnum };
+				endorsements?: { direction: NexusDirectionEnum };
+				updatedAt?: { direction: NexusDirectionEnum };
+			}
+		];
+	};
+	tuneinCrew: {
+		autoUpdate: boolean;
+		dir: string;
+		version?: string;
+	};
+}
+
+interface GuiUpdateDownload {
+	install: () => Promise<void>;
 }

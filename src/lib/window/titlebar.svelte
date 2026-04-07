@@ -1,6 +1,6 @@
 <script lang="ts">
 	// Svelte Imports
-	import { onMount, tick } from 'svelte';
+	import { onMount } from 'svelte';
 
 	// Tauri Imports
 	import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -15,6 +15,8 @@
 	import { DownloadMinimalistic, Home2, Settings } from '@solar-icons/svelte/Outline';
 	import { Close, Plus } from '$assets/tg-icons';
 
+	let { updater }: { updater: GuiUpdateDownload | null } = $props();
+
 	const mainWindow = getCurrentWindow();
 	let isMax = $state<boolean>();
 	let focused = $state<boolean>();
@@ -25,7 +27,7 @@
 		},
 		...$tabStore
 	]);
-	const { isOpen } = settings;
+	const { settingsOpen } = settings;
 
 	onMount(async () => {
 		await mainWindow.onFocusChanged(({ payload: focus }) => {
@@ -49,7 +51,7 @@
 			}}
 			class="flex gap-2 items-center justify-center size-full text-xs text-primary-300"
 			class:text-white!={active}
-			disabled={$isOpen}
+			disabled={$settingsOpen}
 			tabIndex="-1"
 		>
 			<Home2 size={18} />
@@ -59,6 +61,7 @@
 			class="absolute top-1.5 bottom-1.5 left-0.75 right-0.75 text-primary-700 rounded-t-[10px] -z-1"
 			class:bottom-0!={active}
 			class:rounded-b-[10px]={!active}
+			class:transition-colors={!active}
 			class:bg-primary-700={active}
 		>
 			{#if active}
@@ -112,7 +115,7 @@
 			class="flex gap-2 items-center h-full w-48 text-xs text-primary-300 pl-3 pr-6 overflow-hidden"
 			class:text-white!={active}
 			{title}
-			disabled={$isOpen}
+			disabled={$settingsOpen}
 			tabIndex="-1"
 		>
 			<span class="truncate">{title}</span>
@@ -121,6 +124,7 @@
 			class="absolute top-1.5 bottom-1.5 left-0.75 right-0.75 text-primary-700 rounded-t-[10px] -z-1"
 			class:bottom-0!={active}
 			class:rounded-b-[10px]={!active}
+			class:transition-colors={!active}
 			class:bg-primary-700={active}
 		>
 			{#if active}
@@ -178,8 +182,8 @@
 	<!-- Tabs -->
 	<nav class="relative flex items-center gap-1.5 h-full min-w-0 ml-9.25 max-w-[calc(100%-268px)]">
 		<ul class="flex size-full min-w-0" style="max-width: calc({82 + 192 * 8}px);">
+			{@render tgHomeTab({ active: tabs[0].active })}
 			{#await tabStore.init() then _}
-				{@render tgHomeTab({ active: tabs[0].active })}
 				{#each $tabStore as { active, id, title }, i (id)}
 					{@render tgTab({ active, id, index: i, title })}
 				{/each}
@@ -189,7 +193,7 @@
 			onclick={tabStore.add}
 			class="flex items-center justify-center shrink-0 size-7 text-primary-300 hover:text-white hover:bg-primary-600 rounded-full transition-colors"
 			title="Create New"
-			disabled={$tabStore?.length == 18 || $isOpen}
+			disabled={$tabStore?.length == 18 || $settingsOpen}
 		>
 			<Plus />
 		</button>
@@ -198,18 +202,21 @@
 	<!-- Settings, Close, Min, Max -->
 	<div class="absolute top-0 bottom-0 right-0 flex">
 		<div class="py-1.5 flex gap-1">
-			<button
-				class="h-full px-2 rounded-md text-green-400 hover:bg-primary-700 hover:animate-none transition-[background-color]"
-				title="Apply Update"
-			>
-				<DownloadMinimalistic size={18} class="animate-pulse" />
-			</button>
+			{#if updater}
+				<button
+					onclick={updater.install}
+					class="h-full px-2 rounded-md text-green-400 hover:bg-primary-700 hover:animate-none transition-[background-color]"
+					title="Apply Update"
+				>
+					<DownloadMinimalistic size={18} class="animate-pulse" />
+				</button>
+			{/if}
 			<button
 				onclick={settings.open}
 				class="h-full px-2 rounded-lg text-primary-400 hover:text-white hover:bg-primary-700 transition-[background-color]"
 				class:text-white!={focused}
 				title="Settings"
-				disabled={$isOpen}
+				disabled={$settingsOpen}
 			>
 				<Settings size={18} />
 			</button>
@@ -302,7 +309,6 @@
 		&:not(.active):hover {
 			> div {
 				background-color: var(--color-slate-600);
-				transition: background-color 150ms;
 			}
 
 			&::after {

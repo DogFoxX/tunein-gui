@@ -9,6 +9,9 @@
 	// Components
 	import { Sonar } from '$assets/loaders';
 
+	// Stores
+	import { settings } from '$lib/stores';
+
 	// Utils
 	import { fetchMods } from '$lib/utils';
 	import importXML from '$lib/utils/xml';
@@ -56,7 +59,7 @@
 		</div>
 	</div>
 	<div class="flex flex-col items-center gap-8 w-full">
-		<header class="flex items-center gap-1 text-4xl">
+		<header class="flex items-center gap-1 text-3xl">
 			<Flame color="var(--color-orange-500)" />
 			<span class="text-white font-semibold">Latest Radio Mods</span>
 		</header>

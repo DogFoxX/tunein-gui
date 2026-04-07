@@ -1,7 +1,7 @@
 {
 	"name": "tunein-gui",
 	"private": true,
-	"version": "0.0.0",
+	"version": "2.0.0",
 	"type": "module",
 	"author": {
 		"name": "DogFoxX"
@@ -22,6 +22,7 @@
 		"format": "prettier --write ."
 	},
 	"devDependencies": {
+		"@octokit/types": "^16.0.0",
 		"@sveltejs/vite-plugin-svelte": "^7.0.0",
 		"@tailwindcss/vite": "^4.2.2",
 		"@tauri-apps/cli": "^2.10.1",
@@ -57,6 +58,7 @@
 		"fflate": "^0.8.2",
 		"highlight.js": "^11.11.1",
 		"music-metadata": "^11.12.3",
+		"octokit": "^5.0.5",
 		"tauri-plugin-cache-api": "^0.1.6",
 		"tauri-plugin-shellx-api": "^2.0.16",
 		"zod": "^4.3.6"

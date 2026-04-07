@@ -1,3 +1,5 @@
+import { fetch } from '@tauri-apps/plugin-http';
+
 let nexusMods: NexusMods[];
 
 const query = `query {

@@ -1,5 +1,6 @@
-import { writable } from 'svelte/store';
+import { writable, get } from 'svelte/store';
 import { load } from '@tauri-apps/plugin-store';
+import settings from './settings';
 
 function loadTabs() {
 	const { subscribe, update, set } = writable<TgTabs[]>([]);
@@ -18,11 +19,13 @@ function loadTabs() {
 			const currentTabs = (await tgStore.get('tabs')) as TgTabs[];
 
 			subscribe(async (newTabs) => {
+				if (!get(settings).keepTabs) return;
+
 				await tgStore.set('tabs', newTabs);
 				tgStore.save();
 			});
 
-			set(currentTabs);
+			if (get(settings).keepTabs) set(currentTabs);
 		},
 		activate(id: string) {
 			if (id === 'home') {

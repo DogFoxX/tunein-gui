@@ -1,47 +1,59 @@
-import { writable, get } from 'svelte/store';
+import { writable } from 'svelte/store';
 import { load, Store } from '@tauri-apps/plugin-store';
 import { appDataDir, join } from '@tauri-apps/api/path';
-
-const defaultSettings: TgSettings = {
-	autoUpdate: {
-		gui: true,
-		tuneinCrew: true
-	},
-	keepTabs: true,
-	logsDefaultOpen: false
-};
+import { boolean, object, string } from 'zod';
 
 let tgStore: Store;
 
-function loadSettings() {
-	const settings = writable<TgSettings>();
+const SettingsSchema = object({
+	autoUpdate: boolean(),
+	fmodDir: string(),
+	keepTabs: boolean(),
+	logsDefaultOpen: boolean(),
+	tuneinCrew: object({
+		autoUpdate: boolean(),
+		dir: string(),
+		version: string()
+	})
+});
 
-	const isOpen = writable(false);
+function loadSettings() {
+	const { set, subscribe, update } = writable<TgSettings>();
+
+	const settingsOpen = writable(false);
 
 	return {
-		update: settings.update,
-		set: settings.set,
-		subscribe: settings.subscribe,
+		update,
+		set,
+		subscribe,
 		async init() {
 			const appdir = await appDataDir();
 
 			tgStore = await load('settings.json', {
 				defaults: {
 					settings: {
-						...defaultSettings,
+						autoUpdate: true,
+						fmodDir: await join(appdir, 'FMOD'),
+						keepTabs: true,
+						logsDefaultOpen: false,
 						tuneinCrew: {
-							...defaultSettings.tuneinCrew,
-							dir: await join(appdir, 'Tunein Crew')
-						},
-						fmodDir: await join(appdir, 'FMOD')
+							autoUpdate: true,
+							dir: await join(appdir, 'Tunein Crew'),
+							version: 'N/A'
+						}
 					}
 				}
 			});
 			await tgStore.save();
 
-			const currentSettings = (await tgStore.get('settings')) as TgSettings;
+			let currentSettings = (await tgStore.get('settings')) as TgSettings;
 
-			settings.set(currentSettings);
+			const result = SettingsSchema.safeParse(currentSettings);
+
+			if (!result.success) {
+				await tgStore.reset();
+				currentSettings = (await tgStore.get('settings')) as TgSettings;
+			}
 
 			return currentSettings;
 		},
@@ -50,12 +62,12 @@ function loadSettings() {
 			settings.set((await tgStore.get('settings')) as TgSettings);
 		},
 		open() {
-			isOpen.set(true);
+			settingsOpen.set(true);
 		},
 		close() {
-			isOpen.set(false);
+			settingsOpen.set(false);
 		},
-		isOpen
+		settingsOpen
 	};
 }
 

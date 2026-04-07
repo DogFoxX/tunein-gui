@@ -43,7 +43,7 @@
 	};
 
 	const handleKeydown = (e: KeyboardEvent) => {
-		if (modal && e.key === 'Escape') {
+		if (e.key === 'Escape') {
 			e.preventDefault();
 			close();
 		}
@@ -93,7 +93,9 @@
 						onclick={() => (current = key)}
 						class="sett-head-btn relative h-full text-lg text-primary-400 hover:text-white font-semibold transition-colors"
 						class:active={current === key}
-						tabIndex="-1">{key}</button
+						tabIndex="-1"
+					>
+						{key}</button
 					>
 				{/each}
 			{/if}
