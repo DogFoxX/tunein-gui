@@ -2,7 +2,7 @@
 	// Svelte Imports
 	import { scale, fade } from 'svelte/transition';
 
-	// Tauti Imports
+	// Tauri Imports
 	import { open } from '@tauri-apps/plugin-dialog';
 	import { dirname, join, resolveResource } from '@tauri-apps/api/path';
 	import { exists, mkdir, readFile, writeFile } from '@tauri-apps/plugin-fs';
@@ -106,62 +106,65 @@
 			<h1 class="text-white font-semibold">GUI Behaviour</h1>
 			<div class="flex flex-col">
 				<div class="flex flex-col gap-2 p-3 border-t border-primary-750">
-					<div class="flex items-center gap-20">
-						<div class="flex flex-col grow">
+					<div class="flex flex-col gap-1">
+						<div class="flex items-center justify-center gap-20">
 							<button
 								onclick={() => (tempSettings.autoUpdate = !tempSettings.autoUpdate)}
-								class="text-sm text-white text-left py-1 cursor-pointer"
+								class="grow h-full text-sm text-white text-left cursor-pointer"
 								tabIndex="-1"
 							>
 								Auto Update GUI
 							</button>
-							<span class="text-xs text-primary-400">
-								Automatically check for updates when the app launches.
-							</span>
+
+							<Toggle bind:toggled={tempSettings.autoUpdate} />
 						</div>
-						<Toggle bind:toggled={tempSettings.autoUpdate} />
+						<span class="text-xs text-primary-400">
+							Automatically check for updates when the app launches.
+						</span>
 					</div>
 					<button
-						class="w-max px-4 py-1 text-sm text-primary-300 hover:text-white bg-primary-750 border border-primary-600 hover:border-white rounded-lg transition-colors"
+						class="w-max px-4 py-1 text-sm text-white bg-primary-750 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
 						>Check For Updates</button
 					>
 				</div>
 				<div class="flex flex-col gap-2 p-3 border-t border-primary-750">
-					<div class="flex items-center gap-20">
-						<div class="flex flex-col grow">
+					<div class="flex flex-col gap-1">
+						<div class="flex items-center justify-center gap-20">
 							<button
 								onclick={() => (tempSettings.keepTabs = !tempSettings.keepTabs)}
-								class="text-sm text-white text-left py-1 cursor-pointer"
+								class="grow h-full text-sm text-white text-left cursor-pointer"
 								tabIndex="-1"
 							>
 								Restore Tabs
 							</button>
-							<span class="text-xs text-primary-400">
-								Restore previous opened tabs when the app launches.
-							</span>
+							<Toggle bind:toggled={tempSettings.keepTabs} />
 						</div>
-						<Toggle bind:toggled={tempSettings.keepTabs} />
+						<span class="text-xs text-primary-400">
+							Restore previous opened tabs when the app launches.
+						</span>
 					</div>
 					<button
-						class="w-max px-4 py-1 text-sm text-primary-300 hover:text-white bg-primary-750 border border-primary-600 hover:border-white rounded-lg transition-colors"
+						class="w-max px-4 py-1 text-sm text-white bg-primary-750 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
 						disabled={!tempSettings.keepTabs}>Clear Tabs</button
 					>
 				</div>
-				<div class="flex items-center gap-20 p-3 border-t border-primary-750">
-					<div class="flex flex-col grow">
-						<button
-							onclick={() =>
-								(tempSettings.logsDefaultOpen = !tempSettings.logsDefaultOpen)}
-							class="text-sm text-white text-left py-1 cursor-pointer"
-							tabIndex="-1"
-						>
-							Logs Default Open
-						</button>
+				<div class="flex flex-col gap-2 p-3 border-t border-primary-750">
+					<div class="flex flex-col gap-1">
+						<div class="flex items-center justify-center gap-20">
+							<button
+								onclick={() =>
+									(tempSettings.logsDefaultOpen = !tempSettings.logsDefaultOpen)}
+								class="grow h-full text-sm text-white text-left cursor-pointer"
+								tabIndex="-1"
+							>
+								Logs Default Open
+							</button>
+							<Toggle bind:toggled={tempSettings.logsDefaultOpen} />
+						</div>
 						<span class="text-xs text-primary-400">
 							Launch with the Logs window open by default.
 						</span>
 					</div>
-					<Toggle bind:toggled={tempSettings.logsDefaultOpen} />
 				</div>
 			</div>
 		</div>
@@ -170,46 +173,49 @@
 			<h1 class="text-white font-semibold">Tunein Crew</h1>
 			<div class="flex flex-col">
 				<div class="flex flex-col gap-2 p-3 border-t border-primary-750">
-					<div class="flex items-center gap-20">
-						<div class="flex flex-col grow">
+					<div class="flex flex-col gap-1">
+						<div class="flex items-center justify-center gap-20">
 							<button
 								onclick={() =>
 									(tempSettings.tuneinCrew.autoUpdate =
 										!tempSettings.tuneinCrew.autoUpdate)}
-								class="text-sm text-white text-left py-1 cursor-pointer"
+								class="grow h-full text-sm text-white text-left cursor-pointer"
 								tabIndex="-1"
 							>
 								Auto Update Tunein Crew
 							</button>
-							<span class="text-xs text-primary-400">
-								Automatically check for Tunein Crew updates when the app launches.
-							</span>
+							<Toggle bind:toggled={tempSettings.tuneinCrew.autoUpdate} />
 						</div>
-						<Toggle bind:toggled={tempSettings.tuneinCrew.autoUpdate} />
+						<span class="text-xs text-primary-400">
+							Automatically check for Tunein Crew updates when the app launches.
+						</span>
 					</div>
 					<button
-						class="w-max px-4 py-1 text-sm text-primary-300 hover:text-white bg-primary-750 border border-primary-600 hover:border-white rounded-lg transition-colors"
+						class="w-max px-4 py-1 text-sm text-white bg-primary-750 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
 						>Check For Updates</button
 					>
 				</div>
 				<div class="flex flex-col gap-2 p-3 border-t border-primary-750">
-					<div class="flex flex-col">
-						<label class="text-sm text-white text-left py-1" for="tuneincrewPath">
+					<div class="flex flex-col gap-1.5">
+						<label class="text-sm text-white text-left" for="tuneincrew-path">
 							Directory
 						</label>
-						<span class="text-xs text-primary-400">
-							Set Tunein Crew install directory. Recommended to keep at default.
-						</span>
-						<span class="text-xs text-primary-400 font-bold">
-							If you have a Tunein Crew installation, point to 'TuneinCrew.exe' below.
-						</span>
+						<div class="flex flex-col">
+							<span class="text-xs text-primary-400">
+								Set Tunein Crew install directory. Recommended to keep at default.
+							</span>
+							<span class="text-xs text-primary-400 font-bold">
+								If you have a Tunein Crew installation, point to 'TuneinCrew.exe'
+								below.
+							</span>
+						</div>
 					</div>
-					<div class="flex gap-2 bg-primary-750 border border-primary-500 rounded-lg">
+					<div class="flex gap-2 bg-primary-750 border border-primary-600 rounded-lg">
 						<input
 							bind:value={tempSettings.tuneinCrew!.dir}
 							class="size-full px-2 py-1 text-sm text-white"
 							type="text"
-							id="tuneincrewPath"
+							id="tuneincrew-path"
 							autocomplete="off"
 						/>
 						<button
@@ -243,7 +249,7 @@
 					<div class="flex items-center gap-4">
 						<button
 							onclick={installTuneinCrew}
-							class="px-4 py-1 text-sm text-primary-300 hover:text-white bg-primary-750 border border-primary-600 hover:border-white rounded-lg transition-colors"
+							class="px-4 py-1 text-sm text-white bg-primary-750 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
 							disabled={tuneincrewInstalled || tuneinCrewInstalling !== undefined}
 						>
 							Install
@@ -265,24 +271,26 @@
 					</div>
 				</div>
 				<div class="flex flex-col gap-2 p-3 border-t border-primary-750">
-					<div class="flex flex-col">
-						<label class="text-sm text-white text-left py-1" for="fmodPath">
+					<div class="flex flex-col gap-1.5">
+						<label class="text-sm text-white text-left" for="fmod-path">
 							FMOD v4.44.64 Directory
 						</label>
-						<span class="text-xs text-primary-400">
-							Set FMOD install directory. Recommended to keep at default.
-						</span>
-						<span class="text-xs text-primary-400 font-bold">
-							If you have FMOD v4.44.64 installed, point to 'fmod_designercl.exe'
-							below.
-						</span>
+						<div class="flex flex-col">
+							<span class="text-xs text-primary-400">
+								Set FMOD install directory. Recommended to keep at default.
+							</span>
+							<span class="text-xs text-primary-400 font-bold">
+								If you have FMOD v4.44.64 installed, point to 'fmod_designercl.exe'
+								below.
+							</span>
+						</div>
 					</div>
-					<div class="flex gap-2 bg-primary-750 border border-primary-500 rounded-lg">
+					<div class="flex gap-2 bg-primary-750 border border-primary-600 rounded-lg">
 						<input
 							bind:value={tempSettings.fmodDir}
 							class="size-full px-2 py-1 text-sm text-white"
 							type="text"
-							id="fmodPath"
+							id="fmod-path"
 							autocomplete="off"
 						/>
 						<button
@@ -316,7 +324,7 @@
 					<div class="flex items-center gap-4">
 						<button
 							onclick={() => (fmodInstalling = installFMOD())}
-							class="px-4 py-1 text-sm text-primary-300 hover:text-white bg-primary-750 border border-primary-600 hover:border-white rounded-lg transition-colors"
+							class="px-4 py-1 text-sm text-white bg-primary-750 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
 							disabled={fmodInstalled || fmodInstalling !== undefined}
 						>
 							Install
@@ -350,7 +358,7 @@
 			onclick={async () => {
 				await settings.save(tempSettings);
 			}}
-			class="px-4 py-1 text-sm text-white bg-primary-750 hover:bg-primary-700 border border-primary-700 transition-colors rounded-lg"
+			class="w-24 py-1 text-sm text-white bg-primary-750 hover:bg-primary-700 border border-primary-600 transition-colors rounded-lg"
 			disabled={saved}>Save</button
 		>
 	</div>

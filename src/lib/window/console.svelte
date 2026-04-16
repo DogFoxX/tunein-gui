@@ -57,7 +57,7 @@
 	});
 </script>
 
-<div class="flex relative flex-col">
+<div class="flex relative flex-col border-t border-primary-700">
 	<div class="flex items-center gap-4 p-2">
 		<span class="text-xs text-white">Logs</span>
 		<button

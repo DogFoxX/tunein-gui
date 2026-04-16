@@ -40,7 +40,8 @@ svg {
 	pointer-events: none;
 }
 
-button:disabled {
+button:disabled,
+div:has(> input:disabled) {
 	opacity: 0.6;
 	pointer-events: none;
 }

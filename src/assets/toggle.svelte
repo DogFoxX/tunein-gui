@@ -5,7 +5,7 @@
 <div class="h-6 w-12">
 	<button
 		onclick={() => (toggled = !toggled)}
-		class="flex size-full px-1 py-0.75 border border-primary-700 rounded-full overflow-hidden transition-colors delay-200 cursor-pointer"
+		class="flex size-full px-1 py-0.75 border border-primary-600 rounded-full overflow-hidden transition-colors delay-200 cursor-pointer"
 		class:border-transparent={toggled}
 		class:bg-sky-700={toggled}
 		class:bg-primary-750={!toggled}

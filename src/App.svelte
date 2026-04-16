@@ -8,7 +8,7 @@
 
 	// Components
 	import { Console, Titlebar } from '$lib/window';
-	import { Modal, Settings, About } from '$lib/window/modal';
+	import { Modal, Settings, About, NewRadio } from '$lib/window/modal';
 	import { Home, Radio } from '$lib/tabs';
 
 	// Stores
@@ -90,9 +90,10 @@
 				components={{ Settings, About }}
 				active="Settings"
 				close={settings.close}
-				class="h-152 w-220"
+				class="h-150 w-220"
 			></Modal>
 		{/if}
+		<Modal components={{ NewRadio }} header="Create a new Radio" class="h-150 w-220" />
 	</main>
 {/if}
 
