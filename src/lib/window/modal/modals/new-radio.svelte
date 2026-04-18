@@ -2,8 +2,8 @@
 	interface RadioConfigProps {
 		radioId?: string;
 		radioName?: string;
-		logo?: string;
-		logoPath?: string;
+		logo?: string | Promise<string | null> | null;
+		logoPath?: string | null;
 		force?: {
 			enabled: boolean;
 			value: number;
@@ -27,32 +27,36 @@
 	import { listen } from '@tauri-apps/api/event';
 	import { readFile, exists } from '@tauri-apps/plugin-fs';
 	import { open } from '@tauri-apps/plugin-dialog';
-	import { openUrl } from '@tauri-apps/plugin-opener';
 	import { extname } from '@tauri-apps/api/path';
 
 	// Components
 	import { Sonar } from '$assets/loaders';
 
-	// Toggle Component Asset
+	// Assets
 	import { Toggle } from '$assets';
+	import { Cropper, type CropArea } from '$assets/cropper';
 
 	// Stores
 
 	// Icons
 	import { FolderOpen, RestartSquare } from '@solar-icons/svelte/Bold';
-	import { onMount } from 'svelte';
 
 	let {
 		radioId = $bindable(generateId()),
 		radioName = $bindable('Untitled Radio'),
-		logo = $bindable(''),
-		logoPath = $bindable(''),
+		logo = null,
+		logoPath = $bindable(null),
 		force = $bindable({ enabled: false, value: 80 }),
 		volume = $bindable({ enabled: false, value: 95 })
 	}: RadioConfigProps = $props();
 
+	// Logo Cropper Vars
+	let croppedPixels = $state<CropArea>();
+
+	// Logo Image Vars
 	const logoExtensions = ['bmp', 'jpg', 'jpeg', 'png', 'svg', 'webp', 'dds'];
 
+	let logosrc = $state<string | null>(null);
 	let logoDropArea = $state<HTMLElement>();
 	let isDragging = $state(false);
 
@@ -100,7 +104,7 @@
 		return Array.from(bytes, (b) => chars[b % chars.length]).join('');
 	}
 
-	async function imageToBase64(src: string) {
+	async function fetchImage(src: string | null) {
 		if (!src) return null;
 
 		let bytes: Uint8Array;
@@ -132,19 +136,15 @@
 				);
 			}
 
-			try {
-				bytes = await readFile(src);
+			bytes = await readFile(src);
 
-				const lower = src.toLowerCase();
-				if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) contentType = 'image/jpeg';
-				else if (lower.endsWith('.webp')) contentType = 'image/webp';
-				else if (lower.endsWith('.bmp')) contentType = 'image/bmp';
-			} catch {
-				return null;
-			}
+			const lower = src.toLowerCase();
+			if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) contentType = 'image/jpeg';
+			else if (lower.endsWith('.webp')) contentType = 'image/webp';
+			else if (lower.endsWith('.svg')) contentType = 'image/svg';
 		}
 
-		return (logo = `data:${contentType};base64,${uint8ToBase64(bytes)}`);
+		return `data:${contentType};base64,${uint8ToBase64(bytes)}`;
 	}
 
 	function uint8ToBase64(bytes: Uint8Array) {
@@ -177,28 +177,78 @@
 		logoPath = filePath;
 	}
 
-	function isValidImageType(path: string) {
-		const ext = path.split('.').pop()?.toLowerCase();
-		return ext ? logoExtensions.includes(ext) : false;
+	// Get cropped image
+	async function getCroppedImage(imageSrc: string, cropPixels: CropArea): Promise<string> {
+		return new Promise((resolve, reject) => {
+			const img = new Image();
+
+			img.onload = () => {
+				const size = 512;
+
+				const canvas = document.createElement('canvas');
+				canvas.width = size;
+				canvas.height = size;
+
+				const ctx = canvas.getContext('2d');
+				if (!ctx) {
+					reject('No canvas context');
+					return;
+				}
+
+				// Convert roundness % to radius in px
+				const radius = (cropPixels.roundness / 100) * size;
+
+				// Rounded clipping path
+				roundedRect(ctx, 0, 0, size, size, radius);
+				ctx.clip();
+
+				// Draw cropped image resized to 512x512
+				ctx.drawImage(
+					img,
+					cropPixels.x,
+					cropPixels.y,
+					cropPixels.width,
+					cropPixels.height,
+					0,
+					0,
+					size,
+					size
+				);
+
+				resolve(canvas.toDataURL('image/png'));
+			};
+
+			img.onerror = reject;
+			img.src = imageSrc;
+		});
 	}
 
-	// $effect(() => {
-	// 	imageToBase64(logoPath)
-	// 		.then(async ({ data, isUrl }) => {
-	// 			if (isUrl) return (logo = data);
+	function roundedRect(
+		ctx: CanvasRenderingContext2D,
+		x: number,
+		y: number,
+		width: number,
+		height: number,
+		radius: number
+	) {
+		radius = Math.min(radius, width / 2, height / 2);
 
-	// 			if (isValidImageType(logoPath)) {
-	// 				exists(logoPath)
-	// 					.then(async (exist) => {
-	// 						if (exist) return (logo = data);
+		ctx.beginPath();
+		ctx.moveTo(x + radius, y);
+		ctx.lineTo(x + width - radius, y);
+		ctx.arcTo(x + width, y, x + width, y + radius, radius);
+		ctx.lineTo(x + width, y + height - radius);
+		ctx.arcTo(x + width, y + height, x + width - radius, y + height, radius);
+		ctx.lineTo(x + radius, y + height);
+		ctx.arcTo(x, y + height, x, y + height - radius, radius);
+		ctx.lineTo(x, y + radius);
+		ctx.arcTo(x, y, x + radius, y, radius);
+		ctx.closePath();
+	}
 
-	// 						logo = '';
-	// 					})
-	// 					.catch(() => (logo = ''));
-	// 			} else logo = '';
-	// 		})
-	// 		.catch(() => (logo = ''));
-	// });
+	$effect(() => {
+		logo = fetchImage(logoPath).then((src) => (logosrc = src));
+	});
 </script>
 
 <div
@@ -234,7 +284,7 @@
 									maxlength="4"
 								/>
 								<button
-									onclick={async () => (radioId = generateId())}
+									onclick={() => (radioId = generateId())}
 									class="px-2 text-primary-400 hover:text-white transition-colors"
 									title="Generate ID"
 									tabIndex="-1"
@@ -251,6 +301,7 @@
 								class="flex gap-2 bg-primary-750 border border-primary-600 rounded-lg"
 							>
 								<input
+									bind:value={radioName}
 									class="size-full px-2 py-1 text-sm text-white"
 									type="text"
 									id="radio-name"
@@ -270,6 +321,7 @@
 								type="text"
 								id="radio-logo"
 								autocomplete="off"
+								placeholder="Local image or image url..."
 							/>
 							<button
 								onclick={openLogo}
@@ -280,23 +332,23 @@
 						</div>
 					</div>
 				</div>
-				<button
+				<div
 					bind:this={logoDropArea}
-					ondblclick={openLogo}
-					class="flex items-center justify-center h-34 w-full border-2 border-dashed border-primary-700 hover:border-primary-400 rounded-lg transition-colors cursor-pointer"
+					class="relative h-52 w-full border-2 border-primary-600 border-dashed rounded-xl transition-colors"
 					class:border-sky-400={isDragging}
-					title="Logo Preview. Double-click to browse..."
-					tabindex="-1"
 				>
-					{#await imageToBase64(logoPath)}
-						<Sonar />
-					{:then src}
-						{#if !src}
-							<div class="flex flex-col justify-center gap-3 text-center size-full">
+					<div
+						class="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center"
+					>
+						{#await logo}
+							<Sonar />
+						{:then image}
+							{#if !image}
 								<div class="flex flex-col">
 									<span class="text-white font-bold">Logo Preview</span>
 									<span class="text-xs text-primary-400"
-										>Drag & drop here. Or double-click to browse...</span
+										>Drag & drop here, paste image path/url above, or click
+										browse...</span
 									>
 								</div>
 								<div class="flex flex-col justify-center">
@@ -309,22 +361,32 @@
 										>Recommended size: <strong>512 x 512</strong></span
 									>
 								</div>
-							</div>
-						{:else}
-							<img height="114" width="114" class="rounded-md" {src} alt="" />
-						{/if}
-					{:catch err}
-						<div
-							class="flex flex-col justify-center gap-3 px-2 text-center size-full overflow-hidden"
-						>
-							<span class="text-white font-bold">Failed to load preview</span>
-							<span class="text-xs text-primary-400 truncate"
-								>Path\URL: <strong>{logoPath}</strong></span
+							{:else}
+								<Cropper
+									{image}
+									oncropcomplete={async (e) => {
+										croppedPixels = e.pixels;
+									}}
+									onremove={() => {
+										logosrc = null;
+										logoPath = null;
+										croppedPixels = undefined;
+									}}
+								/>
+							{/if}
+						{:catch err}
+							<div
+								class="flex flex-col justify-center gap-3 px-2 text-center size-full overflow-hidden"
 							>
-							<span class="text-xs text-primary-400">{err}</span>
-						</div>
-					{/await}
-				</button>
+								<span class="text-white font-bold">Failed to load preview</span>
+								<span class="text-xs text-primary-400 truncate"
+									>Path\URL: <strong>{logoPath}</strong></span
+								>
+								<span class="text-xs text-primary-400">{err}</span>
+							</div>
+						{/await}
+					</div>
+				</div>
 			</div>
 		</div>
 		<!-- Extra Configuration -->
@@ -357,8 +419,26 @@
 					>
 						<input
 							bind:value={force.value}
+							oninput={(e) => {
+								e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '');
+								e.currentTarget.value = e.currentTarget.value.replace(/^0+/, '');
+								if (e.currentTarget.value === '') e.currentTarget.value = '0';
+							}}
+							onblur={(e) => {
+								const num = parseInt(e.currentTarget.value, 10);
+
+								if (num > 300) e.currentTarget.value = '300';
+							}}
+							onkeydown={(e) => {
+								if (e.key === 'Enter') {
+									const num = parseInt(e.currentTarget.value, 10);
+
+									if (num > 300) e.currentTarget.value = '300';
+								}
+							}}
 							class="h-full w-[20ch] px-2 py-1 text-sm text-white"
 							type="text"
+							maxlength="3"
 							autocomplete="off"
 							disabled={!force.enabled}
 						/>
@@ -391,8 +471,28 @@
 					>
 						<input
 							bind:value={volume.value}
+							oninput={(e) => {
+								e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '');
+								e.currentTarget.value = e.currentTarget.value.replace(/^0+/, '');
+								if (e.currentTarget.value === '') e.currentTarget.value = '0';
+							}}
+							onblur={(e) => {
+								const num = parseInt(e.currentTarget.value, 10);
+
+								if (num < 60) e.currentTarget.value = '60';
+								if (num > 120) e.currentTarget.value = '120';
+							}}
+							onkeydown={(e) => {
+								if (e.key === 'Enter') {
+									const num = parseInt(e.currentTarget.value, 10);
+
+									if (num < 60) e.currentTarget.value = '60';
+									if (num > 120) e.currentTarget.value = '120';
+								}
+							}}
 							class="h-full w-[20ch] px-2 py-1 text-sm text-white"
 							type="text"
+							maxlength="3"
 							autocomplete="off"
 							disabled={!volume.enabled}
 						/>

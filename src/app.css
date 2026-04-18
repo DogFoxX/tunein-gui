@@ -57,6 +57,22 @@ button {
 	outline: none;
 }
 
+input[type='range'] {
+	&:focus-visible::-webkit-slider-thumb {
+		outline: 2px white solid;
+		outline-offset: 2px;
+	}
+
+	&::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		height: 14px;
+		width: 14px;
+		border-radius: 50%;
+		background: white;
+		cursor: pointer;
+	}
+}
+
 /* hljs xml highlighting */
 .language-xml {
 	color: var(--color-orange-300);

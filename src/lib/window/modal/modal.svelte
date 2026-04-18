@@ -1,5 +1,11 @@
 <script lang="ts" generics="T extends Record<string, Component>">
-	import type { ModalProps } from './types';
+	interface ModalProps<T extends Record<string, Component>> {
+		components: T;
+		active?: keyof T;
+		class?: string;
+		close?: () => void;
+		header?: string;
+	}
 
 	// Svelte Imports
 	import type { Component } from 'svelte';
@@ -45,7 +51,7 @@
 	const handleKeydown = (e: KeyboardEvent) => {
 		if (e.key === 'Escape') {
 			e.preventDefault();
-			close();
+			if (close) close();
 		}
 
 		if (modal && e.key === 'Tab') {
