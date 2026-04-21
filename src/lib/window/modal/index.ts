@@ -1,2 +1,6 @@
+import { writable } from 'svelte/store';
+
+export const modelOpen = writable(false);
+
 export { default as Modal } from './modal.svelte';
-export { About, NewRadio, Settings } from './modals';
+export { About, RadioConfig, Settings } from './modals';

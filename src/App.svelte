@@ -1,6 +1,6 @@
 <script lang="ts">
 	// Svelte Imports
-	import { onMount } from 'svelte';
+	import { onMount, type Component } from 'svelte';
 
 	// Tauri Imports
 	import { join } from '@tauri-apps/api/path';
@@ -8,17 +8,19 @@
 
 	// Components
 	import { Console, Titlebar } from '$lib/window';
-	import { Modal, Settings, About, NewRadio } from '$lib/window/modal';
+	import { Modal, Settings, About, RadioConfig } from '$lib/window/modal';
 	import { Home, Radio } from '$lib/tabs';
 
 	// Stores
 	import { settings, tabStore } from '$lib/stores';
+	import radioDataTabs from '$lib/stores/radio-data.store';
 	import logger from '$lib/stores/logger';
 
 	// Utils
 	import { guiUpdater, tuneinCrewUpdater } from '$lib/utils/updates';
 
 	const { settingsOpen } = settings;
+	const { radioConfigurer } = radioDataTabs;
 	let updater = $state<GuiUpdateDownload | null>(null);
 
 	onMount(async () => {
@@ -85,15 +87,19 @@
 			{/if}
 		</div>
 		<Console consoleDefaultOpen={$settings.logsDefaultOpen} />
-		{#if $settingsOpen}
-			<Modal
-				components={{ Settings, About }}
-				active="Settings"
-				close={settings.close}
-				class="h-150 w-220"
-			></Modal>
-		{/if}
-		<Modal components={{ NewRadio }} header="Create a new Radio" class="h-150 w-220" />
+		<!-- Modals -->
+		<Modal
+			components={{ Settings, About }}
+			active="Settings"
+			bind:open={$settingsOpen}
+			class="h-150 w-220"
+		></Modal>
+		<Modal
+			components={{ RadioConfig }}
+			header={$radioConfigurer.header}
+			bind:open={$radioConfigurer.open}
+			class="h-150 w-220"
+		/>
 	</main>
 {/if}
 

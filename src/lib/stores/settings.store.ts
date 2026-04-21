@@ -64,9 +64,6 @@ function loadSettings() {
 		open() {
 			settingsOpen.set(true);
 		},
-		close() {
-			settingsOpen.set(false);
-		},
 		settingsOpen
 	};
 }

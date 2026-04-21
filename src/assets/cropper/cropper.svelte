@@ -3,7 +3,7 @@
 <!-- Repo: https://github.com/ValentinH/svelte-easy-crop -->
 
 <script lang="ts">
-	import { onDestroy, onMount } from 'svelte';
+	import { onDestroy, onMount, tick } from 'svelte';
 	import type { Action } from 'svelte/action';
 	import * as helpers from './helpers';
 	import type { CropperProps, ImageSize, Point, Size } from './types';
@@ -44,7 +44,9 @@
 	let rafDragTimeout = $state<number | null>(null);
 	let rafZoomTimeout = $state<number | null>(null);
 
-	onMount(() => {
+	onMount(async () => {
+		await tick();
+
 		// when rendered via SSR, the image can already be loaded and its onLoad callback will never be called
 		if (imgEl && imgEl.complete) {
 			onImgLoad();

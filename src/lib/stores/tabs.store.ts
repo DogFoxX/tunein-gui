@@ -1,6 +1,9 @@
 import { writable, get } from 'svelte/store';
 import { load } from '@tauri-apps/plugin-store';
-import settings from './settings';
+import { appDataDir, join } from '@tauri-apps/api/path';
+import { remove, exists } from '@tauri-apps/plugin-fs';
+import settings from './settings.store';
+import radioDataStore from './radio-data.store';
 
 function loadTabs() {
 	const { subscribe, update, set } = writable<TgTabs[]>([]);
@@ -18,14 +21,26 @@ function loadTabs() {
 
 			const currentTabs = (await tgStore.get('tabs')) as TgTabs[];
 
-			subscribe(async (newTabs) => {
-				if (!get(settings).keepTabs) return;
+			if (!get(settings).keepTabs) return;
 
-				await tgStore.set('tabs', newTabs);
-				tgStore.save();
+			subscribe(async (tabs) => {
+				await tgStore.set('tabs', tabs);
 			});
 
-			if (get(settings).keepTabs) set(currentTabs);
+			const tempData = await Promise.all(
+				currentTabs.map(async ({ id }) => {
+					const store = await load(`_temp/temp_${id}`);
+					const data = (await store.get('radioData')) as RadioData;
+
+					await store.close();
+
+					return data;
+				})
+			);
+
+			if (tempData) radioDataStore.set(tempData);
+
+			set(currentTabs);
 		},
 		activate(id: string) {
 			if (id === 'home') {
@@ -40,16 +55,14 @@ function loadTabs() {
 				}))
 			);
 		},
-		add() {
-			update((tabs) => [
-				...tabs.map((t) => ({ ...t, active: false })),
-				{
-					id: crypto.randomUUID(),
-					active: true
-				}
-			]);
-		},
 		close(id: string) {
+			appDataDir().then(async (dataDir) => {
+				const tempDataFile = await join(dataDir, `_temp/temp_${id}`);
+				const exist = await exists(tempDataFile);
+
+				if (exist) await remove(tempDataFile);
+			});
+
 			update((tabs) => {
 				const index = tabs.findIndex((t) => t.id === id);
 				if (index === -1) return tabs;

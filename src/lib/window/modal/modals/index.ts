@@ -1,2 +1,2 @@
-export { default as NewRadio } from './new-radio.svelte';
+export { default as RadioConfig } from './radio-config.svelte';
 export { About, Settings } from './settings';

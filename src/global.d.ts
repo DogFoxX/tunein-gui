@@ -6,9 +6,8 @@ interface Window {
 }
 
 interface TgTabs {
-	active: boolean;
+	active?: boolean;
 	id: string;
-	title?: string;
 }
 
 interface NexusMods {
@@ -17,6 +16,37 @@ interface NexusMods {
 	pictureUrl: string;
 	endorsements: number;
 	author: string;
+}
+
+interface RadioData {
+	radioId?: string;
+	radioName?: string;
+	logo?: Base64URLString | Promise<Base64URLString | null> | null;
+	logoPath?: string | null;
+	force?: {
+		enabled: boolean;
+		value: number;
+	};
+	volume?: {
+		enabled: boolean;
+		value: number;
+	};
+	tabId: string;
+	tracks?: {
+		jingles?: {
+			filename: string;
+			file: string;
+		}[];
+		songs?: {
+			filename: string;
+			file: string;
+			artist?: string;
+			name?: string;
+			year?: string;
+			length?: string;
+			measuredVolume?: number;
+		}[];
+	};
 }
 
 interface XMLData {
@@ -52,17 +82,6 @@ interface TgSettings {
 	fmodDir: string;
 	keepTabs: boolean;
 	logsDefaultOpen: boolean;
-	nexusMods: {
-		enabled: boolean;
-		sort: [
-			{
-				createdAt?: { direction: NexusDirectionEnum };
-				downloads?: { direction: NexusDirectionEnum };
-				endorsements?: { direction: NexusDirectionEnum };
-				updatedAt?: { direction: NexusDirectionEnum };
-			}
-		];
-	};
 	tuneinCrew: {
 		autoUpdate: boolean;
 		dir: string;

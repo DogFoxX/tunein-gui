@@ -7,6 +7,8 @@
 
 	// Stores
 	import { settings, tabStore } from '$lib/stores';
+	import radioDataStore from '$lib/stores/radio-data.store';
+	import { modelOpen } from './modal';
 
 	// Utils
 	import { tgSlide } from '$lib/utils';
@@ -27,7 +29,6 @@
 		},
 		...$tabStore
 	]);
-	const { settingsOpen } = settings;
 
 	onMount(async () => {
 		await mainWindow.onFocusChanged(({ payload: focus }) => {
@@ -51,7 +52,7 @@
 			}}
 			class="flex gap-2 items-center justify-center size-full text-xs text-primary-300"
 			class:text-white!={active}
-			disabled={$settingsOpen}
+			disabled={$modelOpen}
 			tabIndex="-1"
 		>
 			<Home2 size={18} />
@@ -91,16 +92,7 @@
 	</li>
 {/snippet}
 
-{#snippet tgTab({
-	active,
-	id,
-	title = 'Untitled'
-}: {
-	active: boolean;
-	id: string;
-	index: number;
-	title?: string;
-})}
+{#snippet tgTab({ active, id, title }: { active: boolean; id: string; title?: string })}
 	<li
 		in:tgSlide={{ duration: 120 }}
 		out:tgSlide={{ duration: 150 }}
@@ -115,7 +107,7 @@
 			class="flex gap-2 items-center h-full w-48 text-xs text-primary-300 pl-3 pr-6 overflow-hidden"
 			class:text-white!={active}
 			{title}
-			disabled={$settingsOpen}
+			disabled={$modelOpen}
 			tabIndex="-1"
 		>
 			<span class="truncate">{title}</span>
@@ -184,16 +176,20 @@
 		<ul class="flex size-full min-w-0" style="max-width: calc({82 + 192 * 8}px);">
 			{@render tgHomeTab({ active: tabs[0].active })}
 			{#await tabStore.init() then _}
-				{#each $tabStore as { active, id, title }, i (id)}
-					{@render tgTab({ active, id, index: i, title })}
+				{#each $tabStore as { active, id }, i (id)}
+					{@render tgTab({
+						active,
+						id,
+						title: $radioDataStore.find(({ tabId }) => tabId === id)?.radioName
+					})}
 				{/each}
 			{/await}
 		</ul>
 		<button
-			onclick={tabStore.add}
+			onclick={() => radioDataStore.openConfig()}
 			class="flex items-center justify-center shrink-0 size-7 text-primary-300 hover:text-white hover:bg-primary-600 rounded-full transition-colors"
 			title="Create New"
-			disabled={$tabStore?.length == 18 || $settingsOpen}
+			disabled={$tabStore?.length == 18 || $modelOpen}
 		>
 			<Plus />
 		</button>
@@ -216,7 +212,7 @@
 				class="h-full px-2 rounded-lg text-primary-400 hover:text-white hover:bg-primary-700 transition-[background-color]"
 				class:text-white!={focused}
 				title="Settings"
-				disabled={$settingsOpen}
+				disabled={$modelOpen}
 			>
 				<Settings size={18} />
 			</button>
