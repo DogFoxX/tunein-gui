@@ -90,6 +90,10 @@
 	};
 
 	$effect(() => modelOpen.set(open));
+
+	$effect(() => {
+		if (modal) modal.focus();
+	});
 </script>
 
 <svelte:window on:keydown={handleKeydown} />

@@ -18,13 +18,13 @@
 
 	let {
 		image,
-		crop = { x: 0, y: 0 },
-		zoom = 1,
+		crop = $bindable({ x: 0, y: 0 }),
+		zoom = $bindable(1),
 		minZoom = 1,
 		maxZoom = 3,
 		aspect = 1,
 		cropSize = { height: 140, width: 140 },
-		cropShape = 0,
+		cropShape = $bindable(0),
 		zoomSpeed = 0.2,
 		crossOrigin = null,
 		restrictPosition = true,
@@ -38,8 +38,8 @@
 	let containerEl = $state<HTMLDivElement | null>(null);
 	let containerRect = $state<DOMRect | null>(null);
 	let imgEl = $state<HTMLImageElement | null>(null);
-	let dragStartPosition = $state<Point>({ x: 0, y: 0 });
-	let dragStartCrop = $state<Point>({ x: 0, y: 0 });
+	let dragStartPosition = $state<Point>(crop);
+	let dragStartCrop = $state<Point>(crop);
 	let lastPinchDistance = $state(0);
 	let rafDragTimeout = $state<number | null>(null);
 	let rafZoomTimeout = $state<number | null>(null);
@@ -278,17 +278,9 @@
 
 	// when zoom changes, we recompute the cropped area
 	$effect(() => {
-		if (!cropperSize) return;
-
-		const restrictedCrop = restrictPosition
-			? helpers.restrictPosition(crop, imageSize, cropperSize, zoom)
-			: crop;
-
-		if (restrictedCrop.x !== crop.x || restrictedCrop.y !== crop.y) {
-			crop = restrictedCrop;
+		if (zoom) {
+			emitCropData();
 		}
-
-		emitCropData();
 	});
 
 	const containerAction: Action<HTMLDivElement> = (node) => {
@@ -351,6 +343,7 @@
 			<MagnifierZoomOut color="white" />
 			<input
 				bind:value={zoom}
+				oninput={() => setNewZoom(zoom, crop)}
 				class="h-2 bg-primary-750 border border-primary-600 rounded-full appearance-none"
 				type="range"
 				min="1"

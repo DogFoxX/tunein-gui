@@ -44,7 +44,7 @@
 </script>
 
 <!-- Tab snippets -->
-{#snippet tgHomeTab({ active }: { active: boolean })}
+{#snippet tgHomeTab({ active }: { active?: boolean })}
 	<li class="relative flex items-center h-full shrink min-w-20.5" class:active role="tab">
 		<button
 			onmousedown={() => {
@@ -92,7 +92,7 @@
 	</li>
 {/snippet}
 
-{#snippet tgTab({ active, id, title }: { active: boolean; id: string; title?: string })}
+{#snippet tgTab({ active, id, title }: { active?: boolean; id: string; title?: string })}
 	<li
 		in:tgSlide={{ duration: 120 }}
 		out:tgSlide={{ duration: 150 }}
@@ -180,7 +180,8 @@
 					{@render tgTab({
 						active,
 						id,
-						title: $radioDataStore.find(({ tabId }) => tabId === id)?.radioName
+						title: $radioDataStore.find(({ tabId }) => tabId === id)?.configuration
+							.radioName
 					})}
 				{/each}
 			{/await}

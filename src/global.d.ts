@@ -19,17 +19,26 @@ interface NexusMods {
 }
 
 interface RadioData {
-	radioId?: string;
-	radioName?: string;
-	logo?: Base64URLString | Promise<Base64URLString | null> | null;
-	logoPath?: string | null;
-	force?: {
-		enabled: boolean;
-		value: number;
-	};
-	volume?: {
-		enabled: boolean;
-		value: number;
+	configuration: {
+		radioId?: string;
+		radioName?: string;
+		logo: {
+			crop: {
+				point: { x: number; y: number };
+				shape: number;
+				zoom: number;
+			};
+			data?: Base64URLString | null;
+		};
+		logoPath?: string | null;
+		force: {
+			enabled: boolean;
+			value: string;
+		};
+		volume: {
+			enabled: boolean;
+			value: string;
+		};
 	};
 	tabId: string;
 	tracks?: {
@@ -44,7 +53,7 @@ interface RadioData {
 			name?: string;
 			year?: string;
 			length?: string;
-			measuredVolume?: number;
+			measuredVolume?: string;
 		}[];
 	};
 }

@@ -30,7 +30,7 @@
 			<button
 				onclick={() =>
 					radioDataTabs.openConfig({
-						header: `Configure ${radioData?.radioName}`,
+						header: `Configure ${radioData?.configuration.radioName}`,
 						tabId: radioData?.tabId
 					})}
 				class="flex items-center justify-center gap-2 px-3 py-1.5 text-sm text-white bg-primary-750 hover:bg-primary-600 border border-primary-600 rounded-lg transition-colors"
@@ -43,15 +43,15 @@
 			<h1 class="text-lg text-white font-semibold">Radio Configuration</h1>
 			<div class="flex gap-4">
 				<div class="relative size-22 overflow-hidden">
-					{#await radioData?.logo then logo}
-						{#if !logo}
+					{#await radioData?.configuration.logo.data then src}
+						{#if !src}
 							<div
 								class="absolute inset-0 flex items-center justify-center bg-primary-600 rounded-lg"
 							>
 								<span class="text-sm text-primary-400 font-bold">No Logo</span>
 							</div>
 						{:else}
-							<img class="absolute inset-0" src={logo} alt="" />
+							<img class="absolute inset-0" {src} alt="" />
 						{/if}
 					{/await}
 				</div>
@@ -86,29 +86,34 @@
 					<tbody>
 						<tr>
 							<td class="min-w-26 truncate px-2 py-1 text-xs text-primary-300"
-								>{radioData?.radioId}</td
+								>{radioData?.configuration.radioId}</td
 							>
 							<td
 								class="min-w-26 max-w-50 truncate px-2 py-1 text-xs text-primary-300"
-								title={radioData?.radioName}>{radioData?.radioName}</td
+								title={radioData?.configuration.radioName}
+								>{radioData?.configuration.radioName}</td
 							>
 							<td class="min-w-26 truncate px-2 py-1 text-xs text-primary-300"
-								>{radioData?.force?.enabled
-									? radioData.force.value
+								>{radioData?.configuration.force.enabled
+									? radioData?.configuration.force.value === '0'
+										? 'Disabled (0)'
+										: radioData?.configuration.force.value
 									: 'Default (80)'}</td
 							>
 							<td class="min-w-26 truncate px-2 py-1 text-xs text-primary-300"
-								>{radioData?.volume?.enabled ? radioData.volume.value : '-'}</td
+								>{radioData?.configuration.volume.enabled
+									? radioData.configuration.volume.value
+									: 'Disbaled'}</td
 							>
 							<td class="min-w-26 truncate px-2 py-1 text-xs text-primary-300"
 								>{radioData?.tracks?.jingles
 									? radioData.tracks.jingles.length
-									: '-'}</td
+									: '- -'}</td
 							>
 							<td class="min-w-26 truncate px-2 py-1 text-xs text-primary-300"
 								>{radioData?.tracks?.songs
 									? radioData.tracks.songs.length
-									: '-'}</td
+									: '- -'}</td
 							>
 						</tr>
 					</tbody>

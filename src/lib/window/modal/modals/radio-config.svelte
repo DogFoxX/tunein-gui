@@ -5,6 +5,7 @@
 	}
 
 	// Svelte Imports
+	import { tick } from 'svelte';
 	import { fade, scale } from 'svelte/transition';
 
 	// Tauri Imports
@@ -28,24 +29,36 @@
 	// Icons
 	import { FolderOpen, RestartSquare } from '@solar-icons/svelte/Bold';
 
-	let radioData = $state<RadioData | undefined>(
+	let radioStoreData = $state(
 		$radioDataStore.find(({ tabId }) => $radioConfigurer.tabId === tabId)
 	);
 
 	let tempRadioData = $state<RadioData>({
-		radioId: radioData?.radioId ?? generateId(),
-		radioName: radioData?.radioName ?? 'Untitled Radio',
-		logo: radioData?.logo ?? null,
-		logoPath: radioData?.logoPath ?? null,
-		force: {
-			enabled: radioData?.force?.enabled ?? false,
-			value: radioData?.force?.value ?? 80
+		configuration: {
+			force: {
+				enabled: radioStoreData?.configuration.force.enabled ?? false,
+				value: radioStoreData?.configuration.force.value ?? '80'
+			},
+			logo: {
+				crop: {
+					point: {
+						x: radioStoreData?.configuration.logo.crop.point.x ?? 0,
+						y: radioStoreData?.configuration.logo.crop.point.y ?? 0
+					},
+					shape: radioStoreData?.configuration.logo.crop.shape ?? 0,
+					zoom: radioStoreData?.configuration.logo.crop.zoom ?? 1
+				},
+				data: radioStoreData?.configuration.logo.data ?? null
+			},
+			logoPath: radioStoreData?.configuration.logoPath ?? null,
+			radioId: radioStoreData?.configuration.radioId ?? generateId(),
+			radioName: radioStoreData?.configuration.radioName ?? 'Untitled Radio',
+			volume: {
+				enabled: radioStoreData?.configuration.volume.enabled ?? false,
+				value: radioStoreData?.configuration.volume.value ?? '95'
+			}
 		},
-		volume: {
-			enabled: radioData?.volume?.enabled ?? false,
-			value: radioData?.volume?.value ?? 95
-		},
-		tabId: radioData?.tabId ?? crypto.randomUUID()
+		tabId: radioStoreData?.tabId ?? crypto.randomUUID()
 	});
 
 	// Logo Cropper Vars
@@ -54,7 +67,7 @@
 	// Logo Image Vars
 	const logoExtensions = ['bmp', 'jpg', 'jpeg', 'png', 'svg', 'webp', 'dds'];
 
-	let logosrc = $state<string | null>(null);
+	let logosrc = $state<Promise<string | null> | null>(null);
 	let logoDropArea = $state<HTMLElement>();
 	let isDragging = $state(false);
 
@@ -63,7 +76,10 @@
 		radioName: false
 	});
 
-	let unsaved = $state<boolean>();
+	let saved = $derived(
+		JSON.stringify(tempRadioData.configuration) ===
+			JSON.stringify(radioStoreData?.configuration)
+	);
 
 	// Logo Drop Listener
 	listen<DragDropEventPayload>('tauri://drag-drop', (e) => {
@@ -75,7 +91,7 @@
 		if (el && logoDropArea?.contains(el)) {
 			const files = e.payload.paths;
 
-			tempRadioData.logoPath = files[0];
+			tempRadioData.configuration.logoPath = files[0];
 		}
 
 		isDragging = false;
@@ -175,12 +191,12 @@
 			return;
 		}
 
-		tempRadioData.logoPath = filePath;
+		tempRadioData.configuration.logoPath = filePath;
 	}
 
 	// Get cropped image
 	async function getCroppedImage(
-		imageSrc: string | null,
+		imageSrc: string | null | undefined,
 		cropPixels?: CropArea
 	): Promise<string | null> {
 		if (!imageSrc || !cropPixels) return null;
@@ -253,7 +269,7 @@
 	}
 
 	$effect(() => {
-		tempRadioData.logo = fetchImage(tempRadioData.logoPath).then((src) => (logosrc = src));
+		logosrc = fetchImage(tempRadioData.configuration.logoPath);
 	});
 </script>
 
@@ -277,7 +293,7 @@
 								class:border-red-400={errors.radioId}
 							>
 								<input
-									bind:value={tempRadioData.radioId}
+									bind:value={tempRadioData.configuration.radioId}
 									oninput={(e) => {
 										errors.radioId =
 											!/^[a-zA-Z0-9]*$/.test(e.currentTarget.value) ||
@@ -290,7 +306,8 @@
 									maxlength="4"
 								/>
 								<button
-									onclick={() => (tempRadioData.radioId = generateId())}
+									onclick={() =>
+										(tempRadioData.configuration.radioId = generateId())}
 									class="px-2 text-primary-400 hover:text-white transition-colors"
 									title="Generate ID"
 									tabIndex="-1"
@@ -308,7 +325,7 @@
 								class:border-red-400={errors.radioName}
 							>
 								<input
-									bind:value={tempRadioData.radioName}
+									bind:value={tempRadioData.configuration.radioName}
 									oninput={(e) => {
 										errors.radioName = e.currentTarget.value.length < 1;
 									}}
@@ -326,7 +343,7 @@
 						>
 						<div class="flex gap-2 bg-primary-750 border border-primary-600 rounded-lg">
 							<input
-								bind:value={tempRadioData.logoPath}
+								bind:value={tempRadioData.configuration.logoPath}
 								class="size-full px-2 py-1 text-sm text-white"
 								type="text"
 								id="radio-logo"
@@ -350,7 +367,7 @@
 					<div
 						class="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center"
 					>
-						{#await tempRadioData.logo}
+						{#await logosrc}
 							<Sonar />
 						{:then image}
 							{#if !image}
@@ -374,12 +391,20 @@
 							{:else}
 								<Cropper
 									{image}
-									oncropcomplete={async (e) => {
+									bind:crop={tempRadioData.configuration.logo.crop.point}
+									bind:cropShape={tempRadioData.configuration.logo.crop.shape}
+									bind:zoom={tempRadioData.configuration.logo.crop.zoom}
+									oncropcomplete={(e) => {
 										croppedPixels = e.pixels;
 									}}
 									onremove={() => {
 										logosrc = null;
-										tempRadioData.logoPath = null;
+										tempRadioData.configuration.logoPath = null;
+										tempRadioData.configuration.logo.crop = {
+											point: { x: 0, y: 0 },
+											shape: 0,
+											zoom: 1
+										};
 										croppedPixels = undefined;
 									}}
 								/>
@@ -390,7 +415,9 @@
 							>
 								<span class="text-white font-bold">Failed to load preview</span>
 								<span class="text-xs text-primary-400 truncate"
-									>Path\URL: <strong>{tempRadioData.logoPath}</strong></span
+									>Path\URL: <strong
+										>{tempRadioData.configuration.logoPath}</strong
+									></span
 								>
 								<span class="text-xs text-primary-400">{err}</span>
 							</div>
@@ -408,14 +435,15 @@
 						<div class="flex items-center justify-center gap-20">
 							<button
 								onclick={() =>
-									(tempRadioData.force!.enabled = !tempRadioData.force!.enabled)}
+									(tempRadioData.configuration.force.enabled =
+										!tempRadioData.configuration.force.enabled)}
 								class="grow h-full text-sm text-white text-left cursor-pointer"
 								tabIndex="-1"
 							>
 								Use Force Value
 							</button>
 
-							<Toggle bind:toggled={tempRadioData.force!.enabled} />
+							<Toggle bind:toggled={tempRadioData.configuration.force.enabled} />
 						</div>
 						<span class="text-xs text-primary-400">
 							KM/H value when music fully fades in. Default 80, Max 300, 0 = Disabled.
@@ -429,29 +457,35 @@
 						class="flex gap-2 w-max bg-primary-750 border border-primary-600 rounded-lg"
 					>
 						<input
-							bind:value={tempRadioData.force!.value}
+							bind:value={tempRadioData.configuration.force.value}
 							oninput={(e) => {
-								e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '');
-								e.currentTarget.value = e.currentTarget.value.replace(/^0+/, '');
-								if (e.currentTarget.value === '') e.currentTarget.value = '0';
+								let value = e.currentTarget.value;
+
+								value = value.replace(/\D/g, '');
+								value = value.replace(/^0+/, '');
+								if (value === '') value = '0';
+
+								tempRadioData.configuration.force.value = value;
 							}}
 							onblur={(e) => {
-								const num = parseInt(e.currentTarget.value, 10);
+								let value = e.currentTarget.value;
 
-								if (num > 300) e.currentTarget.value = '300';
+								const num = parseInt(value, 10);
+
+								if (num > 300) value = '300';
+
+								tempRadioData.configuration.force.value = value;
 							}}
 							onkeydown={(e) => {
 								if (e.key === 'Enter') {
-									const num = parseInt(e.currentTarget.value, 10);
-
-									if (num > 300) e.currentTarget.value = '300';
+									e.currentTarget.blur();
 								}
 							}}
 							class="h-full w-[20ch] px-2 py-1 text-sm text-white"
 							type="text"
 							maxlength="3"
 							autocomplete="off"
-							disabled={!tempRadioData.force?.enabled}
+							disabled={!tempRadioData.configuration.force.enabled}
 						/>
 					</div>
 				</div>
@@ -460,15 +494,15 @@
 						<div class="flex items-center justify-center gap-20">
 							<button
 								onclick={() =>
-									(tempRadioData.volume!.enabled =
-										!tempRadioData.volume!.enabled)}
+									(tempRadioData.configuration.volume.enabled =
+										!tempRadioData.configuration.volume.enabled)}
 								class="grow h-full text-sm text-white text-left cursor-pointer"
 								tabIndex="-1"
 							>
 								Use Target Volume
 							</button>
 
-							<Toggle bind:toggled={tempRadioData.volume!.enabled} />
+							<Toggle bind:toggled={tempRadioData.configuration.volume.enabled} />
 						</div>
 						<span class="text-xs text-primary-400"
 							>A dB value used to calculate an offset value for each track.</span
@@ -485,31 +519,45 @@
 						class="flex gap-2 w-max bg-primary-750 border border-primary-600 rounded-lg"
 					>
 						<input
-							bind:value={tempRadioData.volume!.value}
+							bind:value={tempRadioData.configuration.volume.value}
 							oninput={(e) => {
-								e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '');
-								e.currentTarget.value = e.currentTarget.value.replace(/^0+/, '');
-								if (e.currentTarget.value === '') e.currentTarget.value = '0';
+								let value = e.currentTarget.value;
+
+								// allow only digits and one decimal point
+								if (!/^\d*\.?\d*$/.test(value)) {
+									value = value.slice(0, -1);
+									return;
+								}
+
+								const parts = value.split('.');
+
+								// if more than 2 decimals, remove last character
+								if (parts[1]?.length > 1) {
+									value = value.slice(0, -1);
+								}
+
+								tempRadioData.configuration.volume.value = value;
 							}}
 							onblur={(e) => {
-								const num = parseInt(e.currentTarget.value, 10);
+								let value = e.currentTarget.value;
 
-								if (num < 60) e.currentTarget.value = '60';
-								if (num > 120) e.currentTarget.value = '120';
+								const num = Number(value);
+
+								if (num < 60) value = '60';
+								if (num > 120) value = '120';
+
+								tempRadioData.configuration.volume.value = value;
 							}}
 							onkeydown={(e) => {
 								if (e.key === 'Enter') {
-									const num = parseInt(e.currentTarget.value, 10);
-
-									if (num < 60) e.currentTarget.value = '60';
-									if (num > 120) e.currentTarget.value = '120';
+									e.currentTarget.blur();
 								}
 							}}
 							class="h-full w-[20ch] px-2 py-1 text-sm text-white"
 							type="text"
-							maxlength="3"
+							maxlength="7"
 							autocomplete="off"
-							disabled={!tempRadioData.volume?.enabled}
+							disabled={!tempRadioData.configuration.volume.enabled}
 						/>
 					</div>
 				</div>
@@ -521,16 +569,35 @@
 			<span transition:fade={{ duration: 200 }} class="text-xs text-red-400 animate-pulse"
 				>Check highlighted fields for errors!</span
 			>
+		{:else if !saved}
+			<span transition:fade={{ duration: 200 }} class="text-xs text-red-400 animate-pulse"
+				>You have unsaved changes!</span
+			>
 		{/if}
-		<button
-			onclick={async () => {
-				tempRadioData.logo = await getCroppedImage(logosrc, croppedPixels);
-				radioDataStore.add(tempRadioData);
-				radioDataStore.closeConfig();
-			}}
-			class="w-24 py-1 text-sm text-white bg-primary-750 hover:bg-primary-700 border border-primary-600 transition-colors rounded-lg"
-			disabled={Object.values(errors).some((value) => value === true)}>OK</button
-		>
+		<div class="flex gap-2">
+			<button
+				onclick={radioDataStore.closeConfig}
+				class="w-24 py-1 text-sm text-white bg-primary-750 hover:bg-primary-700 border border-primary-600 transition-colors rounded-lg"
+				>Cancel</button
+			>
+			<button
+				onclick={async () => {
+					radioDataStore.add({
+						...tempRadioData,
+						configuration: {
+							...tempRadioData.configuration,
+							logo: {
+								...tempRadioData.configuration.logo,
+								data: await getCroppedImage(await logosrc, croppedPixels)
+							}
+						}
+					});
+					radioDataStore.closeConfig();
+				}}
+				class="w-24 py-1 text-sm text-white bg-primary-750 hover:bg-primary-700 border border-primary-600 transition-colors rounded-lg"
+				disabled={saved || Object.values(errors).some((value) => value === true)}>OK</button
+			>
+		</div>
 	</div>
 </div>
 

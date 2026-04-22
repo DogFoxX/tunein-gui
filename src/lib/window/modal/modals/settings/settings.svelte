@@ -354,13 +354,20 @@
 				>You have unsaved changes!</span
 			>
 		{/if}
-		<button
-			onclick={async () => {
-				await settings.save(tempSettings);
-			}}
-			class="w-24 py-1 text-sm text-white bg-primary-750 hover:bg-primary-700 border border-primary-600 transition-colors rounded-lg"
-			disabled={saved}>Save</button
-		>
+		<div class="flex gap-2">
+			<button
+				onclick={settings.close}
+				class="w-24 py-1 text-sm text-white bg-primary-750 hover:bg-primary-700 border border-primary-600 transition-colors rounded-lg"
+				>Cancel</button
+			>
+			<button
+				onclick={async () => {
+					await settings.save(tempSettings);
+				}}
+				class="w-24 py-1 text-sm text-white bg-primary-750 hover:bg-primary-700 border border-primary-600 transition-colors rounded-lg"
+				disabled={saved}>Save</button
+			>
+		</div>
 	</div>
 </div>
 
