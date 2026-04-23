@@ -15,7 +15,7 @@
 	import { backOut } from 'svelte/easing';
 
 	// Stores
-	import { modelOpen } from '.';
+	import { modalOpen } from '.';
 
 	// Icons
 	import { Close } from '$assets/tg-icons';
@@ -89,7 +89,7 @@
 		}
 	};
 
-	$effect(() => modelOpen.set(open));
+	$effect(() => modalOpen.set(open));
 
 	$effect(() => {
 		if (modal) modal.focus();

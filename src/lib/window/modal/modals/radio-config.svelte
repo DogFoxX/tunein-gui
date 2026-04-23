@@ -26,6 +26,9 @@
 	import radioDataStore from '$lib/stores/radio-data.store';
 	const { radioConfigurer } = radioDataStore;
 
+	// Utils
+	import { customContext } from '$lib/utils';
+
 	// Icons
 	import { FolderOpen, RestartSquare } from '@solar-icons/svelte/Bold';
 
@@ -77,8 +80,9 @@
 	});
 
 	let saved = $derived(
-		JSON.stringify(tempRadioData.configuration) ===
-			JSON.stringify(radioStoreData?.configuration)
+		!radioStoreData ||
+			JSON.stringify(tempRadioData.configuration) ===
+				JSON.stringify(radioStoreData?.configuration)
 	);
 
 	// Logo Drop Listener
@@ -271,6 +275,12 @@
 	$effect(() => {
 		logosrc = fetchImage(tempRadioData.configuration.logoPath);
 	});
+
+	$effect(() => {
+		if (tempRadioData.configuration.logoPath === radioStoreData?.configuration.logoPath) return;
+
+		tempRadioData.configuration.logo.crop.point = { x: 0, y: 0 };
+	});
 </script>
 
 <div
@@ -294,6 +304,11 @@
 							>
 								<input
 									bind:value={tempRadioData.configuration.radioId}
+									use:customContext={() => ({
+										text: 'Generate ID',
+										action: () =>
+											(tempRadioData.configuration.radioId = generateId())
+									})}
 									oninput={(e) => {
 										errors.radioId =
 											!/^[a-zA-Z0-9]*$/.test(e.currentTarget.value) ||
@@ -326,6 +341,7 @@
 							>
 								<input
 									bind:value={tempRadioData.configuration.radioName}
+									use:customContext
 									oninput={(e) => {
 										errors.radioName = e.currentTarget.value.length < 1;
 									}}
@@ -344,6 +360,7 @@
 						<div class="flex gap-2 bg-primary-750 border border-primary-600 rounded-lg">
 							<input
 								bind:value={tempRadioData.configuration.logoPath}
+								use:customContext
 								class="size-full px-2 py-1 text-sm text-white"
 								type="text"
 								id="radio-logo"
@@ -458,6 +475,7 @@
 					>
 						<input
 							bind:value={tempRadioData.configuration.force.value}
+							use:customContext
 							oninput={(e) => {
 								let value = e.currentTarget.value;
 
@@ -520,6 +538,7 @@
 					>
 						<input
 							bind:value={tempRadioData.configuration.volume.value}
+							use:customContext
 							oninput={(e) => {
 								let value = e.currentTarget.value;
 
@@ -577,7 +596,7 @@
 		<div class="flex gap-2">
 			<button
 				onclick={radioDataStore.closeConfig}
-				class="w-24 py-1 text-sm text-white bg-primary-750 hover:bg-primary-700 border border-primary-600 transition-colors rounded-lg"
+				class="w-24 py-1 text-sm text-white bg-primary-750 hover:bg-primary-650 border border-primary-600 transition-colors rounded-lg"
 				>Cancel</button
 			>
 			<button
@@ -594,8 +613,9 @@
 					});
 					radioDataStore.closeConfig();
 				}}
-				class="w-24 py-1 text-sm text-white bg-primary-750 hover:bg-primary-700 border border-primary-600 transition-colors rounded-lg"
-				disabled={saved || Object.values(errors).some((value) => value === true)}>OK</button
+				class="w-24 py-1 text-sm text-white bg-primary-750 hover:bg-primary-650 border border-primary-600 transition-colors rounded-lg"
+				disabled={(radioStoreData && saved) ||
+					Object.values(errors).some((value) => value === true)}>OK</button
 			>
 		</div>
 	</div>

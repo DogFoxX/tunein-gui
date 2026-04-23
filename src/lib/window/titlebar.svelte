@@ -8,7 +8,7 @@
 	// Stores
 	import { settings, tabStore } from '$lib/stores';
 	import radioDataStore from '$lib/stores/radio-data.store';
-	import { modelOpen } from './modal';
+	import { modalOpen } from './modal';
 
 	// Utils
 	import { tgSlide } from '$lib/utils';
@@ -45,14 +45,19 @@
 
 <!-- Tab snippets -->
 {#snippet tgHomeTab({ active }: { active?: boolean })}
-	<li class="relative flex items-center h-full shrink min-w-20.5" class:active role="tab">
+	<li
+		class="relative flex items-center h-full shrink min-w-20.5"
+		class:active
+		class:pointer-events-none={$modalOpen}
+		role="tab"
+	>
 		<button
 			onmousedown={() => {
 				tabStore.activate('home');
 			}}
-			class="flex gap-2 items-center justify-center size-full text-xs text-primary-300"
+			class="flex gap-2 items-center justify-center size-full text-xs text-primary-200"
 			class:text-white!={active}
-			disabled={$modelOpen}
+			disabled={$modalOpen}
 			tabIndex="-1"
 		>
 			<Home2 size={18} />
@@ -104,10 +109,10 @@
 			onmousedown={() => {
 				tabStore.activate(id);
 			}}
-			class="flex gap-2 items-center h-full w-48 text-xs text-primary-300 pl-3 pr-6 overflow-hidden"
+			class="flex gap-2 items-center h-full w-48 text-xs text-primary-200 pl-3 pr-6 overflow-hidden"
 			class:text-white!={active}
 			{title}
-			disabled={$modelOpen}
+			disabled={$modalOpen}
 			tabIndex="-1"
 		>
 			<span class="truncate">{title}</span>
@@ -146,6 +151,7 @@
 		<button
 			onclick={() => tabStore.close(id)}
 			class="absolute right-2.25 text-zinc-300 hover:text-white hover:bg-slate-500 p-0.5 rounded-full transition-colors"
+			disabled={$modalOpen}
 			tabIndex="-1"
 		>
 			<Close size={13} />
@@ -190,7 +196,7 @@
 			onclick={() => radioDataStore.openConfig()}
 			class="flex items-center justify-center shrink-0 size-7 text-primary-300 hover:text-white hover:bg-primary-600 rounded-full transition-colors"
 			title="Create New"
-			disabled={$tabStore?.length == 18 || $modelOpen}
+			disabled={$tabStore?.length == 18 || $modalOpen}
 		>
 			<Plus />
 		</button>
@@ -213,7 +219,7 @@
 				class="h-full px-2 rounded-lg text-primary-400 hover:text-white hover:bg-primary-700 transition-[background-color]"
 				class:text-white!={focused}
 				title="Settings"
-				disabled={$modelOpen}
+				disabled={$modalOpen}
 			>
 				<Settings size={18} />
 			</button>

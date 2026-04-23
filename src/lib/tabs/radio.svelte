@@ -22,7 +22,7 @@
 				<Bolt />
 			</button>
 			<button
-				class="flex items-center justify-center gap-2 px-3 py-1.5 text-sm text-white bg-primary-750 hover:bg-primary-600 border border-primary-600 rounded-lg transition-colors"
+				class="flex items-center justify-center gap-2 px-3 py-1.5 text-sm text-white bg-primary-750 hover:bg-primary-650 border border-primary-600 rounded-lg transition-colors"
 			>
 				<Diskette size={16} />
 				<span>Save</span>
@@ -33,7 +33,7 @@
 						header: `Configure ${radioData?.configuration.radioName}`,
 						tabId: radioData?.tabId
 					})}
-				class="flex items-center justify-center gap-2 px-3 py-1.5 text-sm text-white bg-primary-750 hover:bg-primary-600 border border-primary-600 rounded-lg transition-colors"
+				class="flex items-center justify-center gap-2 px-3 py-1.5 text-sm text-white bg-primary-750 hover:bg-primary-650 border border-primary-600 rounded-lg transition-colors"
 			>
 				<Tuning2 size={16} />
 				<span>Configure</span>

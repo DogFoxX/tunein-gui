@@ -17,6 +17,9 @@
 	// Stores
 	import { settings } from '$lib/stores';
 
+	// Utils
+	import { customContext } from '$lib/utils';
+
 	// Icons
 	import { CheckCircle, CloseCircle, FolderOpen } from '@solar-icons/svelte/Bold';
 
@@ -123,7 +126,7 @@
 						</span>
 					</div>
 					<button
-						class="w-max px-4 py-1 text-sm text-white bg-primary-750 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
+						class="w-max px-4 py-1 text-sm text-white bg-primary-750 hover:bg-primary-650 border border-primary-600 rounded-lg transition-colors"
 						>Check For Updates</button
 					>
 				</div>
@@ -144,7 +147,7 @@
 						</span>
 					</div>
 					<button
-						class="w-max px-4 py-1 text-sm text-white bg-primary-750 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
+						class="w-max px-4 py-1 text-sm text-white bg-primary-750 hover:bg-primary-650 border border-primary-600 rounded-lg transition-colors"
 						disabled={!tempSettings.keepTabs}>Clear Tabs</button
 					>
 				</div>
@@ -191,7 +194,7 @@
 						</span>
 					</div>
 					<button
-						class="w-max px-4 py-1 text-sm text-white bg-primary-750 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
+						class="w-max px-4 py-1 text-sm text-white bg-primary-750 hover:bg-primary-650 border border-primary-600 rounded-lg transition-colors"
 						>Check For Updates</button
 					>
 				</div>
@@ -213,6 +216,7 @@
 					<div class="flex gap-2 bg-primary-750 border border-primary-600 rounded-lg">
 						<input
 							bind:value={tempSettings.tuneinCrew!.dir}
+							use:customContext
 							class="size-full px-2 py-1 text-sm text-white"
 							type="text"
 							id="tuneincrew-path"
@@ -249,7 +253,7 @@
 					<div class="flex items-center gap-4">
 						<button
 							onclick={installTuneinCrew}
-							class="px-4 py-1 text-sm text-white bg-primary-750 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
+							class="px-4 py-1 text-sm text-white bg-primary-750 hover:bg-primary-650 border border-primary-600 rounded-lg transition-colors"
 							disabled={tuneincrewInstalled || tuneinCrewInstalling !== undefined}
 						>
 							Install
@@ -288,6 +292,7 @@
 					<div class="flex gap-2 bg-primary-750 border border-primary-600 rounded-lg">
 						<input
 							bind:value={tempSettings.fmodDir}
+							use:customContext
 							class="size-full px-2 py-1 text-sm text-white"
 							type="text"
 							id="fmod-path"
@@ -324,7 +329,7 @@
 					<div class="flex items-center gap-4">
 						<button
 							onclick={() => (fmodInstalling = installFMOD())}
-							class="px-4 py-1 text-sm text-white bg-primary-750 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
+							class="px-4 py-1 text-sm text-white bg-primary-750 hover:bg-primary-650 border border-primary-600 rounded-lg transition-colors"
 							disabled={fmodInstalled || fmodInstalling !== undefined}
 						>
 							Install
@@ -357,14 +362,14 @@
 		<div class="flex gap-2">
 			<button
 				onclick={settings.close}
-				class="w-24 py-1 text-sm text-white bg-primary-750 hover:bg-primary-700 border border-primary-600 transition-colors rounded-lg"
+				class="w-24 py-1 text-sm text-white bg-primary-750 hover:bg-primary-650 border border-primary-600 transition-colors rounded-lg"
 				>Cancel</button
 			>
 			<button
 				onclick={async () => {
 					await settings.save(tempSettings);
 				}}
-				class="w-24 py-1 text-sm text-white bg-primary-750 hover:bg-primary-700 border border-primary-600 transition-colors rounded-lg"
+				class="w-24 py-1 text-sm text-white bg-primary-750 hover:bg-primary-650 border border-primary-600 transition-colors rounded-lg"
 				disabled={saved}>Save</button
 			>
 		</div>

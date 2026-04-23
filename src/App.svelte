@@ -92,13 +92,13 @@
 			components={{ Settings, About }}
 			active="Settings"
 			bind:open={$settingsOpen}
-			class="h-150 w-220"
+			class="h-158 w-220"
 		></Modal>
 		<Modal
 			components={{ RadioConfig }}
 			header={$radioConfigurer.header}
 			bind:open={$radioConfigurer.open}
-			class="h-150 w-220"
+			class="h-158 w-220"
 		/>
 	</main>
 {/if}

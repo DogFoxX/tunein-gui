@@ -4,6 +4,8 @@
 	"platforms": ["macOS", "windows", "linux"],
 	"windows": ["main"],
 	"permissions": [
+		"clipboard-manager:allow-write-text",
+		"clipboard-manager:allow-read-text",
 		"updater:default",
 		"opener:default",
 		"dialog:default",

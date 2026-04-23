@@ -11,6 +11,7 @@
 
 	// Stores
 	import { settings } from '$lib/stores';
+	import radioDataStore from '$lib/stores/radio-data.store';
 
 	// Utils
 	import { fetchMods } from '$lib/utils';
@@ -48,7 +49,10 @@
 		</div>
 		<hr class="w-px h-full bg-primary-500" />
 		<div id="tg-profiles" class="grid grid-cols-4 gap-1 h-full p-1 overflow-y-scroll">
-			<button class="flex flex-col gap-2 h-34 w-34 px-4 py-2 rounded-lg">
+			<button
+				onclick={() => radioDataStore.openConfig()}
+				class="flex flex-col gap-2 h-34 w-34 px-4 py-2 rounded-lg"
+			>
 				<span
 					class="tg-profile-tile flex items-center justify-center grow w-full text-sky-500 bg-sky-900 border border-sky-600 rounded-xl transition-colors"
 				>
