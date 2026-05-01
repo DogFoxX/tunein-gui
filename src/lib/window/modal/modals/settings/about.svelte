@@ -48,7 +48,7 @@
 			<div class="flex gap-2">
 				<span class="text-sm text-primary-400">TuneinCrew Version:</span>
 				<span class="text-sm font-bold text-primary-400"
-					>{$settings.tuneinCrew?.version ?? 'N/A'}</span
+					>{settings.tuneinCrewVersion ?? 'N/A'}</span
 				>
 			</div>
 		</div>

@@ -59,7 +59,6 @@
 		"highlight.js": "^11.11.1",
 		"music-metadata": "^11.12.3",
 		"octokit": "^5.0.5",
-		"tauri-plugin-cache-api": "^0.1.6",
 		"tauri-plugin-shellx-api": "^2.0.16",
 		"zod": "^4.3.6"
 	}

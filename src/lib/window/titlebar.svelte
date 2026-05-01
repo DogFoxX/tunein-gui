@@ -6,8 +6,9 @@
 	import { getCurrentWindow } from '@tauri-apps/api/window';
 
 	// Stores
-	import { settings, tabStore } from '$lib/stores';
-	import radioDataStore from '$lib/stores/radio-data.store';
+	import { settings } from '$lib/stores';
+	import { tabs } from '$lib/stores';
+	import { radioData } from '$lib/stores';
 	import { modalOpen } from './modal';
 
 	// Utils
@@ -19,26 +20,19 @@
 
 	let { updater }: { updater: GuiUpdateDownload | null } = $props();
 
-	const mainWindow = getCurrentWindow();
+	const appWindow = getCurrentWindow();
 	let isMax = $state<boolean>();
 	let focused = $state<boolean>();
-	let tabs = $derived<TgTabs[]>([
-		{
-			active: !$tabStore?.some(({ active }) => active),
-			id: 'home'
-		},
-		...$tabStore
-	]);
 
 	onMount(async () => {
-		await mainWindow.onFocusChanged(({ payload: focus }) => {
+		await appWindow.onFocusChanged(({ payload: focus }) => {
 			focused = focus;
 		});
 
-		isMax = await mainWindow.isMaximized();
+		isMax = await appWindow.isMaximized();
 
-		await mainWindow.onResized(async () => {
-			isMax = await mainWindow.isMaximized();
+		await appWindow.onResized(async () => {
+			isMax = await appWindow.isMaximized();
 		});
 	});
 </script>
@@ -53,7 +47,7 @@
 	>
 		<button
 			onmousedown={() => {
-				tabStore.activate('home');
+				tabs.activate('home');
 			}}
 			class="flex gap-2 items-center justify-center size-full text-xs text-primary-200"
 			class:text-white!={active}
@@ -107,7 +101,7 @@
 	>
 		<button
 			onmousedown={() => {
-				tabStore.activate(id);
+				tabs.activate(id);
 			}}
 			class="flex gap-2 items-center h-full w-48 text-xs text-primary-200 pl-3 pr-6 overflow-hidden"
 			class:text-white!={active}
@@ -149,8 +143,8 @@
 			{/if}
 		</div>
 		<button
-			onclick={() => tabStore.close(id)}
-			class="absolute right-2.25 text-zinc-300 hover:text-white hover:bg-slate-500 p-0.5 rounded-full transition-colors"
+			onclick={() => tabs.close(id)}
+			class="absolute right-2.25 text-zinc-300 hover:text-white hover:bg-primary-400/50 p-0.5 rounded-full transition-colors"
 			disabled={$modalOpen}
 			tabIndex="-1"
 		>
@@ -180,23 +174,21 @@
 	<!-- Tabs -->
 	<nav class="relative flex items-center gap-1.5 h-full min-w-0 ml-9.25 max-w-[calc(100%-268px)]">
 		<ul class="flex size-full min-w-0" style="max-width: calc({82 + 192 * 8}px);">
-			{@render tgHomeTab({ active: tabs[0].active })}
-			{#await tabStore.init() then _}
-				{#each $tabStore as { active, id }, i (id)}
-					{@render tgTab({
-						active,
-						id,
-						title: $radioDataStore.find(({ tabId }) => tabId === id)?.configuration
-							.radioName
-					})}
-				{/each}
-			{/await}
+			{@render tgHomeTab({ active: !tabs.state.some(({ active }) => active) })}
+			{#each tabs.state as { active, id } (id)}
+				{@render tgTab({
+					active,
+					id,
+					title: radioData.state.find(({ tabId }) => tabId === id)?.configuration
+						.radioName
+				})}
+			{/each}
 		</ul>
 		<button
-			onclick={() => radioDataStore.openConfig()}
-			class="flex items-center justify-center shrink-0 size-7 text-primary-300 hover:text-white hover:bg-primary-600 rounded-full transition-colors"
+			onclick={() => radioData.openConfig()}
+			class="flex items-center justify-center shrink-0 size-7 text-primary-300 hover:text-white hover:bg-primary-600/50 rounded-full transition-colors"
 			title="Create New"
-			disabled={$tabStore?.length == 18 || $modalOpen}
+			disabled={tabs.state?.length == 18 || $modalOpen}
 		>
 			<Plus />
 		</button>
@@ -216,7 +208,7 @@
 			{/if}
 			<button
 				onclick={settings.open}
-				class="h-full px-2 rounded-lg text-primary-400 hover:text-white hover:bg-primary-700 transition-[background-color]"
+				class="h-full px-2 rounded-lg text-primary-400 hover:text-white hover:bg-primary-600/50 transition-[background-color]"
 				class:text-white!={focused}
 				title="Settings"
 				disabled={$modalOpen}
@@ -226,8 +218,8 @@
 		</div>
 		<div class="flex h-full">
 			<button
-				onclick={mainWindow.minimize}
-				class="w-11.5 h-full flex items-center justify-center text-primary-400 hover:text-white hover:bg-primary-700 transition-[background-color]"
+				onclick={appWindow.minimize}
+				class="w-11.5 h-full flex items-center justify-center text-primary-400 hover:text-white hover:bg-primary-700/50 transition-[background-color]"
 				class:text-white!={focused}
 				aria-label="minimze"
 				title="Minimize"
@@ -247,8 +239,8 @@
 				</svg>
 			</button>
 			<button
-				onclick={mainWindow.toggleMaximize}
-				class="w-11.5 h-full flex items-center justify-center text-primary-400 hover:text-white hover:bg-primary-700 transition-[background-color]"
+				onclick={appWindow.toggleMaximize}
+				class="w-11.5 h-full flex items-center justify-center text-primary-400 hover:text-white hover:bg-primary-700/50 transition-[background-color]"
 				class:text-white!={focused}
 				aria-label="maximize"
 				title={isMax ? 'Restore' : 'Maximize'}
@@ -283,7 +275,7 @@
 				{/if}
 			</button>
 			<button
-				onclick={mainWindow.close}
+				onclick={appWindow.close}
 				class="w-11.5 h-full flex items-center justify-center text-primary-400 hover:text-white hover:bg-close transition-[background-color]"
 				class:text-white!={focused}
 				aria-label="close"
@@ -311,7 +303,7 @@
 	li {
 		&:not(.active):hover {
 			> div {
-				background-color: var(--color-slate-600);
+				background-color: color-mix(in srgb, var(--color-primary-600) 50%, transparent);
 			}
 
 			&::after {

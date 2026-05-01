@@ -1,6 +1,6 @@
 import { check as updaterCheck, type Update } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
-import logger from '$lib/stores/logger';
+import logger from '$lib/utils/logger';
 
 let update: Update | null = null;
 

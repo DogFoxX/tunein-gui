@@ -4,8 +4,6 @@
 		active?: keyof T;
 		class?: string;
 		open: boolean;
-		onOpen?: () => void;
-		onClose?: () => void;
 		header?: string;
 	}
 
@@ -22,8 +20,6 @@
 
 	let {
 		open = $bindable(),
-		onOpen,
-		onClose,
 		components,
 		active,
 		class: className,
@@ -102,18 +98,16 @@
 	<div
 		transition:fade={{ duration: 180 }}
 		bind:this={modal}
-		class="absolute inset-0 flex items-center justify-center backdrop-blur-xs"
+		class="absolute inset-0 flex items-center justify-center bg-primary-700/50 backdrop-blur-xs z-999"
 		role="dialog"
-		tabindex="-1"
 	>
-		<div class="absolute inset-0 bg-primary-700 opacity-70"></div>
 		<div
 			in:scale={{ start: 0.9, duration: 300, easing: backOut }}
 			out:scale={{ start: 0.9, duration: 180 }}
 			class={`absolute flex flex-col bg-primary-800 rounded-lg shadow-lg shadow-neutral-900 ${className ?? ''}`}
 		>
 			<header
-				class="relative box-content flex items-center gap-6 min-h-10 px-6 border-b border-primary-750"
+				class="relative box-content flex items-center gap-6 min-h-10 px-6 border-b border-primary-700"
 			>
 				{#if keys.length > 1}
 					{#each keys as key}

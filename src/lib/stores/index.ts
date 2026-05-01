@@ -1,5 +1,6 @@
-export { default as settings } from './settings.store';
-export { default as tabStore } from './tabs.store';
+export { default as radioData } from './radio-data.svelte';
+export { default as settings } from './settings.svelte';
+export { tables, tabs } from './states.svelte';
 
 import { writable } from 'svelte/store';
 

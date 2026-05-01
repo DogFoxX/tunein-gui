@@ -1,11 +1,10 @@
-import { get } from 'svelte/store';
 import { fetch } from '@tauri-apps/plugin-http';
 import { type } from '@tauri-apps/plugin-os';
 import { writeFile, remove, mkdir } from '@tauri-apps/plugin-fs';
 import { tempDir, join, dirname } from '@tauri-apps/api/path';
 import { unzipSync } from 'fflate';
 import { settings } from '$lib/stores';
-import logger from '$lib/stores/logger';
+import logger from '$lib/utils/logger';
 
 import { Octokit } from 'octokit';
 import type { Endpoints } from '@octokit/types';
@@ -108,7 +107,7 @@ async function downloadAndInstall({
 		const relativePath = path.replace(rootFolder, '');
 		if (!relativePath) continue;
 
-		const targetDir = installLoc ? installLoc : get(settings).tuneinCrew.dir;
+		const targetDir = installLoc ? installLoc : settings.state.tuneinCrew.dir;
 		const outPath = await join(targetDir, relativePath);
 		const parentDir = await dirname(outPath);
 

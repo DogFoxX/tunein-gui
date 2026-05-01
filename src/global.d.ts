@@ -18,7 +18,26 @@ interface NexusMods {
 	author: string;
 }
 
-interface RadioData {
+interface JinglesType {
+	id: string;
+	file: string;
+	filename: string;
+}
+
+interface SongsType {
+	id: string;
+	number?: string;
+	artist?: string;
+	name?: string;
+	year?: string;
+	length?: string;
+	measured_volume?: string;
+	volume_offset?: string;
+	filename: string;
+	path?: string;
+}
+
+interface TgRadioData {
 	configuration: {
 		radioId?: string;
 		radioName?: string;
@@ -42,19 +61,8 @@ interface RadioData {
 	};
 	tabId: string;
 	tracks?: {
-		jingles?: {
-			filename: string;
-			file: string;
-		}[];
-		songs?: {
-			filename: string;
-			file: string;
-			artist?: string;
-			name?: string;
-			year?: string;
-			length?: string;
-			measuredVolume?: string;
-		}[];
+		jingles: JinglesType[];
+		songs: SongsType[];
 	};
 }
 
@@ -81,11 +89,6 @@ interface XMLData {
 	};
 }
 
-enum NexusDirectionEnum {
-	ASC,
-	DESC
-}
-
 interface TgSettings {
 	autoUpdate: boolean;
 	fmodDir: string;
@@ -100,4 +103,12 @@ interface TgSettings {
 
 interface GuiUpdateDownload {
 	install: () => Promise<void>;
+}
+
+interface TableState {
+	ascending?: boolean;
+	fields: {
+		sort?: boolean;
+		width?: number;
+	}[];
 }

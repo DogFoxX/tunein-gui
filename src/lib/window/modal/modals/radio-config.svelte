@@ -5,7 +5,6 @@
 	}
 
 	// Svelte Imports
-	import { tick } from 'svelte';
 	import { fade, scale } from 'svelte/transition';
 
 	// Tauri Imports
@@ -23,8 +22,8 @@
 	import { Cropper, type CropArea } from '$assets/cropper';
 
 	// Stores
-	import radioDataStore from '$lib/stores/radio-data.store';
-	const { radioConfigurer } = radioDataStore;
+	import { tabs } from '$lib/stores';
+	import { radioData } from '$lib/stores';
 
 	// Utils
 	import { customContext } from '$lib/utils';
@@ -33,10 +32,10 @@
 	import { FolderOpen, RestartSquare } from '@solar-icons/svelte/Bold';
 
 	let radioStoreData = $state(
-		$radioDataStore.find(({ tabId }) => $radioConfigurer.tabId === tabId)
+		radioData.state.find(({ tabId }) => radioData.configurer.tabId === tabId)
 	);
 
-	let tempRadioData = $state<RadioData>({
+	let tempRadioData = $state<TgRadioData>({
 		configuration: {
 			force: {
 				enabled: radioStoreData?.configuration.force.enabled ?? false,
@@ -70,7 +69,10 @@
 	// Logo Image Vars
 	const logoExtensions = ['bmp', 'jpg', 'jpeg', 'png', 'svg', 'webp', 'dds'];
 
-	let logosrc = $state<Promise<string | null> | null>(null);
+	let logo = $state<{ src: Promise<string | null> | null; pending: boolean }>({
+		src: null,
+		pending: false
+	});
 	let logoDropArea = $state<HTMLElement>();
 	let isDragging = $state(false);
 
@@ -273,7 +275,12 @@
 	}
 
 	$effect(() => {
-		logosrc = fetchImage(tempRadioData.configuration.logoPath);
+		logo = {
+			src: fetchImage(tempRadioData.configuration.logoPath).finally(
+				() => (logo.pending = false)
+			),
+			pending: true
+		};
 	});
 
 	$effect(() => {
@@ -291,7 +298,7 @@
 		<!-- Radio Info -->
 		<div class="flex flex-col gap-3">
 			<h1 class="text-white font-semibold">Basic Radio Info</h1>
-			<div class="flex flex-col gap-4 p-3 border-t border-primary-750">
+			<div class="flex flex-col gap-4 p-3 border-t border-primary-700">
 				<div class="flex flex-col gap-2 grow">
 					<div class="flex gap-2">
 						<div class="flex flex-col gap-1">
@@ -299,7 +306,7 @@
 								>Radio ID (Unique)</label
 							>
 							<div
-								class="flex gap-2 bg-primary-750 border border-primary-600 rounded-lg"
+								class="flex gap-2 bg-primary-700/50 border border-primary-600 rounded-lg"
 								class:border-red-400={errors.radioId}
 							>
 								<input
@@ -336,7 +343,7 @@
 								>Radio Station Name</label
 							>
 							<div
-								class="flex gap-2 bg-primary-750 border border-primary-600 rounded-lg"
+								class="flex bg-primary-700/50 border border-primary-600 rounded-lg"
 								class:border-red-400={errors.radioName}
 							>
 								<input
@@ -357,7 +364,9 @@
 						<label class="text-sm text-primary-300" for="radio-logo"
 							>Logo Path\URL</label
 						>
-						<div class="flex gap-2 bg-primary-750 border border-primary-600 rounded-lg">
+						<div
+							class="flex gap-2 bg-primary-700/50 border border-primary-600 rounded-lg"
+						>
 							<input
 								bind:value={tempRadioData.configuration.logoPath}
 								use:customContext
@@ -384,7 +393,7 @@
 					<div
 						class="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center"
 					>
-						{#await logosrc}
+						{#await logo.src}
 							<Sonar />
 						{:then image}
 							{#if !image}
@@ -415,7 +424,7 @@
 										croppedPixels = e.pixels;
 									}}
 									onremove={() => {
-										logosrc = null;
+										logo.src = null;
 										tempRadioData.configuration.logoPath = null;
 										tempRadioData.configuration.logo.crop = {
 											point: { x: 0, y: 0 },
@@ -447,7 +456,7 @@
 		<div class="flex flex-col gap-3">
 			<h1 class="text-white font-semibold">Extra Configuration</h1>
 			<div class="flex flex-col">
-				<div class="flex flex-col gap-2 p-3 border-t border-primary-750">
+				<div class="flex flex-col gap-2 p-3 border-t border-primary-700">
 					<div class="flex flex-col gap-1">
 						<div class="flex items-center justify-center gap-20">
 							<button
@@ -471,7 +480,7 @@
 						</span>
 					</div>
 					<div
-						class="flex gap-2 w-max bg-primary-750 border border-primary-600 rounded-lg"
+						class="flex gap-2 w-max bg-primary-700 border border-primary-600 rounded-lg"
 					>
 						<input
 							bind:value={tempRadioData.configuration.force.value}
@@ -507,7 +516,7 @@
 						/>
 					</div>
 				</div>
-				<div class="flex flex-col gap-2 p-3 border-t border-primary-750">
+				<div class="flex flex-col gap-2 p-3 border-t border-primary-700">
 					<div class="flex flex-col gap-1">
 						<div class="flex items-center justify-center gap-20">
 							<button
@@ -534,7 +543,7 @@
 						</span>
 					</div>
 					<div
-						class="flex gap-2 w-max bg-primary-750 border border-primary-600 rounded-lg"
+						class="flex gap-2 w-max bg-primary-700 border border-primary-600 rounded-lg"
 					>
 						<input
 							bind:value={tempRadioData.configuration.volume.value}
@@ -595,27 +604,28 @@
 		{/if}
 		<div class="flex gap-2">
 			<button
-				onclick={radioDataStore.closeConfig}
-				class="w-24 py-1 text-sm text-white bg-primary-750 hover:bg-primary-650 border border-primary-600 transition-colors rounded-lg"
-				>Cancel</button
-			>
-			<button
 				onclick={async () => {
-					radioDataStore.add({
+					tabs.addOrModify({
 						...tempRadioData,
 						configuration: {
 							...tempRadioData.configuration,
 							logo: {
 								...tempRadioData.configuration.logo,
-								data: await getCroppedImage(await logosrc, croppedPixels)
+								data: await getCroppedImage(await logo.src, croppedPixels)
 							}
 						}
 					});
-					radioDataStore.closeConfig();
+					radioData.closeConfig();
 				}}
-				class="w-24 py-1 text-sm text-white bg-primary-750 hover:bg-primary-650 border border-primary-600 transition-colors rounded-lg"
-				disabled={(radioStoreData && saved) ||
+				class="w-24 py-1 text-sm text-white bg-primary-700/50 hover:bg-primary-700 border border-primary-600 transition-colors rounded-lg"
+				disabled={logo.pending ||
+					(radioStoreData && saved) ||
 					Object.values(errors).some((value) => value === true)}>OK</button
+			>
+			<button
+				onclick={radioData.closeConfig}
+				class="w-24 py-1 text-sm text-white bg-primary-700/50 hover:bg-primary-700 border border-primary-600 transition-colors rounded-lg"
+				>Cancel</button
 			>
 		</div>
 	</div>

@@ -26,8 +26,8 @@
 	// Loaders
 	import { Spinner } from '$assets/loaders';
 
-	let tempSettings = $state($settings);
-	let saved = $derived(JSON.stringify(tempSettings) === JSON.stringify($settings));
+	let tempSettings = $state(JSON.parse(JSON.stringify(settings.state)));
+	let saved = $derived(JSON.stringify(tempSettings) === JSON.stringify(settings.state));
 
 	let tuneincrewInstalled = $state<boolean>();
 	let tuneinCrewInstalling = $state<Promise<string | null>>();
@@ -40,8 +40,7 @@
 		const version = await tuneinCrewInstalling;
 
 		if (version) {
-			$settings.tuneinCrew.version = version;
-			await settings.save($settings);
+			settings.tuneinCrewVersion = version;
 		}
 
 		const tuneinCrewPath = await join(tempSettings.tuneinCrew.dir!, 'TuneinCrew.exe');
@@ -108,7 +107,7 @@
 		<div class="flex flex-col gap-3">
 			<h1 class="text-white font-semibold">GUI Behaviour</h1>
 			<div class="flex flex-col">
-				<div class="flex flex-col gap-2 p-3 border-t border-primary-750">
+				<div class="flex flex-col gap-2 p-3 border-t border-primary-700">
 					<div class="flex flex-col gap-1">
 						<div class="flex items-center justify-center gap-20">
 							<button
@@ -126,11 +125,11 @@
 						</span>
 					</div>
 					<button
-						class="w-max px-4 py-1 text-sm text-white bg-primary-750 hover:bg-primary-650 border border-primary-600 rounded-lg transition-colors"
+						class="w-max px-4 py-1 text-sm text-white bg-primary-700/50 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
 						>Check For Updates</button
 					>
 				</div>
-				<div class="flex flex-col gap-2 p-3 border-t border-primary-750">
+				<div class="flex flex-col gap-2 p-3 border-t border-primary-700">
 					<div class="flex flex-col gap-1">
 						<div class="flex items-center justify-center gap-20">
 							<button
@@ -147,11 +146,11 @@
 						</span>
 					</div>
 					<button
-						class="w-max px-4 py-1 text-sm text-white bg-primary-750 hover:bg-primary-650 border border-primary-600 rounded-lg transition-colors"
+						class="w-max px-4 py-1 text-sm text-white bg-primary-700/50 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
 						disabled={!tempSettings.keepTabs}>Clear Tabs</button
 					>
 				</div>
-				<div class="flex flex-col gap-2 p-3 border-t border-primary-750">
+				<div class="flex flex-col gap-2 p-3 border-t border-primary-700">
 					<div class="flex flex-col gap-1">
 						<div class="flex items-center justify-center gap-20">
 							<button
@@ -175,7 +174,7 @@
 		<div class="flex flex-col gap-3">
 			<h1 class="text-white font-semibold">Tunein Crew</h1>
 			<div class="flex flex-col">
-				<div class="flex flex-col gap-2 p-3 border-t border-primary-750">
+				<div class="flex flex-col gap-2 p-3 border-t border-primary-700">
 					<div class="flex flex-col gap-1">
 						<div class="flex items-center justify-center gap-20">
 							<button
@@ -194,11 +193,11 @@
 						</span>
 					</div>
 					<button
-						class="w-max px-4 py-1 text-sm text-white bg-primary-750 hover:bg-primary-650 border border-primary-600 rounded-lg transition-colors"
+						class="w-max px-4 py-1 text-sm text-white bg-primary-700/50 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
 						>Check For Updates</button
 					>
 				</div>
-				<div class="flex flex-col gap-2 p-3 border-t border-primary-750">
+				<div class="flex flex-col gap-2 p-3 border-t border-primary-700">
 					<div class="flex flex-col gap-1.5">
 						<label class="text-sm text-white text-left" for="tuneincrew-path">
 							Directory
@@ -213,7 +212,7 @@
 							</span>
 						</div>
 					</div>
-					<div class="flex gap-2 bg-primary-750 border border-primary-600 rounded-lg">
+					<div class="flex gap-2 bg-primary-700/50 border border-primary-600 rounded-lg">
 						<input
 							bind:value={tempSettings.tuneinCrew!.dir}
 							use:customContext
@@ -224,22 +223,14 @@
 						/>
 						<button
 							onclick={async () => {
-								const path = await open({
+								const dir = await open({
 									canCreateDirectories: true,
-									defaultPath: 'TuneinCrew.exe',
-									filters: [
-										{
-											extensions: ['exe'],
-											name: 'TuneinCrew.exe'
-										}
-									],
+									directory: true,
 									multiple: false,
 									title: 'Browse TuneinCrew.exe'
 								});
 
-								if (!path) return;
-
-								const dir = await dirname(path);
+								if (!dir) return;
 
 								tempSettings.tuneinCrew!.dir = dir;
 							}}
@@ -253,7 +244,7 @@
 					<div class="flex items-center gap-4">
 						<button
 							onclick={installTuneinCrew}
-							class="px-4 py-1 text-sm text-white bg-primary-750 hover:bg-primary-650 border border-primary-600 rounded-lg transition-colors"
+							class="px-4 py-1 text-sm text-white bg-primary-700/50 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
 							disabled={tuneincrewInstalled || tuneinCrewInstalling !== undefined}
 						>
 							Install
@@ -274,7 +265,7 @@
 						{/await}
 					</div>
 				</div>
-				<div class="flex flex-col gap-2 p-3 border-t border-primary-750">
+				<div class="flex flex-col gap-2 p-3 border-t border-primary-700">
 					<div class="flex flex-col gap-1.5">
 						<label class="text-sm text-white text-left" for="fmod-path">
 							FMOD v4.44.64 Directory
@@ -289,7 +280,7 @@
 							</span>
 						</div>
 					</div>
-					<div class="flex gap-2 bg-primary-750 border border-primary-600 rounded-lg">
+					<div class="flex gap-2 bg-primary-700/50 border border-primary-600 rounded-lg">
 						<input
 							bind:value={tempSettings.fmodDir}
 							use:customContext
@@ -300,22 +291,14 @@
 						/>
 						<button
 							onclick={async () => {
-								const path = await open({
+								const dir = await open({
 									canCreateDirectories: true,
-									defaultPath: 'fmod_designercl.exe',
-									filters: [
-										{
-											extensions: ['exe'],
-											name: 'fmod_designercl.exe'
-										}
-									],
+									directory: true,
 									multiple: false,
 									title: 'Browse fmod_designercl.exe'
 								});
 
-								if (!path) return;
-
-								const dir = await dirname(path);
+								if (!dir) return;
 
 								tempSettings.fmodDir = dir;
 							}}
@@ -329,7 +312,7 @@
 					<div class="flex items-center gap-4">
 						<button
 							onclick={() => (fmodInstalling = installFMOD())}
-							class="px-4 py-1 text-sm text-white bg-primary-750 hover:bg-primary-650 border border-primary-600 rounded-lg transition-colors"
+							class="px-4 py-1 text-sm text-white bg-primary-700/50 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
 							disabled={fmodInstalled || fmodInstalling !== undefined}
 						>
 							Install
@@ -361,16 +344,29 @@
 		{/if}
 		<div class="flex gap-2">
 			<button
+				onclick={async () => {
+					if (!saved) {
+						settings.state = JSON.parse(JSON.stringify(tempSettings));
+						await settings.save();
+					}
+					settings.close();
+				}}
+				class="w-24 py-1 text-sm text-white bg-primary-700/50 hover:bg-primary-700 border border-primary-600 transition-colors rounded-lg"
+				>OK</button
+			>
+			<button
 				onclick={settings.close}
-				class="w-24 py-1 text-sm text-white bg-primary-750 hover:bg-primary-650 border border-primary-600 transition-colors rounded-lg"
+				class="w-24 py-1 text-sm text-white bg-primary-700/50 hover:bg-primary-700 border border-primary-600 transition-colors rounded-lg"
 				>Cancel</button
 			>
 			<button
 				onclick={async () => {
-					await settings.save(tempSettings);
+					settings.state = JSON.parse(JSON.stringify(tempSettings));
+
+					await settings.save();
 				}}
-				class="w-24 py-1 text-sm text-white bg-primary-750 hover:bg-primary-650 border border-primary-600 transition-colors rounded-lg"
-				disabled={saved}>Save</button
+				class="w-24 py-1 text-sm text-white bg-primary-700/50 hover:bg-primary-700 border border-primary-600 transition-colors rounded-lg"
+				disabled={saved}>Apply</button
 			>
 		</div>
 	</div>

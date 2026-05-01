@@ -10,8 +10,7 @@
 	import { Sonar } from '$assets/loaders';
 
 	// Stores
-	import { settings } from '$lib/stores';
-	import radioDataStore from '$lib/stores/radio-data.store';
+	import { radioData } from '$lib/stores';
 
 	// Utils
 	import { fetchMods } from '$lib/utils';
@@ -22,8 +21,8 @@
 	import { Flame, Like } from '@solar-icons/svelte/Bold';
 	import { Plus } from '$assets/tg-icons';
 
-	onMount(async () => {
-		await getCurrentWindow().setTitle('Home - Tunein GUI');
+	onMount(() => {
+		getCurrentWindow().setTitle('Home - Tunein GUI');
 	});
 </script>
 
@@ -50,7 +49,7 @@
 		<hr class="w-px h-full bg-primary-500" />
 		<div id="tg-profiles" class="grid grid-cols-4 gap-1 h-full p-1 overflow-y-scroll">
 			<button
-				onclick={() => radioDataStore.openConfig()}
+				onclick={() => radioData.openConfig()}
 				class="flex flex-col gap-2 h-34 w-34 px-4 py-2 rounded-lg"
 			>
 				<span

@@ -1,11 +1,5 @@
-import { Menu, type MenuItem, type MenuItemOptions } from '@tauri-apps/api/menu';
+import { Menu, type MenuItemOptions } from '@tauri-apps/api/menu';
 import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
-
-interface ExtraItem {
-	text?: string;
-	action?: () => void;
-	accelerator?: string;
-}
 
 type InputEl = HTMLInputElement | HTMLTextAreaElement;
 
@@ -109,12 +103,12 @@ function customContext(
 	node: HTMLInputElement | HTMLTextAreaElement,
 	extraItem?: () => MenuItemOptions
 ) {
-	const handler = async (e: Event) => {
+	async function handler(e: Event) {
 		e.preventDefault();
 
 		const menu = await buildMenu(node, extraItem?.());
 		await menu.popup();
-	};
+	}
 
 	node.addEventListener('contextmenu', handler);
 

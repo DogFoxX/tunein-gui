@@ -73,6 +73,13 @@ input[type='range'] {
 	}
 }
 
+div[contenteditable='plaintext-only'] {
+	border: none;
+	outline: none;
+	background: color-mix(in srgb, var(--color-primary-800) 70%, transparent);
+	text-overflow: unset;
+}
+
 /* hljs xml highlighting */
 .language-xml {
 	color: var(--color-orange-300);

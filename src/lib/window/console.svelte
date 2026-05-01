@@ -6,7 +6,7 @@
 	import { openPath } from '@tauri-apps/plugin-opener';
 
 	// Stores
-	import logger from '$lib/stores/logger';
+	import logger from '$lib/utils/logger';
 	import { settings } from '$lib/stores';
 
 	// Icons
@@ -16,7 +16,7 @@
 	let { consoleDefaultOpen }: { consoleDefaultOpen: boolean } = $props();
 
 	let consoleComp = $state<HTMLElement>();
-	let consoleOpen = $derived($settings.logsDefaultOpen ?? consoleDefaultOpen);
+	let consoleOpen = $derived(settings.state.logsDefaultOpen ?? consoleDefaultOpen);
 
 	let errorCount = $derived($logger.filter((l) => l.includes('ERR')).length);
 	let warnCount = $derived($logger.filter((l) => l.includes('WARN')).length);
@@ -62,7 +62,7 @@
 		<span class="text-xs text-white">Logs</span>
 		<button
 			onclick={() => (consoleOpen = !consoleOpen)}
-			class="h-full px-2 py-1 text-primary-400 hover:text-white hover:bg-primary-600 rounded-md transition-colors"
+			class="h-full px-2 py-1 text-primary-400 hover:text-white hover:bg-primary-600/50 rounded-md transition-colors"
 			title={consoleOpen ? 'Collapse' : 'Expand'}
 		>
 			<AltArrowUp class="transition-all {consoleOpen && 'rotate-180'}" />
@@ -85,7 +85,7 @@
 		</div>
 		<button
 			onclick={logger.export}
-			class="flex items-center gap-1.5 h-full px-2 py-1 text-primary-400 hover:text-white hover:bg-primary-600 rounded-md transition-colors"
+			class="flex items-center gap-1.5 h-full px-2 py-1 text-primary-400 hover:text-white hover:bg-primary-600/50 rounded-md transition-colors"
 			disabled={!$logger.length}
 		>
 			<Upload />
@@ -93,7 +93,7 @@
 		</button>
 		<button
 			onclick={logger.clear}
-			class="flex items-center gap-1.5 h-full px-2 py-1 text-primary-400 hover:text-white hover:bg-primary-600 rounded-md transition-colors"
+			class="flex items-center gap-1.5 h-full px-2 py-1 text-primary-400 hover:text-white hover:bg-primary-600/50 rounded-md transition-colors"
 			disabled={!$logger.length}
 		>
 			<TrashBinTrash />
