@@ -1,5 +1,9 @@
 use tauri::{AppHandle, Manager};
 
+mod dds_convert;
+mod measure_volume;
+use std::path::PathBuf;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
 
@@ -33,6 +37,11 @@ pub fn run() {
             }
             Ok(())
         })
+        .invoke_handler(tauri::generate_handler![
+            dds_convert::convert_to_dds,
+            dds_convert::dds_to_png_base64,
+            measure_volume::get_volume
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

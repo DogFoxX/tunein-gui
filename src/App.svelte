@@ -7,9 +7,9 @@
 	import { exists } from '@tauri-apps/plugin-fs';
 
 	// Components
-	import { Console, Titlebar } from '$lib/window';
-	import { Modal, Settings, About, RadioConfig } from '$lib/window/modal';
-	import { Home, Radio } from '$lib/tabs';
+	import { Console, Titlebar } from '$lib/components/window';
+	import { Modal, RadioConfigModal, SettingsModal } from '$lib/components/modal';
+	import { HomeTab, RadioTab } from '$lib/components/tabs';
 
 	// Stores
 	import { radioData, settings, tabs } from '$lib/stores';
@@ -63,7 +63,7 @@
 	});
 
 	let ActiveTab = $derived(
-		!tabs.state.length || !tabs.state.some(({ active }) => active) ? Home : Radio
+		!tabs.state.length || !tabs.state.some(({ active }) => active) ? HomeTab : RadioTab
 	);
 </script>
 
@@ -79,13 +79,13 @@
 		<Console consoleDefaultOpen={settings.state.logsDefaultOpen} />
 		<!-- Modals -->
 		<Modal
-			components={{ Settings, About }}
+			components={SettingsModal}
 			active="Settings"
 			bind:open={settings.isOpen}
 			class="h-158 w-220"
 		></Modal>
 		<Modal
-			components={{ RadioConfig }}
+			components={{ RadioConfigModal }}
 			header={radioData.configurer.header}
 			bind:open={radioData.configurer.open}
 			class="h-158 w-220"

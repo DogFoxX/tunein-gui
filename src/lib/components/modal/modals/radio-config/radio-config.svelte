@@ -4,6 +4,9 @@
 		position: { x: number; y: number };
 	}
 
+	// Tauri Imports
+	import { invoke } from '@tauri-apps/api/core';
+
 	// Svelte Imports
 	import { fade, scale } from 'svelte/transition';
 
@@ -14,12 +17,12 @@
 	import { open } from '@tauri-apps/plugin-dialog';
 	import { extname } from '@tauri-apps/api/path';
 
-	// Components
-	import { Sonar } from '$assets/loaders';
+	// Cropper Component
+	import { Cropper, type CropArea } from './cropper';
 
 	// Assets
 	import { Toggle } from '$assets';
-	import { Cropper, type CropArea } from '$assets/cropper';
+	import { Sonar } from '$assets/loaders';
 
 	// Stores
 	import { tabs } from '$lib/stores';
@@ -120,6 +123,19 @@
 		isDragging = false;
 	});
 
+	async function showDDSImage(inputPath: string): Promise<string> {
+		return await invoke('dds_to_png_base64', {
+			inputPath
+		});
+	}
+
+	async function convertImageToDds(inputPath: string, outputDir?: string) {
+		await invoke('convert_to_dds', {
+			inputPath,
+			outputDir
+		});
+	}
+
 	function generateId() {
 		const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 		const bytes = crypto.getRandomValues(new Uint8Array(4));
@@ -157,6 +173,10 @@
 				throw new Error(
 					'Invalid image format. Expected formats: bmp, jpg, jpeg, png, svg, webp, dds'
 				);
+			}
+
+			if (ext === 'dds') {
+				return await showDDSImage(src);
 			}
 
 			bytes = await readFile(src);

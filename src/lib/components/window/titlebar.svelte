@@ -9,7 +9,7 @@
 	import { settings } from '$lib/stores';
 	import { tabs } from '$lib/stores';
 	import { radioData } from '$lib/stores';
-	import { modalOpen } from './modal';
+	import { modalOpen } from '../modal';
 
 	// Utils
 	import { tgSlide } from '$lib/utils';

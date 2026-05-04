@@ -5,54 +5,81 @@
 
 	// Utils
 	import { customInput } from '$lib/utils';
-	import columnResize from '$lib/utils/column-resize';
+
+	// Column Resizer
+	import columnResize from './column-resize';
 
 	// Stores
 	import { radioData, tabs, tables } from '$lib/stores';
 
 	// Icons
 	import { Plus } from '$assets/tg-icons';
-	import { AltArrowDown, AltArrowUp } from '@solar-icons/svelte/Outline';
-	import { TrashBinTrash } from '@solar-icons/svelte/Bold';
-	import { filename } from '@tauri-apps/plugin-window-state';
+	import { AltArrowDown, AltArrowUp, Sort } from '@solar-icons/svelte/Outline';
+	import { Pen, TrashBinTrash, VolumeLoud } from '@solar-icons/svelte/Bold';
 
 	let audioDropArea = $state<HTMLElement>();
 
 	// Table Vars
 	let loadingSongs = $state<boolean>();
 	let songPaths = $state<string[]>([]);
-	let filteredSongs = $state<JinglesType[]>([]);
-	let jingleFilter = $state('');
+	let filteredSongs = $state<SongsType[]>([]);
+	let songFilter = $state('');
 	let selectedSong = $state<number[]>([]);
 	let lastSelectedIndex = $state<number | null>(null);
 	let windowShiftDown = $state<boolean>();
 	let windowCtrlDown = $state<boolean>();
 	let shiftAnchorIndex = $state<number | null>(null);
 
-	const tableFields = ['File', 'Filename'];
+	const tableFields = [
+		'#',
+		'Artist',
+		'Name',
+		'Year',
+		'Length',
+		'Measured Volume (dB)',
+		'Volume Offset (dB)',
+		'Filename',
+		'Path'
+	];
 
-	const fieldMap: (keyof JinglesType)[] = ['file', 'filename'];
+	const fieldMap: (keyof SongsType)[] = [
+		'number',
+		'artist',
+		'name',
+		'year',
+		'length',
+		'measured_volume',
+		'volume_offset',
+		'filename',
+		'path'
+	];
 
 	// Songs
-	let jinglesList = $derived<JinglesType[]>(
+	let songsList = $derived<SongsType[]>(
 		radioData.state.find(
 			(tabData) => tabData.tabId === tabs.state.find((tab) => tab.active)?.id
-		)?.tracks?.jingles ?? [
+		)?.tracks?.songs ?? [
 			{
+				filename: 'Test.mp3',
 				id: '1',
-				file: 'Test Jingle.wav',
-				filename: 'C:\\test songs\\Test Jingle.wav'
+				artist: 'Test Artist',
+				length: '3:02',
+				name: 'Test Song',
+				number: '1',
+				path: 'C:\\test songs\\Test.mp3',
+				year: '2023'
 			}
 		]
 	);
 
 	onMount(() => {
-		if (!tables.jingles_table.fields.length) {
-			tables.jingles_table = {
+		if (!tables.songs_table.fields.length) {
+			tables.songs_table = {
 				ascending: false,
 				fields: tableFields.map((_, i) => {
-					if (i === 0) return { sort: true, width: 160 };
-					if (i === 1) return { sort: false, width: 400 };
+					if (i === 0) return { sort: true, width: 48 };
+					if (i >= 1 && i <= 7) return { sort: false, width: 160 };
+					if (i === 8) return { sort: false, width: 400 };
 					return {};
 				})
 			};
@@ -90,9 +117,9 @@
 	}
 
 	function compareSongs(
-		a: JinglesType,
-		b: JinglesType,
-		key: keyof JinglesType,
+		a: SongsType,
+		b: SongsType,
+		key: keyof SongsType,
 		ascending: boolean
 	): number {
 		const isEmpty = (v: string | undefined) => v === undefined;
@@ -101,7 +128,7 @@
 		const bValue = b[key];
 
 		// All values empty in this column
-		const allValues = jinglesList!.map((t) => t[key]);
+		const allValues = songsList!.map((t) => t[key]);
 		if (allValues.every(isEmpty)) return 0;
 
 		// Partial values present
@@ -140,7 +167,7 @@
 	}
 
 	function removeTrack() {
-		jinglesList = jinglesList.filter((_, i) => !selectedSong.some((n) => n === i));
+		songsList = songsList.filter((_, i) => !selectedSong.some((n) => n === i));
 
 		selectedSong = [];
 		lastSelectedIndex = null;
@@ -148,16 +175,16 @@
 
 	// Update 'filterSongs' for searching
 	$effect(() => {
-		if (jinglesList) {
+		if (songsList) {
 			filteredSongs =
-				jinglesList.length > 0
-					? jinglesList.filter((song) =>
+				songsList.length > 0
+					? songsList.filter((song) =>
 							Object.entries(song)
 								.filter(([key]) => key !== 'length')
 								.map(([, value]) => value)
 								.join(' ')
 								.toLowerCase()
-								.includes(jingleFilter.toLowerCase())
+								.includes(songFilter.toLowerCase())
 						)
 					: [];
 		}
@@ -173,7 +200,7 @@
 
 		if (e.ctrlKey && e.key.toLowerCase() === 'a') {
 			e.preventDefault();
-			selectedSong = jinglesList.map((_, i) => i);
+			selectedSong = songsList.map((_, i) => i);
 		}
 
 		if (e.key === 'Home' && selectedSong.length) {
@@ -263,9 +290,7 @@
 	}}
 />
 
-<div
-	class="relative flex flex-col gap-2 w-110 border border-primary-700 rounded-lg overflow-hidden"
->
+<div class="relative flex flex-col grow gap-2 border border-primary-700 rounded-lg overflow-hidden">
 	<!-- Loading Songs -->
 	{#if loadingSongs}
 		<div
@@ -273,7 +298,7 @@
 			class="absolute inset-0 z-50 flex items-center justify-center bg-primary-800/70 backdrop-blur-xs rounded-lg"
 		>
 			<div class="flex w-full flex-col items-center gap-2">
-				<span class="text-sm text-white">Loading Jingle(s)...</span>
+				<span class="text-sm text-white">Loading Song(s)...</span>
 				<div
 					class="loading relative h-1 w-1/2 overflow-hidden rounded-full bg-primary-500"
 				></div>
@@ -282,7 +307,7 @@
 	{/if}
 
 	<div class="flex flex-col gap-2 p-2">
-		<header class="text-xl text-white font-semibold">Jingles</header>
+		<header class="text-xl text-white font-semibold">Songs</header>
 		<div class="flex gap-2 px-2">
 			<div class="flex gap-2">
 				<button
@@ -290,6 +315,27 @@
 					title="Add File(s)"
 				>
 					<Plus />
+				</button>
+				<button
+					class="px-4 py-1 text-sm text-white bg-primary-700/50 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
+					disabled={selectedSong.length <= 0 || selectedSong.length < 1}
+					title="Edit Song"
+				>
+					<Pen />
+				</button>
+				<button
+					class="px-4 py-1 text-sm text-white bg-primary-700/50 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
+					disabled={songsList!.length < 1}
+					title="Auto Number"
+				>
+					<Sort />
+				</button>
+				<button
+					class="px-4 py-1 text-sm text-white bg-primary-700/50 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
+					disabled={songsList!.length < 1}
+					title="Measure Volume"
+				>
+					<VolumeLoud />
 				</button>
 				<button
 					onclick={removeTrack}
@@ -302,7 +348,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="flex grow min-w-0 flex-col gap-2 border-t border-primary-700">
+	<div class="flex grow flex-col gap-2 border-t border-primary-700">
 		<div class="flex size-full flex-col">
 			<!-- Songs Table -->
 			<div class="relative grow">
@@ -316,11 +362,11 @@
 					<table class="relative table-fixed w-min border-separate border-spacing-0">
 						<thead class="bg-primary-800 sticky top-0">
 							<tr>
-								{#if tables.jingles_table.fields.length}
+								{#if tables.songs_table.fields.length}
 									{#each tableFields as field, i}
 										<th
 											class="border-r border-r-primary-700 relative"
-											style="width: {tables.jingles_table.fields[i]
+											style="width: {tables.songs_table.fields[i]
 												.width}px; z-index: {tableFields.length - (i + 1)}"
 										>
 											<div
@@ -330,14 +376,14 @@
 											</div>
 											<button
 												onclick={async () => {
-													if (tables.jingles_table.fields[i].sort) {
-														tables.jingles_table.ascending =
-															!tables.jingles_table.ascending;
+													if (tables.songs_table.fields[i].sort) {
+														tables.songs_table.ascending =
+															!tables.songs_table.ascending;
 													}
 
-													tables.jingles_table = {
-														...tables.jingles_table,
-														fields: tables.jingles_table!.fields.map(
+													tables.songs_table = {
+														...tables.songs_table,
+														fields: tables.songs_table!.fields.map(
 															(field, index) => ({
 																...field,
 																sort: index === i
@@ -345,26 +391,26 @@
 														)
 													};
 
-													if (jinglesList.length) {
+													if (songsList.length) {
 														const key = fieldMap[i];
 
-														jinglesList = jinglesList.sort((a, b) =>
+														songsList = songsList.sort((a, b) =>
 															compareSongs(
 																a,
 																b,
 																key,
-																!tables.jingles_table?.ascending
+																!tables.songs_table?.ascending
 															)
 														);
 													}
 
-													tables.jingles_table = tables.jingles_table;
+													tables.songs_table = tables.songs_table;
 												}}
 												class="sort absolute inset-0 flex overflow-hidden items-start justify-center text-primary-400 z-1"
 												tabindex="-1"
 											>
-												{#if tables.jingles_table.fields[i].sort}
-													{#if tables.jingles_table?.ascending}
+												{#if tables.songs_table.fields[i].sort}
+													{#if tables.songs_table?.ascending}
 														<AltArrowDown
 															height="14"
 															width="14"
@@ -383,14 +429,14 @@
 												use:columnResize={async (width, done) => {
 													if (done) {
 														// Persist once, at the end
-														tables.jingles_table = tables.jingles_table;
+														tables.songs_table = tables.songs_table;
 														return;
 													}
 
 													// Update local reactive state live
-													tables.jingles_table = {
-														...tables.jingles_table,
-														fields: tables.jingles_table!.fields.map(
+													tables.songs_table = {
+														...tables.songs_table,
+														fields: tables.songs_table!.fields.map(
 															(field, index) =>
 																index === i
 																	? { ...field, width }
@@ -457,7 +503,7 @@
 																el.innerText = song[key] as string;
 															},
 															onApply: (value) => {
-																jinglesList[index][key] = value;
+																songsList[index][key] = value;
 															}
 														}}
 														role="textbox"
@@ -481,7 +527,7 @@
 							</tbody>
 						{/if}
 					</table>
-					{#if !jinglesList.length}
+					{#if !songsList.length}
 						<div
 							transition:fade={{ duration: 80 }}
 							class="absolute inset-0 flex flex-col items-center justify-center -z-1"
@@ -500,8 +546,8 @@
 			<div class="flex flex-col gap-3 px-4 py-2">
 				<div class="flex items-center">
 					<div class="flex items-center gap-2">
-						<span class="text-xs text-primary-400">Total Jingles:</span>
-						<span class="text-xs font-bold text-white">{jinglesList!.length}</span>
+						<span class="text-xs text-primary-400">Total Songs:</span>
+						<span class="text-xs font-bold text-white">{songsList!.length}</span>
 					</div>
 					<i class="text-xs text-primary-600 px-2">|</i>
 					<div class="flex items-center gap-2">
@@ -513,13 +559,13 @@
 					<label for="song-filter" class="text-xs text-white">Filter:</label>
 					<div class="flex w-full bg-primary-700/50 border border-primary-600 rounded-lg">
 						<input
-							bind:value={jingleFilter}
+							bind:value={songFilter}
 							id="song-filter"
 							class="size-full px-2 py-1 text-sm text-white"
 							type="text"
 							spellcheck="false"
 							autocomplete="off"
-							disabled={!jinglesList!.length}
+							disabled={!songsList!.length}
 						/>
 					</div>
 				</div>

@@ -1,32 +1,49 @@
-async function loadRadioData() {
-	let data_state = $state<TgRadioData[]>([]);
-	let configurer = $state<{ header?: string; open: boolean; tabId?: string }>({ open: false });
-
-	return {
-		get state() {
-			return data_state;
-		},
-		set state(data) {
-			data_state = data;
-		},
-		get configurer() {
-			return configurer;
-		},
-		openConfig(
-			options: { header?: string; tabId?: string } = { header: 'Create a New Radio' }
-		) {
-			configurer = {
-				header: options.header,
-				open: true,
-				tabId: options.tabId
-			};
-		},
-		closeConfig() {
-			configurer = { open: false };
-		}
-	};
+interface Configurer {
+	header?: string;
+	open: boolean;
+	tabId?: string;
 }
 
-const radioData = await loadRadioData();
+interface RadioDataAPI {
+	closeConfig: () => void;
+	configurer: Configurer;
+	openConfig: (options?: { header?: string; tabId?: string }) => void;
+	state: TgRadioData[];
+}
+
+class LoadRadioData {
+	#data_state = $state<TgRadioData[]>([]);
+	#configurer = $state<Configurer>({ open: false });
+
+	public radioData: RadioDataAPI;
+
+	constructor() {
+		const self = this;
+
+		this.radioData = {
+			closeConfig() {
+				self.#configurer = { open: false };
+			},
+			get configurer() {
+				return self.#configurer;
+			},
+			openConfig(options = { header: 'Create a New Radio' }) {
+				self.#configurer = {
+					header: options.header,
+					open: true,
+					tabId: options.tabId
+				};
+			},
+			get state() {
+				return self.#data_state;
+			},
+			set state(v) {
+				self.#data_state = v;
+			}
+		};
+	}
+}
+
+const { radioData } = new LoadRadioData();
 
 export default radioData;
