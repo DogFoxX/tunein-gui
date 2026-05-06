@@ -5,6 +5,11 @@ interface Window {
 	openedFile?: string;
 }
 
+interface DragDropEventPayload {
+	paths: string[];
+	position: { x: number; y: number };
+}
+
 interface TgTabs {
 	active?: boolean;
 	id: string;
@@ -20,8 +25,8 @@ interface NexusMods {
 
 interface JinglesType {
 	id: string;
-	file: string;
 	filename: string;
+	path: string;
 }
 
 interface SongsType {
@@ -34,7 +39,7 @@ interface SongsType {
 	measured_volume?: string;
 	volume_offset?: string;
 	filename: string;
-	path?: string;
+	path: string;
 }
 
 interface TgRadioData {
@@ -60,7 +65,7 @@ interface TgRadioData {
 		};
 	};
 	tabId: string;
-	tracks?: {
+	tracks: {
 		jingles: JinglesType[];
 		songs: SongsType[];
 	};
@@ -71,6 +76,7 @@ interface XMLData {
 		radio?: {
 			id?: string;
 			name?: string;
+			logo?: string;
 			jingles?: {
 				file: string[];
 			};
@@ -79,10 +85,10 @@ interface XMLData {
 					file: string;
 					artist?: string;
 					name?: string;
-					year?: number;
+					year?: string;
 					length?: string;
-					volume?: number;
-					force?: number;
+					volume?: string;
+					force?: string;
 				}[];
 			};
 		};

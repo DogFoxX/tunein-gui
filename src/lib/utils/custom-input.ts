@@ -1,6 +1,6 @@
 import { tick } from 'svelte';
 import { Menu } from '@tauri-apps/api/menu';
-import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
+import { readText } from '@tauri-apps/plugin-clipboard-manager';
 
 interface CustomInputParams {
 	onCancel?: (el: HTMLDivElement) => void;
@@ -21,7 +21,7 @@ async function canPaste() {
 }
 
 // Context Menu Builder
-async function buildMenu(node: HTMLElement) {
+async function buildMenu() {
 	const hasSelection = hasEditableSelection();
 	const pasteAvailable = await canPaste();
 
@@ -68,15 +68,6 @@ async function buildMenu(node: HTMLElement) {
 function customInput(node: HTMLDivElement, params: CustomInputParams) {
 	async function dblClickHandler() {
 		node.setAttribute('contenteditable', 'plaintext-only');
-
-		await tick();
-
-		const range = document.createRange();
-		range.selectNodeContents(node);
-
-		const selection = window.getSelection();
-		selection?.removeAllRanges();
-		selection?.addRange(range);
 	}
 
 	function keyDownHandler(e: KeyboardEvent) {
@@ -92,10 +83,24 @@ function customInput(node: HTMLDivElement, params: CustomInputParams) {
 			node.blur();
 			return;
 		}
+
+		if (e.key === 'Tab' && node.getAttribute('contenteditable') === 'plaintext-only') {
+			node.setAttribute('contenteditable', 'false');
+
+			const sibling = node.parentElement?.nextElementSibling?.querySelector(
+				'[data-editable]'
+			) as HTMLDivElement;
+
+			if (sibling) {
+				e.preventDefault();
+				sibling.setAttribute('contenteditable', 'plaintext-only');
+			}
+		}
 	}
 
 	async function blurHandler() {
 		node.setAttribute('contenteditable', 'false');
+
 		await tick();
 
 		node.scrollLeft = 0;
@@ -106,9 +111,35 @@ function customInput(node: HTMLDivElement, params: CustomInputParams) {
 
 		e.preventDefault();
 
-		const menu = await buildMenu(node);
+		const menu = await buildMenu();
 		await menu.popup();
 	}
+
+	async function checkAttibute() {
+		await tick();
+
+		if (node.getAttribute('contenteditable') === 'plaintext-only') {
+			const range = document.createRange();
+			range.selectNodeContents(node);
+
+			const selection = window.getSelection();
+			selection?.removeAllRanges();
+			selection?.addRange(range);
+		}
+	}
+
+	const observer = new MutationObserver((mutations) => {
+		for (const m of mutations) {
+			if (m.type === 'attributes' && m.attributeName === 'contenteditable') {
+				checkAttibute();
+			}
+		}
+	});
+
+	observer.observe(node, {
+		attributes: true,
+		attributeFilter: ['contenteditable']
+	});
 
 	node.addEventListener('dblclick', dblClickHandler);
 	node.addEventListener('keydown', keyDownHandler);
@@ -124,6 +155,7 @@ function customInput(node: HTMLDivElement, params: CustomInputParams) {
 			node.removeEventListener('keydown', keyDownHandler);
 			node.removeEventListener('blur', blurHandler);
 			node.removeEventListener('contextmenu', contextMenuHandler);
+			observer.disconnect();
 		}
 	};
 }

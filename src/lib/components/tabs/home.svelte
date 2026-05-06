@@ -14,7 +14,7 @@
 
 	// Utils
 	import { fetchMods } from '$lib/utils';
-	import importXML from '$lib/utils/xml';
+	import { importXML } from '$lib/utils/xml';
 	('$lib/utils/xml');
 
 	// Icons

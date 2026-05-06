@@ -1,8 +1,15 @@
 use tauri::{AppHandle, Manager};
+use std::sync::{Arc, Mutex};
+use std::collections::HashMap;
 
 mod dds_convert;
 mod measure_volume;
+mod watch_log;
 use std::path::PathBuf;
+
+use dds_convert::{convert_to_dds, dds_to_png_base64};
+use measure_volume::{get_volume};
+use watch_log::{start_log_watch, stop_log_watch, WatchState};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -37,10 +44,16 @@ pub fn run() {
             }
             Ok(())
         })
+        .plugin(tauri_plugin_shellx::init(true))
+        .manage(WatchState {
+            running: Arc::new(Mutex::new(HashMap::new())),
+        })
         .invoke_handler(tauri::generate_handler![
-            dds_convert::convert_to_dds,
-            dds_convert::dds_to_png_base64,
-            measure_volume::get_volume
+            convert_to_dds,
+            dds_to_png_base64,
+            get_volume,
+            start_log_watch,
+            stop_log_watch
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

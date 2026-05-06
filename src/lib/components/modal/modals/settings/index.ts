@@ -1,6 +1,6 @@
 import About from './about.svelte';
 import Settings from './settings.svelte';
 
-const SettingsModal = { About, Settings };
+const SettingsModal = { Settings, About };
 
 export default SettingsModal;

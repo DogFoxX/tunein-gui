@@ -3,27 +3,42 @@
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
 
+	// Tauri Imports
+	import { listen } from '@tauri-apps/api/event';
+	import { open, type DialogFilter } from '@tauri-apps/plugin-dialog';
+	import { exists } from '@tauri-apps/plugin-fs';
+
 	// Utils
-	import { customInput } from '$lib/utils';
+	import logger from '$lib/utils/logger';
+	import { getFiles } from '$lib/utils/tracks';
 
 	// Column Resizer
 	import columnResize from './column-resize';
 
 	// Stores
-	import { radioData, tabs, tables } from '$lib/stores';
+	import { tables } from '$lib/stores';
 
 	// Icons
 	import { Plus } from '$assets/tg-icons';
-	import { AltArrowDown, AltArrowUp } from '@solar-icons/svelte/Outline';
+	import { AltArrowDown, AltArrowUp, Restart } from '@solar-icons/svelte/Outline';
 	import { TrashBinTrash } from '@solar-icons/svelte/Bold';
-	import { filename } from '@tauri-apps/plugin-window-state';
+
+	// Props
+	let {
+		checkMissing,
+		missingFiles,
+		radioStoreData = $bindable()
+	}: {
+		checkMissing: () => Promise<void>;
+		missingFiles: { missingJingles: Map<string, boolean>; missingJinglesCount: number };
+		radioStoreData: TgRadioData;
+	} = $props();
 
 	let audioDropArea = $state<HTMLElement>();
 
 	// Table Vars
 	let loadingSongs = $state<boolean>();
-	let songPaths = $state<string[]>([]);
-	let filteredSongs = $state<JinglesType[]>([]);
+	let filteredJingles = $state<JinglesType[]>([]);
 	let jingleFilter = $state('');
 	let selectedSong = $state<number[]>([]);
 	let lastSelectedIndex = $state<number | null>(null);
@@ -31,22 +46,19 @@
 	let windowCtrlDown = $state<boolean>();
 	let shiftAnchorIndex = $state<number | null>(null);
 
-	const tableFields = ['File', 'Filename'];
+	// Jingles
+	let jinglesList = $state<JinglesType[]>(radioStoreData.tracks.jingles ?? []);
 
-	const fieldMap: (keyof JinglesType)[] = ['file', 'filename'];
+	const audioFilter: DialogFilter[] = [
+		{
+			extensions: ['flac', 'mp3', 'ogg', 'wav'],
+			name: 'Audio Files'
+		}
+	];
 
-	// Songs
-	let jinglesList = $derived<JinglesType[]>(
-		radioData.state.find(
-			(tabData) => tabData.tabId === tabs.state.find((tab) => tab.active)?.id
-		)?.tracks?.jingles ?? [
-			{
-				id: '1',
-				file: 'Test Jingle.wav',
-				filename: 'C:\\test songs\\Test Jingle.wav'
-			}
-		]
-	);
+	const tableFields = ['File', 'Path'];
+
+	const fieldMap: (keyof JinglesType)[] = ['filename', 'path'];
 
 	onMount(() => {
 		if (!tables.jingles_table.fields.length) {
@@ -58,6 +70,25 @@
 					return {};
 				})
 			};
+		}
+	});
+
+	// Listen to drag/drop events
+	listen<DragDropEventPayload>('tauri://drag-drop', async (event) => {
+		const { x, y } = event.payload.position;
+
+		// get element under cursor
+		const el = document.elementFromPoint(x, y);
+		if (el && audioDropArea?.contains(el)) {
+			let paths = event.payload.paths;
+
+			getFiles(paths)
+				.then((res) => {
+					loadJingles(res);
+				})
+				.catch((err: Error) => {
+					return logger.err(err.message);
+				});
 		}
 	});
 
@@ -89,6 +120,24 @@
 				top: scrollTarget
 			});
 		}
+	}
+
+	async function loadJingles(songPaths: string[]) {
+		for (const path of songPaths) {
+			jinglesList = [
+				...jinglesList,
+				{ id: crypto.randomUUID(), filename: path.split(/[/\\]/).pop() ?? '', path }
+			];
+		}
+
+		jinglesList.sort((a, b) =>
+			compareSongs(
+				a,
+				b,
+				fieldMap[tables.songs_table.fields.findIndex((f) => f.sort)],
+				!tables.songs_table.ascending
+			)
+		);
 	}
 
 	function compareSongs(
@@ -141,6 +190,18 @@
 			: bValue!.localeCompare(aValue!, undefined, { numeric: true });
 	}
 
+	async function addJingles() {
+		const paths = await open({
+			title: 'Choose audio file(s)',
+			filters: audioFilter,
+			multiple: true
+		});
+
+		if (!paths) return;
+
+		loadJingles(paths);
+	}
+
 	function removeTrack() {
 		jinglesList = jinglesList.filter((_, i) => !selectedSong.some((n) => n === i));
 
@@ -151,7 +212,7 @@
 	// Update 'filterSongs' for searching
 	$effect(() => {
 		if (jinglesList) {
-			filteredSongs =
+			filteredJingles =
 				jinglesList.length > 0
 					? jinglesList.filter((song) =>
 							Object.entries(song)
@@ -164,6 +225,10 @@
 					: [];
 		}
 	});
+
+	$effect(() => {
+		radioStoreData.tracks.jingles = jinglesList;
+	});
 </script>
 
 <svelte:window
@@ -171,7 +236,7 @@
 		windowShiftDown = e.shiftKey;
 		windowCtrlDown = e.ctrlKey;
 
-		if (document.activeElement !== audioDropArea || !filteredSongs.length) return;
+		if (document.activeElement !== audioDropArea || !filteredJingles.length) return;
 
 		if (e.ctrlKey && e.key.toLowerCase() === 'a') {
 			e.preventDefault();
@@ -200,13 +265,13 @@
 			if (windowShiftDown) {
 				if (lastSelectedIndex !== null) {
 					const start = lastSelectedIndex;
-					const end = filteredSongs.length - 1;
+					const end = filteredJingles.length - 1;
 
 					selectedSong = Array.from({ length: end - start + 1 }, (_, i) => start + i);
 				}
-			} else selectedSong = [filteredSongs.length - 1];
+			} else selectedSong = [filteredJingles.length - 1];
 
-			lastSelectedIndex = filteredSongs.length - 1;
+			lastSelectedIndex = filteredJingles.length - 1;
 			focusRow(selectedSong[selectedSong.length - 1]);
 		}
 
@@ -239,7 +304,7 @@
 		const next =
 			e.key === 'ArrowUp'
 				? Math.max(0, lastSelectedIndex - 1)
-				: Math.min(filteredSongs.length - 1, lastSelectedIndex + 1);
+				: Math.min(filteredJingles.length - 1, lastSelectedIndex + 1);
 
 		// SHIFT + ARROW = Range select
 		if (windowShiftDown) {
@@ -288,14 +353,23 @@
 		<div class="flex gap-2 px-2">
 			<div class="flex gap-2">
 				<button
+					onclick={addJingles}
 					class="px-4 py-1 text-sm text-white bg-primary-700/50 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
 					title="Add File(s)"
 				>
 					<Plus />
 				</button>
 				<button
+					onclick={checkMissing}
+					class="px-4 py-1 text-sm text-white bg-primary-700/50 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
+					title="Refresh List"
+					disabled={jinglesList.length < 1}
+				>
+					<Restart />
+				</button>
+				<button
 					onclick={removeTrack}
-					class="flex items-center justify-center gap-2 px-4 py-1 text-sm text-red-400 hover:text-red-500 bg-primary-700/50 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
+					class="flex items-center justify-center gap-2 px-4 py-1 text-sm text-red-400 bg-primary-700/50 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
 					disabled={selectedSong.length < 1}
 				>
 					<TrashBinTrash width="18" height="18" />
@@ -312,7 +386,7 @@
 				<div
 					bind:this={audioDropArea}
 					tabindex="0"
-					id="songs-table"
+					id="jingles-table"
 					class="inset-0 absolute overflow-x-auto overflow-y-scroll"
 				>
 					<table class="relative table-fixed w-min border-separate border-spacing-0">
@@ -339,7 +413,7 @@
 
 													tables.jingles_table = {
 														...tables.jingles_table,
-														fields: tables.jingles_table!.fields.map(
+														fields: tables.jingles_table.fields.map(
 															(field, index) => ({
 																...field,
 																sort: index === i
@@ -355,7 +429,7 @@
 																a,
 																b,
 																key,
-																!tables.jingles_table?.ascending
+																!tables.jingles_table.ascending
 															)
 														);
 													}
@@ -366,7 +440,7 @@
 												tabindex="-1"
 											>
 												{#if tables.jingles_table.fields[i].sort}
-													{#if tables.jingles_table?.ascending}
+													{#if tables.jingles_table.ascending}
 														<AltArrowDown
 															height="14"
 															width="14"
@@ -392,7 +466,7 @@
 													// Update local reactive state live
 													tables.jingles_table = {
 														...tables.jingles_table,
-														fields: tables.jingles_table!.fields.map(
+														fields: tables.jingles_table.fields.map(
 															(field, index) =>
 																index === i
 																	? { ...field, width }
@@ -409,9 +483,9 @@
 								{/if}
 							</tr>
 						</thead>
-						{#if filteredSongs.length}
+						{#if filteredJingles.length}
 							<tbody transition:fade={{ duration: 80 }}>
-								{#each filteredSongs as song, index (song.id)}
+								{#each filteredJingles as jingle, index (jingle.id)}
 									<tr
 										onmousedown={(e) => {
 											document.querySelector<HTMLElement>(
@@ -448,34 +522,14 @@
 											lastSelectedIndex = index;
 										}}
 										class:selected={selectedSong.includes(index)}
+										class:error={missingFiles.missingJingles.get(jingle.path)}
 										data-index={index}
 									>
 										{#each fieldMap as key, i}
 											<td>
-												{#if i <= 3}
-													<div
-														use:customInput={{
-															onCancel: (el) => {
-																el.innerText = song[key] as string;
-															},
-															onApply: (value) => {
-																jinglesList[index][key] = value;
-															}
-														}}
-														role="textbox"
-														aria-multiline="false"
-														class="truncate mx-1 my-0.5 px-1 py-0.5 text-xs text-white"
-														tabindex="-1"
-													>
-														{song[key] ?? ''}
-													</div>
-												{:else}
-													<div
-														class="truncate px-2 py-1 text-xs text-white"
-													>
-														{song[key] ?? ''}
-													</div>
-												{/if}
+												<div class="truncate px-2 py-1 text-xs text-white">
+													{jingle[key] ?? ''}
+												</div>
 											</td>
 										{/each}
 									</tr>
@@ -503,13 +557,22 @@
 				<div class="flex items-center">
 					<div class="flex items-center gap-2">
 						<span class="text-xs text-primary-400">Total Jingles:</span>
-						<span class="text-xs font-bold text-white">{jinglesList!.length}</span>
+						<span class="text-xs font-bold text-white">{jinglesList.length}</span>
 					</div>
 					<i class="text-xs text-primary-600 px-2">|</i>
 					<div class="flex items-center gap-2">
 						<span class="text-xs text-primary-400">Selected:</span>
 						<span class="text-xs font-bold text-white">{selectedSong.length}</span>
 					</div>
+					{#if missingFiles.missingJinglesCount > 0}
+						<i class="text-xs text-primary-600 px-2">|</i>
+						<div class="flex items-center gap-2">
+							<span class="text-xs text-red-400">Missing:</span>
+							<span class="text-xs font-bold text-red-400"
+								>{missingFiles.missingJinglesCount}</span
+							>
+						</div>
+					{/if}
 				</div>
 				<div class="flex items-center grow gap-2">
 					<label for="song-filter" class="text-xs text-white">Filter:</label>
@@ -521,7 +584,7 @@
 							type="text"
 							spellcheck="false"
 							autocomplete="off"
-							disabled={!jinglesList!.length}
+							disabled={!jinglesList.length}
 						/>
 					</div>
 				</div>
@@ -533,16 +596,16 @@
 <style>
 	thead th {
 		&:hover {
-			background-color: var(--color-secondary);
+			background-color: color-mix(in srgb, var(--color-primary-700) 50%, transparent);
 		}
 	}
 
-	#songs-table {
+	#jingles-table {
 		&:focus-within {
 			outline: none;
 
 			tbody tr.selected {
-				background-color: #51a2ff99;
+				background-color: var(--color-slate-700);
 			}
 		}
 
@@ -556,7 +619,13 @@
 
 		tbody tr {
 			&.selected {
-				background-color: #51a2ff66;
+				background-color: color-mix(in srgb, var(--color-slate-600) 40%, transparent);
+			}
+
+			&.error {
+				& td div {
+					color: var(--color-red-400);
+				}
 			}
 
 			&:hover {
@@ -564,7 +633,7 @@
 			}
 
 			&:not(.selected):hover {
-				background-color: #51a2ff33;
+				background-color: color-mix(in srgb, var(--color-slate-700) 50%, transparent);
 			}
 		}
 	}

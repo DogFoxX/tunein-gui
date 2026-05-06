@@ -80,7 +80,7 @@ function createLogger() {
 		log(...msgs: MessageInput[]) {
 			push(null, ...msgs);
 		},
-		update(template: string, value: string | number) {
+		update(template: string, value?: string | number) {
 			const msg = template.replace('{}', String(value));
 			const formatted = format('INFO', msg);
 			update((logs) => {

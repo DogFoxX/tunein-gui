@@ -1,16 +1,9 @@
 <script lang="ts">
-	interface DragDropEventPayload {
-		paths: string[];
-		position: { x: number; y: number };
-	}
-
-	// Tauri Imports
-	import { invoke } from '@tauri-apps/api/core';
-
 	// Svelte Imports
 	import { fade, scale } from 'svelte/transition';
 
 	// Tauri Imports
+	import { invoke } from '@tauri-apps/api/core';
 	import { fetch } from '@tauri-apps/plugin-http';
 	import { listen } from '@tauri-apps/api/event';
 	import { readFile, exists } from '@tauri-apps/plugin-fs';
@@ -62,6 +55,10 @@
 				enabled: radioStoreData?.configuration.volume.enabled ?? false,
 				value: radioStoreData?.configuration.volume.value ?? '95'
 			}
+		},
+		tracks: {
+			jingles: [],
+			songs: []
 		},
 		tabId: radioStoreData?.tabId ?? crypto.randomUUID()
 	});

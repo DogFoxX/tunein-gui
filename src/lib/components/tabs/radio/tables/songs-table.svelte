@@ -3,25 +3,46 @@
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
 
+	// Tauri Imports
+	import { listen } from '@tauri-apps/api/event';
+	import { open, type DialogFilter } from '@tauri-apps/plugin-dialog';
+
 	// Utils
 	import { customInput } from '$lib/utils';
+	import parseTracks, { getFiles, measureVolume } from '$lib/utils/tracks';
+	import logger from '$lib/utils/logger';
 
 	// Column Resizer
 	import columnResize from './column-resize';
 
 	// Stores
-	import { radioData, tabs, tables } from '$lib/stores';
+	import { tables } from '$lib/stores';
 
 	// Icons
 	import { Plus } from '$assets/tg-icons';
-	import { AltArrowDown, AltArrowUp, Sort } from '@solar-icons/svelte/Outline';
+	import {
+		AltArrowDown,
+		AltArrowUp,
+		SortFromTopToBottom,
+		Restart
+	} from '@solar-icons/svelte/Outline';
 	import { Pen, TrashBinTrash, VolumeLoud } from '@solar-icons/svelte/Bold';
+
+	// Props
+	let {
+		checkMissing,
+		missingFiles,
+		radioStoreData = $bindable()
+	}: {
+		checkMissing: () => Promise<void>;
+		missingFiles: { missingSongs: Map<string, boolean>; missingSongsCount: number };
+		radioStoreData: TgRadioData;
+	} = $props();
 
 	let audioDropArea = $state<HTMLElement>();
 
 	// Table Vars
 	let loadingSongs = $state<boolean>();
-	let songPaths = $state<string[]>([]);
 	let filteredSongs = $state<SongsType[]>([]);
 	let songFilter = $state('');
 	let selectedSong = $state<number[]>([]);
@@ -29,6 +50,16 @@
 	let windowShiftDown = $state<boolean>();
 	let windowCtrlDown = $state<boolean>();
 	let shiftAnchorIndex = $state<number | null>(null);
+
+	// Songs
+	let songsList = $state<SongsType[]>(radioStoreData.tracks.songs ?? []);
+
+	const audioFilter: DialogFilter[] = [
+		{
+			extensions: ['flac', 'mp3', 'ogg', 'wav'],
+			name: 'Audio Files'
+		}
+	];
 
 	const tableFields = [
 		'#',
@@ -54,24 +85,6 @@
 		'path'
 	];
 
-	// Songs
-	let songsList = $derived<SongsType[]>(
-		radioData.state.find(
-			(tabData) => tabData.tabId === tabs.state.find((tab) => tab.active)?.id
-		)?.tracks?.songs ?? [
-			{
-				filename: 'Test.mp3',
-				id: '1',
-				artist: 'Test Artist',
-				length: '3:02',
-				name: 'Test Song',
-				number: '1',
-				path: 'C:\\test songs\\Test.mp3',
-				year: '2023'
-			}
-		]
-	);
-
 	onMount(() => {
 		if (!tables.songs_table.fields.length) {
 			tables.songs_table = {
@@ -83,6 +96,25 @@
 					return {};
 				})
 			};
+		}
+	});
+
+	// Listen to drag/drop events
+	listen<DragDropEventPayload>('tauri://drag-drop', async (event) => {
+		const { x, y } = event.payload.position;
+
+		// get element under cursor
+		const el = document.elementFromPoint(x, y);
+		if (el && audioDropArea?.contains(el)) {
+			let paths = event.payload.paths;
+
+			getFiles(paths)
+				.then((res) => {
+					loadSongs(res);
+				})
+				.catch((err: Error) => {
+					return logger.err(err.message);
+				});
 		}
 	});
 
@@ -116,6 +148,21 @@
 		}
 	}
 
+	async function loadSongs(songPaths: string[]) {
+		parseTracks(songPaths, (isLoading) => (loadingSongs = isLoading)).then((tracks) => {
+			songsList = [...songsList, ...tracks];
+
+			songsList.sort((a, b) =>
+				compareSongs(
+					a,
+					b,
+					fieldMap[tables.songs_table.fields.findIndex((f) => f.sort)],
+					!tables.songs_table.ascending
+				)
+			);
+		});
+	}
+
 	function compareSongs(
 		a: SongsType,
 		b: SongsType,
@@ -128,7 +175,7 @@
 		const bValue = b[key];
 
 		// All values empty in this column
-		const allValues = songsList!.map((t) => t[key]);
+		const allValues = songsList!.map((s) => s[key]);
 		if (allValues.every(isEmpty)) return 0;
 
 		// Partial values present
@@ -166,7 +213,19 @@
 			: bValue!.localeCompare(aValue!, undefined, { numeric: true });
 	}
 
-	function removeTrack() {
+	async function addSongs() {
+		const paths = await open({
+			title: 'Choose audio file(s)',
+			filters: audioFilter,
+			multiple: true
+		});
+
+		if (!paths) return;
+
+		loadSongs(paths);
+	}
+
+	function removeSong() {
 		songsList = songsList.filter((_, i) => !selectedSong.some((n) => n === i));
 
 		selectedSong = [];
@@ -188,6 +247,51 @@
 						)
 					: [];
 		}
+	});
+
+	$effect(() => {
+		const enabled = radioStoreData?.configuration.volume.enabled;
+		const value = radioStoreData?.configuration.volume.value;
+
+		let changed = false;
+
+		if (!enabled) {
+			const next = songsList.map((s) => {
+				if (s.volume_offset !== undefined) {
+					changed = true;
+					return { ...s, volume_offset: undefined };
+				}
+
+				return s;
+			});
+
+			if (changed) {
+				songsList = next;
+			}
+
+			return;
+		}
+
+		const next = songsList.map((s) => {
+			if (!s.measured_volume) return s;
+
+			const newOffset = (Number(value) - Number(s.measured_volume)).toFixed(1);
+
+			if (s.volume_offset !== newOffset) {
+				changed = true;
+				return { ...s, volume_offset: newOffset };
+			}
+
+			return s;
+		});
+
+		if (changed) {
+			songsList = next;
+		}
+	});
+
+	$effect(() => {
+		radioStoreData.tracks.songs = songsList;
 	});
 </script>
 
@@ -237,7 +341,7 @@
 
 		if (e.key === 'Delete' && selectedSong.length) {
 			e.preventDefault();
-			removeTrack();
+			removeSong();
 		}
 
 		if (e.key === 'Escape' && selectedSong.length) {
@@ -311,12 +415,19 @@
 		<div class="flex gap-2 px-2">
 			<div class="flex gap-2">
 				<button
+					onclick={addSongs}
 					class="px-4 py-1 text-sm text-white bg-primary-700/50 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
 					title="Add File(s)"
 				>
 					<Plus />
 				</button>
 				<button
+					onclick={() => {
+						audioDropArea
+							?.querySelectorAll('tbody tr')
+							[selectedSong[0]].querySelectorAll('[data-editable]')[1]
+							.setAttribute('contenteditable', 'plaintext-only');
+					}}
 					class="px-4 py-1 text-sm text-white bg-primary-700/50 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
 					disabled={selectedSong.length <= 0 || selectedSong.length < 1}
 					title="Edit Song"
@@ -324,22 +435,48 @@
 					<Pen />
 				</button>
 				<button
+					onclick={() => {
+						songsList = songsList.map((track) => {
+							track.number = Number(songsList.indexOf(track) + 1).toString();
+
+							return track;
+						});
+					}}
 					class="px-4 py-1 text-sm text-white bg-primary-700/50 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
-					disabled={songsList!.length < 1}
+					disabled={songsList.length < 1}
 					title="Auto Number"
 				>
-					<Sort />
+					<SortFromTopToBottom />
 				</button>
 				<button
+					onclick={async () => {
+						await measureVolume(
+							songsList,
+							(isLoading) => (loadingSongs = isLoading),
+							(measuredTrack) => {
+								songsList = songsList.map((s) =>
+									s.path === measuredTrack.path ? measuredTrack : s
+								);
+							}
+						);
+					}}
 					class="px-4 py-1 text-sm text-white bg-primary-700/50 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
-					disabled={songsList!.length < 1}
+					disabled={songsList.length < 1}
 					title="Measure Volume"
 				>
 					<VolumeLoud />
 				</button>
 				<button
-					onclick={removeTrack}
-					class="flex items-center justify-center gap-2 px-4 py-1 text-sm text-red-400 hover:text-red-500 bg-primary-700/50 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
+					onclick={checkMissing}
+					class="px-4 py-1 text-sm text-white bg-primary-700/50 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
+					disabled={songsList.length < 1}
+					title="Refresh List"
+				>
+					<Restart />
+				</button>
+				<button
+					onclick={removeSong}
+					class="flex items-center justify-center gap-2 px-4 py-1 text-sm text-red-400 bg-primary-700/50 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
 					disabled={selectedSong.length < 1}
 				>
 					<TrashBinTrash width="18" height="18" />
@@ -383,7 +520,7 @@
 
 													tables.songs_table = {
 														...tables.songs_table,
-														fields: tables.songs_table!.fields.map(
+														fields: tables.songs_table.fields.map(
 															(field, index) => ({
 																...field,
 																sort: index === i
@@ -399,7 +536,7 @@
 																a,
 																b,
 																key,
-																!tables.songs_table?.ascending
+																!tables.songs_table.ascending
 															)
 														);
 													}
@@ -410,7 +547,7 @@
 												tabindex="-1"
 											>
 												{#if tables.songs_table.fields[i].sort}
-													{#if tables.songs_table?.ascending}
+													{#if tables.songs_table.ascending}
 														<AltArrowDown
 															height="14"
 															width="14"
@@ -436,7 +573,7 @@
 													// Update local reactive state live
 													tables.songs_table = {
 														...tables.songs_table,
-														fields: tables.songs_table!.fields.map(
+														fields: tables.songs_table.fields.map(
 															(field, index) =>
 																index === i
 																	? { ...field, width }
@@ -492,6 +629,7 @@
 											lastSelectedIndex = index;
 										}}
 										class:selected={selectedSong.includes(index)}
+										class:error={missingFiles.missingSongs.get(song.path)}
 										data-index={index}
 									>
 										{#each fieldMap as key, i}
@@ -506,10 +644,9 @@
 																songsList[index][key] = value;
 															}
 														}}
-														role="textbox"
 														aria-multiline="false"
-														class="truncate mx-1 my-0.5 px-1 py-0.5 text-xs text-white"
-														tabindex="-1"
+														class="truncate h-5 mx-1 my-0.5 px-1 py-0.5 text-xs text-white"
+														data-editable
 													>
 														{song[key] ?? ''}
 													</div>
@@ -554,6 +691,15 @@
 						<span class="text-xs text-primary-400">Selected:</span>
 						<span class="text-xs font-bold text-white">{selectedSong.length}</span>
 					</div>
+					{#if missingFiles.missingSongsCount > 0}
+						<i class="text-xs text-primary-600 px-2">|</i>
+						<div class="flex items-center gap-2">
+							<span class="text-xs text-red-400">Missing:</span>
+							<span class="text-xs font-bold text-red-400"
+								>{missingFiles.missingSongsCount}</span
+							>
+						</div>
+					{/if}
 				</div>
 				<div class="flex items-center grow gap-2">
 					<label for="song-filter" class="text-xs text-white">Filter:</label>
@@ -577,7 +723,7 @@
 <style>
 	thead th {
 		&:hover {
-			background-color: var(--color-secondary);
+			background-color: color-mix(in srgb, var(--color-primary-700) 50%, transparent);
 		}
 	}
 
@@ -586,7 +732,7 @@
 			outline: none;
 
 			tbody tr.selected {
-				background-color: #51a2ff99;
+				background-color: var(--color-slate-700);
 			}
 		}
 
@@ -600,7 +746,13 @@
 
 		tbody tr {
 			&.selected {
-				background-color: #51a2ff66;
+				background-color: color-mix(in srgb, var(--color-slate-600) 40%, transparent);
+			}
+
+			&.error {
+				& td div {
+					color: var(--color-red-400);
+				}
 			}
 
 			&:hover {
@@ -608,7 +760,7 @@
 			}
 
 			&:not(.selected):hover {
-				background-color: #51a2ff33;
+				background-color: color-mix(in srgb, var(--color-slate-700) 50%, transparent);
 			}
 		}
 	}

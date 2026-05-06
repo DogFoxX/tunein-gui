@@ -10,16 +10,28 @@ use tauri::command;
 
 /// Convert PNG/JPG/BMP → DXT5 DDS
 #[command]
-pub fn convert_to_dds(input_path: String, output_dir: String) -> Result<(), String> {
-    // Load input image
-    let img: DynamicImage = image::open(&input_path)
-        .map_err(|e: image::ImageError| format!("Failed to open image: {}", e))?;
+pub fn convert_to_dds(base64_input: String, output_dir: String) -> Result<(), String> {
+    // Strip data URL prefix if present (e.g. "data:image/png;base64,...")
+    let base64_data = if let Some(idx) = base64_input.find(",") {
+        &base64_input[idx + 1..]
+    } else {
+        &base64_input
+    };
+
+    // Decode base64 → bytes
+    let image_bytes = general_purpose::STANDARD
+        .decode(base64_data)
+        .map_err(|e| format!("Failed to decode base64: {}", e))?;
+
+    // Load image from memory
+    let img: DynamicImage = image::load_from_memory(&image_bytes)
+        .map_err(|e| format!("Failed to load image from memory: {}", e))?;
 
     // Resize to 512x512
     let resized: DynamicImage = img.resize_exact(512, 512, FilterType::Lanczos3);
 
-    // Convert DynamicImage → RGBA8 buffer
-    let rgba: image::ImageBuffer<image::Rgba<u8>, Vec<u8>> = resized.to_rgba8();
+    // Convert to RGBA8 buffer
+    let rgba = resized.to_rgba8();
 
     // Encode to DDS (BC3 = DXT5)
     let dds: Dds = dds_from_image(
@@ -28,15 +40,16 @@ pub fn convert_to_dds(input_path: String, output_dir: String) -> Result<(), Stri
         image_dds::Quality::Normal,
         image_dds::Mipmaps::FromSurface,
     )
-    .map_err(|e: image_dds::CreateDdsError| format!("Failed to encode as DXT5: {:?}", e))?;
+    .map_err(|e| format!("Failed to encode as DXT5: {:?}", e))?;
 
-    // Always save as "<directory>/thumb.dds"
-    let output_path: std::path::PathBuf = Path::new(&output_dir).join("thumb.dds");
+    // Output path
+    let output_path = Path::new(&output_dir).join("thumb.dds");
 
-    let mut file: File = File::create(&output_path)
-        .map_err(|e: std::io::Error| format!("Failed to create DDS file: {}", e))?;
+    let mut file = File::create(&output_path)
+        .map_err(|e| format!("Failed to create DDS file: {}", e))?;
+
     dds.write(&mut file)
-        .map_err(|e: ddsfile::Error| format!("Failed to write DDS file: {}", e))?;
+        .map_err(|e| format!("Failed to write DDS file: {}", e))?;
 
     Ok(())
 }

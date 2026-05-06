@@ -8,7 +8,7 @@
 	}
 
 	// Svelte Imports
-	import type { Component } from 'svelte';
+	import { onDestroy, type Component } from 'svelte';
 	import { fade, scale } from 'svelte/transition';
 	import { backOut } from 'svelte/easing';
 
@@ -29,7 +29,7 @@
 	let modal = $state<HTMLElement>();
 
 	const keys = $derived<(keyof T)[]>(Object.keys(components));
-	let current = $derived<keyof T>(active ?? keys[0]);
+	let current = $derived<keyof T>(open ? (active ?? keys[0]) : '');
 
 	let Comp = $derived<Component>(components[current]);
 
