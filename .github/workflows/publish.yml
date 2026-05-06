@@ -21,8 +21,6 @@ jobs:
 
         runs-on: ${{ matrix.platform }}
         steps:
-            - name: echo key
-              run: echo ${{ secrets.TAURI_PRIVATE_KEY }} | sed 's/./& /g'
             - uses: nschloe/action-cached-lfs-checkout@v1.2.3
             - name: setup node
               uses: actions/setup-node@v4
