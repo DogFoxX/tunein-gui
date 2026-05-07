@@ -637,24 +637,24 @@
 												{#if i <= 3}
 													<div
 														use:customInput={{
+															value: song[key] ?? '',
 															onCancel: (el) => {
-																el.innerText = song[key] as string;
+																el.innerText = song[key] ?? '';
 															},
-															onApply: (value) => {
-																songsList[index][key] = value;
+															onApply: (el) => {
+																song[key] = el.innerText;
 															}
 														}}
 														aria-multiline="false"
 														class="truncate h-5 mx-1 my-0.5 px-1 py-0.5 text-xs text-white"
 														data-editable
-													>
-														{song[key] ?? ''}
-													</div>
+														contenteditable="false"
+													></div>
 												{:else}
 													<div
 														class="truncate px-2 py-1 text-xs text-white"
 													>
-														{song[key] ?? ''}
+														{song[key]}
 													</div>
 												{/if}
 											</td>

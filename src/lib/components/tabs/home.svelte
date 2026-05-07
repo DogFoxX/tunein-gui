@@ -66,7 +66,7 @@
 			<Flame color="var(--color-orange-500)" />
 			<span class="text-white font-semibold">Latest Radio Mods</span>
 		</header>
-		<div class="flex items-center justify-center h-38 w-full px-4 overflow-hidden">
+		<div class="flex items-center justify-center h-35.5 w-full px-4 overflow-hidden">
 			{#await fetchMods()}
 				<Sonar />
 			{:then data}
@@ -83,17 +83,16 @@
 							title={modUrl}
 						>
 							<div
-								class="absolute inset-0 bg-linear-to-t to-50% from-25% from-black"
+								class="absolute inset-0 bg-linear-to-t to-75% to-transparent from-black"
 							></div>
 							<div
 								class="absolute bottom-0 left-0 right-0 flex flex-col text-left p-1.5 overflow-hidden"
 							>
-								<span class="text-sm font-semibold text-white truncate">{name}</span
-								>
+								<span class="text-sm font-bold text-white truncate">{name}</span>
 								<div class="flex items-center gap-1.5">
-									<span class="text-xs text-zinc-400">{author}</span>
-									<span class="text-xs text-zinc-600">|</span>
-									<div class="flex items-center gap-1 text-xs text-zinc-400">
+									<span class="text-xs text-primary-300">{author}</span>
+									<span class="text-xs text-primary-600">|</span>
+									<div class="flex items-center gap-1 text-xs text-primary-300">
 										<Like />
 										<span>{endorsements}</span>
 									</div>
@@ -108,7 +107,7 @@
 						title={nexusUrl}
 					>
 						<span
-							class="absolute bottom-1.5 left-0 right-0 text-sm font-semibold text-white"
+							class="absolute bottom-1.5 left-0 right-0 text-sm font-bold text-white"
 							>Explore more at NexusMods</span
 						>
 					</button>

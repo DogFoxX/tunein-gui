@@ -3,8 +3,9 @@ import { Menu } from '@tauri-apps/api/menu';
 import { readText } from '@tauri-apps/plugin-clipboard-manager';
 
 interface CustomInputParams {
+	value?: string;
 	onCancel?: (el: HTMLDivElement) => void;
-	onApply?: (value: string, el: HTMLDivElement) => void;
+	onApply?: (el: HTMLDivElement) => void;
 }
 
 function hasEditableSelection() {
@@ -66,12 +67,15 @@ async function buildMenu() {
 }
 
 function customInput(node: HTMLDivElement, params: CustomInputParams) {
+	node.innerText = params.value ?? '';
+
 	async function dblClickHandler() {
 		node.setAttribute('contenteditable', 'plaintext-only');
 	}
 
-	function keyDownHandler(e: KeyboardEvent) {
+	async function keyDownHandler(e: KeyboardEvent) {
 		if (e.key === 'Escape') {
+			e.preventDefault();
 			params.onCancel?.(node);
 			node.blur();
 			return;
@@ -79,13 +83,16 @@ function customInput(node: HTMLDivElement, params: CustomInputParams) {
 
 		if (e.key === 'Enter') {
 			e.preventDefault();
-			params.onApply?.(node.innerText, node);
+			params.onApply?.(node);
 			node.blur();
 			return;
 		}
 
 		if (e.key === 'Tab' && node.getAttribute('contenteditable') === 'plaintext-only') {
-			node.setAttribute('contenteditable', 'false');
+			params.onApply?.(node);
+			node.blur();
+
+			await tick();
 
 			const sibling = node.parentElement?.nextElementSibling?.querySelector(
 				'[data-editable]'
@@ -149,6 +156,10 @@ function customInput(node: HTMLDivElement, params: CustomInputParams) {
 	return {
 		update(newParams: CustomInputParams) {
 			params = newParams;
+
+			if (document.activeElement !== node) {
+				node.innerText = params.value ?? '';
+			}
 		},
 		destroy() {
 			node.removeEventListener('dblclick', dblClickHandler);
