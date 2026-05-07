@@ -83,13 +83,11 @@ function customInput(node: HTMLDivElement, params: CustomInputParams) {
 
 		if (e.key === 'Enter') {
 			e.preventDefault();
-			params.onApply?.(node);
 			node.blur();
 			return;
 		}
 
 		if (e.key === 'Tab' && node.getAttribute('contenteditable') === 'plaintext-only') {
-			params.onApply?.(node);
 			node.blur();
 
 			await tick();
@@ -106,6 +104,7 @@ function customInput(node: HTMLDivElement, params: CustomInputParams) {
 	}
 
 	async function blurHandler() {
+		params.onApply?.(node);
 		node.setAttribute('contenteditable', 'false');
 
 		await tick();
