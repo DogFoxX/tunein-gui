@@ -209,41 +209,13 @@
 		lastSelectedIndex = null;
 	}
 
-	// Update 'filterSongs' for searching
-	$effect(() => {
-		if (jinglesList) {
-			filteredJingles =
-				jinglesList.length > 0
-					? jinglesList.filter((song) =>
-							Object.entries(song)
-								.filter(([key]) => key !== 'length')
-								.map(([, value]) => value)
-								.join(' ')
-								.toLowerCase()
-								.includes(jingleFilter.toLowerCase())
-						)
-					: [];
-		}
-	});
-
-	$effect(() => {
-		radioStoreData.tracks.jingles = jinglesList;
-	});
-</script>
-
-<svelte:window
-	onkeydown={(e) => {
-		windowShiftDown = e.shiftKey;
-		windowCtrlDown = e.ctrlKey;
-
-		if (document.activeElement !== audioDropArea || !filteredJingles.length) return;
-
+	function tableKeyControls(e: KeyboardEvent) {
 		if (e.ctrlKey && e.key.toLowerCase() === 'a') {
 			e.preventDefault();
 			selectedSong = jinglesList.map((_, i) => i);
 		}
 
-		if (e.key === 'Home' && selectedSong.length) {
+		if ((e.key === 'Home' || e.key === 'PageUp') && selectedSong.length) {
 			e.preventDefault();
 
 			if (windowShiftDown) {
@@ -259,7 +231,7 @@
 			focusRow(selectedSong[selectedSong.length - 1]);
 		}
 
-		if (e.key === 'End' && selectedSong.length) {
+		if ((e.key === 'End' || e.key === 'PageDown') && selectedSong.length) {
 			e.preventDefault();
 
 			if (windowShiftDown) {
@@ -323,6 +295,34 @@
 
 		lastSelectedIndex = next;
 		focusRow(next);
+	}
+
+	// Update 'filterSongs' for searching
+	$effect(() => {
+		if (jinglesList) {
+			filteredJingles =
+				jinglesList.length > 0
+					? jinglesList.filter((song) =>
+							Object.entries(song)
+								.filter(([key]) => key !== 'length')
+								.map(([, value]) => value)
+								.join(' ')
+								.toLowerCase()
+								.includes(jingleFilter.toLowerCase())
+						)
+					: [];
+		}
+	});
+
+	$effect(() => {
+		radioStoreData.tracks.jingles = jinglesList;
+	});
+</script>
+
+<svelte:window
+	onkeydown={(e) => {
+		windowShiftDown = e.shiftKey;
+		windowCtrlDown = e.ctrlKey;
 	}}
 	onkeyup={(e) => {
 		windowShiftDown = e.shiftKey;
@@ -385,8 +385,10 @@
 				<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 				<div
 					bind:this={audioDropArea}
+					onkeydown={tableKeyControls}
 					tabindex="0"
 					id="jingles-table"
+					role="dialog"
 					class="inset-0 absolute overflow-x-auto overflow-y-scroll"
 				>
 					<table class="relative table-fixed w-min border-separate border-spacing-0">
@@ -606,14 +608,6 @@
 
 			tbody tr.selected {
 				background-color: var(--color-slate-700);
-			}
-		}
-
-		&:focus-visible tbody:not(:has(tr.selected)) {
-			outline: none;
-
-			tr:first-of-type {
-				box-shadow: inset 0 0 0 1px var(--color-blue-300);
 			}
 		}
 

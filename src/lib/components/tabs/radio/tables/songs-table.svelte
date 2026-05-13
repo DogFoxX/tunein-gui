@@ -232,6 +232,102 @@
 		lastSelectedIndex = null;
 	}
 
+	function tableKeyControls(e: KeyboardEvent) {
+		const target = e.target as HTMLDivElement;
+
+		if (e.ctrlKey && e.key.toLowerCase() === 'a') {
+			e.preventDefault();
+			selectedSong = songsList.map((_, i) => i);
+		}
+
+		if ((e.key === 'Home' || e.key === 'PageUp') && selectedSong.length) {
+			e.preventDefault();
+
+			if (windowShiftDown) {
+				if (lastSelectedIndex !== null) {
+					const start = 0;
+					const end = lastSelectedIndex;
+
+					selectedSong = Array.from({ length: end - start + 1 }, (_, i) => start + i);
+				}
+			} else selectedSong = [0];
+
+			lastSelectedIndex = 0;
+			focusRow(selectedSong[selectedSong.length - 1]);
+		}
+
+		if ((e.key === 'End' || e.key === 'PageDown') && selectedSong.length) {
+			e.preventDefault();
+
+			if (windowShiftDown) {
+				if (lastSelectedIndex !== null) {
+					const start = lastSelectedIndex;
+					const end = filteredSongs.length - 1;
+
+					selectedSong = Array.from({ length: end - start + 1 }, (_, i) => start + i);
+				}
+			} else selectedSong = [filteredSongs.length - 1];
+
+			lastSelectedIndex = filteredSongs.length - 1;
+			focusRow(selectedSong[selectedSong.length - 1]);
+		}
+
+		if (e.key === 'Delete' && selectedSong.length) {
+			e.preventDefault();
+			removeSong();
+		}
+
+		if (e.key === 'Escape' && selectedSong.length) {
+			if (
+				target.querySelector('[data-editable]')?.getAttribute('contenteditable') !== 'false'
+			)
+				return;
+
+			e.preventDefault();
+
+			selectedSong = [];
+			lastSelectedIndex = null;
+		}
+
+		if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+		e.preventDefault();
+
+		// Nothing selected yet
+		if (lastSelectedIndex === null) {
+			if (e.key === 'ArrowDown') {
+				lastSelectedIndex = 0;
+				selectedSong = [0];
+				shiftAnchorIndex = 0;
+				focusRow(0);
+			}
+			return;
+		}
+
+		// Calculate next index
+		const next =
+			e.key === 'ArrowUp'
+				? Math.max(0, lastSelectedIndex - 1)
+				: Math.min(filteredSongs.length - 1, lastSelectedIndex + 1);
+
+		// SHIFT + ARROW = Range select
+		if (windowShiftDown) {
+			// First time pressing Shift: remember where range started
+			if (shiftAnchorIndex === null) shiftAnchorIndex = lastSelectedIndex;
+
+			const start = Math.min(shiftAnchorIndex, next);
+			const end = Math.max(shiftAnchorIndex, next);
+
+			selectedSong = Array.from({ length: end - start + 1 }, (_, i) => start + i);
+		} else {
+			// Normal single selection
+			selectedSong = [next];
+			shiftAnchorIndex = null; // reset range anchor
+		}
+
+		lastSelectedIndex = next;
+		focusRow(next);
+	}
+
 	// Update 'filterSongs' for searching
 	$effect(() => {
 		if (songsList) {
@@ -299,100 +395,6 @@
 	onkeydown={(e) => {
 		windowShiftDown = e.shiftKey;
 		windowCtrlDown = e.ctrlKey;
-
-		if (document.activeElement !== audioDropArea || !filteredSongs.length) return;
-
-		if (e.ctrlKey && e.key.toLowerCase() === 'a') {
-			e.preventDefault();
-			selectedSong = songsList.map((_, i) => i);
-		}
-
-		if (e.key === 'Home' && selectedSong.length) {
-			e.preventDefault();
-
-			if (windowShiftDown) {
-				if (lastSelectedIndex !== null) {
-					const start = 0;
-					const end = lastSelectedIndex;
-
-					selectedSong = Array.from({ length: end - start + 1 }, (_, i) => start + i);
-				}
-			} else selectedSong = [0];
-
-			lastSelectedIndex = 0;
-			focusRow(selectedSong[selectedSong.length - 1]);
-		}
-
-		if (e.key === 'End' && selectedSong.length) {
-			e.preventDefault();
-
-			if (windowShiftDown) {
-				if (lastSelectedIndex !== null) {
-					const start = lastSelectedIndex;
-					const end = filteredSongs.length - 1;
-
-					selectedSong = Array.from({ length: end - start + 1 }, (_, i) => start + i);
-				}
-			} else selectedSong = [filteredSongs.length - 1];
-
-			lastSelectedIndex = filteredSongs.length - 1;
-			focusRow(selectedSong[selectedSong.length - 1]);
-		}
-
-		if (e.key === 'Delete' && selectedSong.length) {
-			e.preventDefault();
-			removeSong();
-		}
-
-		if (
-			e.key === 'Escape' &&
-			selectedSong.length &&
-			audioDropArea.querySelector('[data-editable]')?.getAttribute('contenteditable') ===
-				'plaintext-only'
-		) {
-			e.preventDefault();
-
-			selectedSong = [];
-			lastSelectedIndex = null;
-		}
-
-		if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
-		e.preventDefault();
-
-		// Nothing selected yet
-		if (lastSelectedIndex === null) {
-			if (e.key === 'ArrowDown') {
-				lastSelectedIndex = 0;
-				selectedSong = [0];
-				shiftAnchorIndex = 0;
-				focusRow(0);
-			}
-			return;
-		}
-
-		// Calculate next index
-		const next =
-			e.key === 'ArrowUp'
-				? Math.max(0, lastSelectedIndex - 1)
-				: Math.min(filteredSongs.length - 1, lastSelectedIndex + 1);
-
-		// SHIFT + ARROW = Range select
-		if (windowShiftDown) {
-			// First time pressing Shift: remember where range started
-			if (shiftAnchorIndex === null) shiftAnchorIndex = lastSelectedIndex;
-
-			const start = Math.min(shiftAnchorIndex, next);
-			const end = Math.max(shiftAnchorIndex, next);
-
-			selectedSong = Array.from({ length: end - start + 1 }, (_, i) => start + i);
-		} else {
-			// Normal single selection
-			selectedSong = [next];
-			shiftAnchorIndex = null; // reset range anchor
-		}
-
-		lastSelectedIndex = next;
-		focusRow(next);
 	}}
 	onkeyup={(e) => {
 		windowShiftDown = e.shiftKey;
@@ -498,8 +500,10 @@
 				<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 				<div
 					bind:this={audioDropArea}
+					onkeydown={tableKeyControls}
 					tabindex="0"
 					id="songs-table"
+					role="dialog"
 					class="inset-0 absolute overflow-x-auto overflow-y-scroll"
 				>
 					<table class="relative table-fixed w-min border-separate border-spacing-0">
@@ -655,7 +659,7 @@
 															}
 														}}
 														aria-multiline="false"
-														class="truncate h-5 mx-1 my-0.5 px-1 py-0.5 text-xs text-white"
+														class="truncate h-5 mx-1 my-0.5 px-1 py-0.5 text-xs text-white rounded-sm"
 														data-editable
 														contenteditable="false"
 													></div>
@@ -742,14 +746,6 @@
 
 			tbody tr.selected {
 				background-color: var(--color-slate-700);
-			}
-		}
-
-		&:focus-visible tbody:not(:has(tr.selected)) {
-			outline: none;
-
-			tr:first-of-type {
-				box-shadow: inset 0 0 0 1px var(--color-blue-300);
 			}
 		}
 

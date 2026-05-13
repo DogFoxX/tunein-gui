@@ -90,6 +90,7 @@ function customInput(node: HTMLDivElement, params: CustomInputParams) {
 
 		if (e.key === 'Enter') {
 			e.preventDefault();
+			params.onApply?.(node);
 			closeEdit();
 			return;
 		}
@@ -119,7 +120,6 @@ function customInput(node: HTMLDivElement, params: CustomInputParams) {
 	}
 
 	async function closeEdit() {
-		params.onApply?.(node);
 		node.setAttribute('contenteditable', 'false');
 
 		await tick();
