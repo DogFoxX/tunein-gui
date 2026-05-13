@@ -52,7 +52,7 @@
 	let shiftAnchorIndex = $state<number | null>(null);
 
 	// Songs
-	let songsList = $state<SongsType[]>(radioStoreData.tracks.songs ?? []);
+	let songsList = $derived<SongsType[]>(radioStoreData.tracks.songs ?? []);
 
 	const audioFilter: DialogFilter[] = [
 		{
@@ -344,8 +344,14 @@
 			removeSong();
 		}
 
-		if (e.key === 'Escape' && selectedSong.length) {
+		if (
+			e.key === 'Escape' &&
+			selectedSong.length &&
+			audioDropArea.querySelector('[data-editable]')?.getAttribute('contenteditable') ===
+				'plaintext-only'
+		) {
 			e.preventDefault();
+
 			selectedSong = [];
 			lastSelectedIndex = null;
 		}
@@ -595,10 +601,6 @@
 								{#each filteredSongs as song, index (song.id)}
 									<tr
 										onmousedown={(e) => {
-											document.querySelector<HTMLElement>(
-												'tr[data-index="0"]'
-											)!.style.boxShadow = '';
-
 											shiftAnchorIndex = null;
 
 											focusRow(index);
@@ -638,11 +640,18 @@
 													<div
 														use:customInput={{
 															value: song[key] ?? '',
-															onCancel: (el) => {
-																el.innerText = song[key] ?? '';
+															focusNext: () => {
+																selectedSong = [index + 1];
+																lastSelectedIndex = index + 1;
 															},
 															onApply: (el) => {
+																audioDropArea?.focus();
 																song[key] = el.innerText;
+															},
+															onCancel: (el) => {
+																audioDropArea?.focus();
+
+																el.innerText = song[key] ?? '';
 															}
 														}}
 														aria-multiline="false"

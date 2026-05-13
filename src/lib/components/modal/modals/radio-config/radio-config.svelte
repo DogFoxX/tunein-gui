@@ -57,8 +57,8 @@
 			}
 		},
 		tracks: {
-			jingles: [],
-			songs: []
+			jingles: radioStoreData?.tracks.jingles ?? [],
+			songs: radioStoreData?.tracks.songs ?? []
 		},
 		tabId: radioStoreData?.tabId ?? crypto.randomUUID()
 	});

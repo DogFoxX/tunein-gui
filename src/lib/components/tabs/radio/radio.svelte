@@ -239,6 +239,8 @@
 	$effect(() => {
 		getCurrentWindow().setTitle(`${radioStoreData?.configuration.radioName} - Tunein GUI`);
 	});
+
+	$inspect(radioData.state);
 </script>
 
 <div class="flex flex-col size-full">

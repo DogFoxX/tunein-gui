@@ -47,7 +47,7 @@
 	let shiftAnchorIndex = $state<number | null>(null);
 
 	// Jingles
-	let jinglesList = $state<JinglesType[]>(radioStoreData.tracks.jingles ?? []);
+	let jinglesList = $derived<JinglesType[]>(radioStoreData.tracks.jingles ?? []);
 
 	const audioFilter: DialogFilter[] = [
 		{
