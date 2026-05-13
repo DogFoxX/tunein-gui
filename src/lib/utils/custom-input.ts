@@ -3,10 +3,9 @@ import { Menu } from '@tauri-apps/api/menu';
 import { readText } from '@tauri-apps/plugin-clipboard-manager';
 
 interface CustomInputParams {
-	value?: string;
+	value: string;
 	focusNext?: () => void;
-	onApply?: (el: HTMLDivElement) => void;
-	onCancel?: (el: HTMLDivElement) => void;
+	onclose?: (detail: { node: HTMLDivElement; value: string; cancelled?: boolean }) => void;
 }
 
 function hasEditableSelection() {
@@ -70,27 +69,26 @@ async function buildMenu() {
 function customInput(node: HTMLDivElement, params: CustomInputParams) {
 	node.innerText = params.value ?? '';
 
+	let closing = false;
+
 	const parentSibling = node.parentElement?.parentElement?.nextElementSibling as
 		| HTMLElement
 		| null
 		| undefined;
 
-	async function dblClickHandler() {
+	async function ondblclick() {
 		node.setAttribute('contenteditable', 'plaintext-only');
 	}
 
-	async function keyDownHandler(e: KeyboardEvent) {
+	async function onkeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape') {
 			e.preventDefault();
-			params.onCancel?.(node);
-			closeEdit();
-
+			closeEdit(true);
 			return;
 		}
 
 		if (e.key === 'Enter') {
 			e.preventDefault();
-			params.onApply?.(node);
 			closeEdit();
 			return;
 		}
@@ -119,25 +117,32 @@ function customInput(node: HTMLDivElement, params: CustomInputParams) {
 		}
 	}
 
-	async function closeEdit() {
+	async function closeEdit(cancelled?: boolean) {
+		if (closing) return;
+		closing = true;
+
 		node.setAttribute('contenteditable', 'false');
 
 		await tick();
 
+		params.onclose?.({
+			node,
+			value: node.innerText,
+			cancelled
+		});
+
 		node.scrollLeft = 0;
+
+		await tick();
+
+		closing = false;
 	}
 
-	// async function blurHandler() {
-	// 	params.onApply?.(node);
-	// 	node.setAttribute('contenteditable', 'false');
+	function onblur() {
+		closeEdit();
+	}
 
-	// 	await tick();
-	// 	params.onBlur?.();
-
-	// 	node.scrollLeft = 0;
-	// }
-
-	async function contextMenuHandler(e: MouseEvent) {
+	async function oncontextmenu(e: MouseEvent) {
 		if (node.getAttribute('contenteditable') !== 'plaintext-only') return;
 
 		e.preventDefault();
@@ -172,10 +177,10 @@ function customInput(node: HTMLDivElement, params: CustomInputParams) {
 		attributeFilter: ['contenteditable']
 	});
 
-	node.addEventListener('dblclick', dblClickHandler);
-	node.addEventListener('keydown', keyDownHandler);
-	node.addEventListener('blur', closeEdit);
-	node.addEventListener('contextmenu', contextMenuHandler);
+	node.addEventListener('dblclick', ondblclick);
+	node.addEventListener('keydown', onkeydown);
+	node.addEventListener('blur', onblur);
+	node.addEventListener('contextmenu', oncontextmenu);
 
 	return {
 		update(newParams: CustomInputParams) {
@@ -186,10 +191,10 @@ function customInput(node: HTMLDivElement, params: CustomInputParams) {
 			}
 		},
 		destroy() {
-			node.removeEventListener('dblclick', dblClickHandler);
-			node.removeEventListener('keydown', keyDownHandler);
-			node.removeEventListener('blur', closeEdit);
-			node.removeEventListener('contextmenu', contextMenuHandler);
+			node.removeEventListener('dblclick', ondblclick);
+			node.removeEventListener('keydown', onkeydown);
+			node.removeEventListener('blur', onblur);
+			node.removeEventListener('contextmenu', oncontextmenu);
 			observer.disconnect();
 		}
 	};

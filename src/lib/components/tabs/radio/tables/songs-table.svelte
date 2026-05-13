@@ -648,14 +648,20 @@
 																selectedSong = [index + 1];
 																lastSelectedIndex = index + 1;
 															},
-															onApply: (el) => {
-																audioDropArea?.focus();
-																song[key] = el.innerText;
-															},
-															onCancel: (el) => {
+															onclose: ({
+																node,
+																value,
+																cancelled
+															}) => {
 																audioDropArea?.focus();
 
-																el.innerText = song[key] ?? '';
+																if (cancelled) {
+																	node.innerText =
+																		song[key] ?? '';
+																	return;
+																}
+
+																song[key] = value;
 															}
 														}}
 														aria-multiline="false"
