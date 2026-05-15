@@ -713,7 +713,6 @@
 															}
 														}}
 														use:contextmenu.action
-														aria-multiline="false"
 														class="truncate h-5 mx-1 my-0.5 px-1 py-0.5 text-xs text-white rounded-sm"
 														data-editable
 														contenteditable="false"

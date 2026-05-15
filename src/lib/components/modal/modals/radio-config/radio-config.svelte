@@ -26,6 +26,7 @@
 
 	// Icons
 	import { FolderOpen, RestartSquare } from '@solar-icons/svelte/Bold';
+	import { tick } from 'svelte';
 
 	let radioStoreData = $state(
 		radioData.state.find(({ tabId }) => radioData.configurer.tabId === tabId)
@@ -132,14 +133,7 @@
 		const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 		const bytes = crypto.getRandomValues(new Uint8Array(4));
 
-		const id = Array.from(bytes, (b) => chars[b % chars.length]).join('');
-
-		radioIdInput?.focus();
-		radioIdInput?.select();
-
-		document.execCommand('insertText', false, id);
-
-		return id;
+		return Array.from(bytes, (b) => chars[b % chars.length]).join('');
 	}
 
 	async function fetchImage(src: string | null | undefined): Promise<Base64URLString | null> {
@@ -334,7 +328,16 @@
 									use:contextmenu.action={[
 										{
 											text: 'Generate ID',
-											action: generateId
+											action: () => {
+												radioIdInput?.focus();
+												radioIdInput?.select();
+
+												document.execCommand(
+													'insertText',
+													false,
+													generateId()
+												);
+											}
 										}
 									]}
 									oninput={(e) => {
@@ -349,7 +352,12 @@
 									maxlength="4"
 								/>
 								<button
-									onclick={generateId}
+									onclick={() => {
+										radioIdInput?.focus();
+										radioIdInput?.select();
+
+										document.execCommand('insertText', false, generateId());
+									}}
 									class="px-2 text-primary-400 hover:text-white transition-colors"
 									title="Generate ID"
 									tabIndex="-1"

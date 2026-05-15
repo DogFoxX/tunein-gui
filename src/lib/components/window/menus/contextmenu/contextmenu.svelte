@@ -1,4 +1,7 @@
 <script lang="ts">
+	// Svelte Imports
+	import { fly } from 'svelte/transition';
+
 	// Tauri Imports
 	import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 
@@ -128,6 +131,7 @@
 
 {#if contextmenu.state.visible}
 	<div
+		in:fly={{ y: 20, duration: 100 }}
 		bind:this={contextmenuEl}
 		onmousedown={(e) => {
 			e.preventDefault();
