@@ -104,7 +104,7 @@
 		<div
 			in:scale={{ start: 0.9, duration: 300, easing: backOut }}
 			out:scale={{ start: 0.9, duration: 180 }}
-			class={`absolute flex flex-col bg-primary-800 rounded-lg shadow-lg shadow-neutral-900 ${className ?? ''}`}
+			class={`absolute flex flex-col bg-primary-800 rounded-lg shadow-lg shadow-black/40 ${className ?? ''}`}
 		>
 			<header
 				class="relative box-content flex items-center gap-6 min-h-10 px-6 border-b border-primary-700"

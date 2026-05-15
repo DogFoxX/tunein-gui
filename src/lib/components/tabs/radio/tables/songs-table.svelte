@@ -15,6 +15,9 @@
 	// Column Resizer
 	import columnResize from './column-resize';
 
+	// Custom Contextmenu
+	import { contextmenu } from '$lib/components/window/menus';
+
 	// Stores
 	import { tables } from '$lib/stores';
 
@@ -23,6 +26,7 @@
 	import {
 		AltArrowDown,
 		AltArrowUp,
+		Shuffle,
 		SortFromTopToBottom,
 		Restart
 	} from '@solar-icons/svelte/Outline';
@@ -121,7 +125,7 @@
 	function focusRow(index: number) {
 		if (!audioDropArea) return;
 
-		const row = document.querySelector(`tr[data-index="${index}"]`);
+		const row = audioDropArea.querySelector(`tr[data-index="${index}"]`);
 
 		if (!row) return;
 
@@ -225,6 +229,26 @@
 		loadSongs(paths);
 	}
 
+	function shuffleSongs(array: SongsType[]) {
+		const arr = [...array]; // copy so original is unchanged
+
+		for (let i = arr.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+
+			[arr[i], arr[j]] = [arr[j], arr[i]];
+		}
+
+		tables.songs_table = {
+			...tables.songs_table,
+			fields: tables.songs_table.fields.map((field) => ({
+				...field,
+				sort: false
+			}))
+		};
+
+		return arr;
+	}
+
 	function removeSong() {
 		songsList = songsList.filter((_, i) => !selectedSong.some((n) => n === i));
 
@@ -234,6 +258,8 @@
 
 	function tableKeyControls(e: KeyboardEvent) {
 		const target = e.target as HTMLDivElement;
+
+		if (document.activeElement !== audioDropArea) return;
 
 		if (e.ctrlKey && e.key.toLowerCase() === 'a') {
 			e.preventDefault();
@@ -389,6 +415,17 @@
 	$effect(() => {
 		radioStoreData.tracks.songs = songsList;
 	});
+
+	$effect(() => {
+		if (audioDropArea) {
+			if (
+				document.activeElement === audioDropArea &&
+				songsList.length &&
+				lastSelectedIndex === null
+			)
+				focusRow(0);
+		}
+	});
 </script>
 
 <svelte:window
@@ -455,6 +492,16 @@
 					title="Auto Number"
 				>
 					<SortFromTopToBottom />
+				</button>
+				<button
+					onclick={() => {
+						songsList = shuffleSongs(songsList);
+					}}
+					class="px-4 py-1 text-sm text-white bg-primary-700/50 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
+					title="Shuffle"
+					disabled={songsList.length < 1}
+				>
+					<Shuffle />
 				</button>
 				<button
 					onclick={async () => {
@@ -647,6 +694,7 @@
 															focusNext: () => {
 																selectedSong = [index + 1];
 																lastSelectedIndex = index + 1;
+																focusRow(selectedSong[0]);
 															},
 															onclose: ({
 																node,
@@ -664,6 +712,7 @@
 																song[key] = value;
 															}
 														}}
+														use:contextmenu.action
 														aria-multiline="false"
 														class="truncate h-5 mx-1 my-0.5 px-1 py-0.5 text-xs text-white rounded-sm"
 														data-editable
@@ -721,7 +770,11 @@
 					{/if}
 				</div>
 				<div class="flex items-center grow gap-2">
-					<label for="song-filter" class="text-xs text-white">Filter:</label>
+					<label
+						for="song-filter"
+						class="text-xs text-white"
+						class:opacity-50={!songsList!.length}>Filter:</label
+					>
 					<div class="flex w-full bg-primary-700/50 border border-primary-600 rounded-lg">
 						<input
 							bind:value={songFilter}
@@ -752,6 +805,14 @@
 
 			tbody tr.selected {
 				background-color: var(--color-slate-700);
+			}
+		}
+
+		&:focus-visible tbody:not(:has(tr.selected)) {
+			outline: none;
+
+			tr:first-of-type {
+				box-shadow: inset 0 0 0 1px var(--color-blue-300);
 			}
 		}
 

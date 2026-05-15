@@ -1,6 +1,6 @@
 import { tick } from 'svelte';
-import { Menu } from '@tauri-apps/api/menu';
-import { readText } from '@tauri-apps/plugin-clipboard-manager';
+
+import contextmenu from '$lib/components/window/menus/contextmenu/state.svelte';
 
 interface CustomInputParams {
 	value: string;
@@ -8,87 +8,31 @@ interface CustomInputParams {
 	onclose?: (detail: { node: HTMLDivElement; value: string; cancelled?: boolean }) => void;
 }
 
-function hasEditableSelection() {
-	const selection = window.getSelection();
-	return !!selection && !selection.isCollapsed;
-}
-
-async function canPaste() {
-	try {
-		return (await readText()).length > 0;
-	} catch {
-		return false;
-	}
-}
-
-// Context Menu Builder
-async function buildMenu() {
-	const hasSelection = hasEditableSelection();
-	const pasteAvailable = await canPaste();
-
-	return await Menu.new({
-		items: [
-			{
-				text: 'Undo',
-				accelerator: 'Ctrl+Z',
-				enabled: document.queryCommandEnabled('undo'),
-				action: () => document.execCommand('undo')
-			},
-			{
-				text: 'Redo',
-				accelerator: 'Ctrl+Y',
-				enabled: document.queryCommandEnabled('redo'),
-				action: () => document.execCommand('redo')
-			},
-			{ item: 'Separator' as const },
-			{
-				text: 'Cut',
-				accelerator: 'Ctrl+X',
-				enabled: hasSelection,
-				action: () => document.execCommand('cut')
-			},
-			{
-				text: 'Copy',
-				accelerator: 'Ctrl+C',
-				enabled: hasSelection,
-				action: () => document.execCommand('copy')
-			},
-			{
-				text: 'Paste',
-				accelerator: 'Ctrl+V',
-				enabled: pasteAvailable,
-				action: async () => {
-					const text = await readText();
-					document.execCommand('insertText', false, text);
-				}
-			}
-		]
-	});
-}
-
 function customInput(node: HTMLDivElement, params: CustomInputParams) {
 	node.innerText = params.value ?? '';
 
 	let closing = false;
-
-	const parentSibling = node.parentElement?.parentElement?.nextElementSibling as
-		| HTMLElement
-		| null
-		| undefined;
 
 	async function ondblclick() {
 		node.setAttribute('contenteditable', 'plaintext-only');
 	}
 
 	async function onkeydown(e: KeyboardEvent) {
+		if (contextmenu.state.visible) {
+			e.preventDefault();
+			return;
+		}
+
 		if (e.key === 'Escape') {
 			e.preventDefault();
+
 			closeEdit(true);
 			return;
 		}
 
 		if (e.key === 'Enter') {
 			e.preventDefault();
+
 			closeEdit();
 			return;
 		}
@@ -97,6 +41,11 @@ function customInput(node: HTMLDivElement, params: CustomInputParams) {
 			closeEdit();
 
 			await tick();
+
+			const parentSibling = node.parentElement?.parentElement?.nextElementSibling as
+				| HTMLElement
+				| null
+				| undefined;
 
 			const sibling = node.parentElement?.nextElementSibling?.querySelector(
 				'[data-editable]'
@@ -138,17 +87,21 @@ function customInput(node: HTMLDivElement, params: CustomInputParams) {
 		closing = false;
 	}
 
-	function onblur() {
+	function onWindowBlur() {
+		if (node.getAttribute('contenteditable') !== 'plaintext-only') return;
 		closeEdit();
 	}
 
-	async function oncontextmenu(e: MouseEvent) {
-		if (node.getAttribute('contenteditable') !== 'plaintext-only') return;
+	function onWindowMouseDown(e: MouseEvent) {
+		const target = e.target as HTMLElement;
 
-		e.preventDefault();
+		const clickedInsideEditor = node.contains(target);
 
-		const menu = await buildMenu();
-		await menu.popup();
+		const clickedInsideContextMenu = !!target.closest('[data-contextmenu]');
+
+		if (!clickedInsideEditor && !clickedInsideContextMenu) {
+			closeEdit();
+		}
 	}
 
 	async function checkAttibute() {
@@ -179,8 +132,8 @@ function customInput(node: HTMLDivElement, params: CustomInputParams) {
 
 	node.addEventListener('dblclick', ondblclick);
 	node.addEventListener('keydown', onkeydown);
-	node.addEventListener('blur', onblur);
-	node.addEventListener('contextmenu', oncontextmenu);
+	window.addEventListener('mousedown', onWindowMouseDown);
+	window.addEventListener('blur', onWindowBlur);
 
 	return {
 		update(newParams: CustomInputParams) {
@@ -193,8 +146,8 @@ function customInput(node: HTMLDivElement, params: CustomInputParams) {
 		destroy() {
 			node.removeEventListener('dblclick', ondblclick);
 			node.removeEventListener('keydown', onkeydown);
-			node.removeEventListener('blur', onblur);
-			node.removeEventListener('contextmenu', oncontextmenu);
+			window.removeEventListener('mousedown', onWindowMouseDown);
+			window.removeEventListener('blur', onWindowBlur);
 			observer.disconnect();
 		}
 	};

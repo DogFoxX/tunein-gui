@@ -20,7 +20,7 @@
 
 	// Icons
 	import { Plus } from '$assets/tg-icons';
-	import { AltArrowDown, AltArrowUp, Restart } from '@solar-icons/svelte/Outline';
+	import { AltArrowDown, AltArrowUp, Restart, Shuffle } from '@solar-icons/svelte/Outline';
 	import { TrashBinTrash } from '@solar-icons/svelte/Bold';
 
 	// Props
@@ -95,7 +95,7 @@
 	function focusRow(index: number) {
 		if (!audioDropArea) return;
 
-		const row = document.querySelector(`tr[data-index="${index}"]`);
+		const row = audioDropArea.querySelector(`tr[data-index="${index}"]`);
 
 		if (!row) return;
 
@@ -200,6 +200,26 @@
 		if (!paths) return;
 
 		loadJingles(paths);
+	}
+
+	function shuffleJingles(array: JinglesType[]) {
+		const arr = [...array]; // copy so original is unchanged
+
+		for (let i = arr.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+
+			[arr[i], arr[j]] = [arr[j], arr[i]];
+		}
+
+		tables.jingles_table = {
+			...tables.jingles_table,
+			fields: tables.jingles_table.fields.map((field) => ({
+				...field,
+				sort: false
+			}))
+		};
+
+		return arr;
 	}
 
 	function removeTrack() {
@@ -358,6 +378,16 @@
 					title="Add File(s)"
 				>
 					<Plus />
+				</button>
+				<button
+					onclick={() => {
+						jinglesList = shuffleJingles(jinglesList);
+					}}
+					class="px-4 py-1 text-sm text-white bg-primary-700/50 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors"
+					title="Shuffle"
+					disabled={jinglesList.length < 1}
+				>
+					<Shuffle />
 				</button>
 				<button
 					onclick={checkMissing}
@@ -577,7 +607,11 @@
 					{/if}
 				</div>
 				<div class="flex items-center grow gap-2">
-					<label for="song-filter" class="text-xs text-white">Filter:</label>
+					<label
+						for="song-filter"
+						class="text-xs text-white"
+						class:opacity-50={!jinglesList!.length}>Filter:</label
+					>
 					<div class="flex w-full bg-primary-700/50 border border-primary-600 rounded-lg">
 						<input
 							bind:value={jingleFilter}
@@ -608,6 +642,14 @@
 
 			tbody tr.selected {
 				background-color: var(--color-slate-700);
+			}
+		}
+
+		&:focus-visible tbody:not(:has(tr.selected)) {
+			outline: none;
+
+			tr:first-of-type {
+				box-shadow: inset 0 0 0 1px var(--color-blue-300);
 			}
 		}
 

@@ -13,6 +13,9 @@
 	// Cropper Component
 	import { Cropper, type CropArea } from './cropper';
 
+	// Custom Contextmenu
+	import { contextmenu } from '$lib/components/window/menus';
+
 	// Assets
 	import { Toggle } from '$assets';
 	import { Sonar } from '$assets/loaders';
@@ -20,9 +23,6 @@
 	// Stores
 	import { tabs } from '$lib/stores';
 	import { radioData } from '$lib/stores';
-
-	// Utils
-	import { customContext } from '$lib/utils';
 
 	// Icons
 	import { FolderOpen, RestartSquare } from '@solar-icons/svelte/Bold';
@@ -76,6 +76,8 @@
 	let logoDropArea = $state<HTMLElement>();
 	let isDragging = $state(false);
 
+	let radioIdInput = $state<HTMLInputElement>();
+
 	let errors = $state({
 		radioId: false,
 		radioName: false
@@ -126,18 +128,18 @@
 		});
 	}
 
-	async function convertImageToDds(inputPath: string, outputDir?: string) {
-		await invoke('convert_to_dds', {
-			inputPath,
-			outputDir
-		});
-	}
-
 	function generateId() {
 		const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 		const bytes = crypto.getRandomValues(new Uint8Array(4));
 
-		return Array.from(bytes, (b) => chars[b % chars.length]).join('');
+		const id = Array.from(bytes, (b) => chars[b % chars.length]).join('');
+
+		radioIdInput?.focus();
+		radioIdInput?.select();
+
+		document.execCommand('insertText', false, id);
+
+		return id;
 	}
 
 	async function fetchImage(src: string | null | undefined): Promise<Base64URLString | null> {
@@ -327,12 +329,14 @@
 								class:border-red-400={errors.radioId}
 							>
 								<input
+									bind:this={radioIdInput}
 									bind:value={tempRadioData.configuration.radioId}
-									use:customContext={() => ({
-										text: 'Generate ID',
-										action: () =>
-											(tempRadioData.configuration.radioId = generateId())
-									})}
+									use:contextmenu.action={[
+										{
+											text: 'Generate ID',
+											action: generateId
+										}
+									]}
 									oninput={(e) => {
 										errors.radioId =
 											!/^[a-zA-Z0-9]*$/.test(e.currentTarget.value) ||
@@ -345,8 +349,7 @@
 									maxlength="4"
 								/>
 								<button
-									onclick={() =>
-										(tempRadioData.configuration.radioId = generateId())}
+									onclick={generateId}
 									class="px-2 text-primary-400 hover:text-white transition-colors"
 									title="Generate ID"
 									tabIndex="-1"
@@ -365,7 +368,7 @@
 							>
 								<input
 									bind:value={tempRadioData.configuration.radioName}
-									use:customContext
+									use:contextmenu.action
 									oninput={(e) => {
 										errors.radioName = e.currentTarget.value.length < 1;
 									}}
@@ -386,7 +389,7 @@
 						>
 							<input
 								bind:value={tempRadioData.configuration.logoPath}
-								use:customContext
+								use:contextmenu.action
 								class="size-full px-2 py-1 text-sm text-white"
 								type="text"
 								id="radio-logo"
@@ -497,11 +500,11 @@
 						</span>
 					</div>
 					<div
-						class="flex gap-2 w-max bg-primary-700 border border-primary-600 rounded-lg"
+						class="flex gap-2 w-max bg-primary-700/50 border border-primary-600 rounded-lg"
 					>
 						<input
 							bind:value={tempRadioData.configuration.force.value}
-							use:customContext
+							use:contextmenu.action
 							oninput={(e) => {
 								let value = e.currentTarget.value;
 
@@ -560,11 +563,11 @@
 						</span>
 					</div>
 					<div
-						class="flex gap-2 w-max bg-primary-700 border border-primary-600 rounded-lg"
+						class="flex gap-2 w-max bg-primary-700/50 border border-primary-600 rounded-lg"
 					>
 						<input
 							bind:value={tempRadioData.configuration.volume.value}
-							use:customContext
+							use:contextmenu.action
 							oninput={(e) => {
 								let value = e.currentTarget.value;
 

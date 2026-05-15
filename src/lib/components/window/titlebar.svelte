@@ -97,6 +97,7 @@
 		out:tgSlide={{ duration: 150 }}
 		class="relative flex items-center h-full shrink min-w-0"
 		class:active
+		class:pointer-events-none={$modalOpen}
 		role="tab"
 	>
 		<button

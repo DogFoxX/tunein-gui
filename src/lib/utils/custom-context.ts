@@ -76,7 +76,7 @@ async function buildMenu(el: InputEl, extraItem?: MenuItemOptions) {
 				enabled: canRedo(el),
 				action: () => document.execCommand('redo')
 			},
-			{ item: 'Separator' as const },
+			{ item: 'Separator' },
 			{
 				text: 'Cut',
 				accelerator: 'Ctrl+X',

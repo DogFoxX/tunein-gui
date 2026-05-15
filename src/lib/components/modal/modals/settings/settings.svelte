@@ -14,17 +14,18 @@
 	// Toggle Component Asset
 	import { Toggle } from '$assets';
 
+	// Custom Contextmenu
+	import { contextmenu } from '$lib/components/window/menus';
+
 	// Stores
 	import { settings } from '$lib/stores';
-
-	// Utils
-	import { customContext } from '$lib/utils';
 
 	// Icons
 	import { CheckCircle, CloseCircle, FolderOpen } from '@solar-icons/svelte/Bold';
 
 	// Loaders
 	import { Spinner } from '$assets/loaders';
+	import Contextmenu from '$lib/components/window/menus/contextmenu/contextmenu.svelte';
 
 	let tempSettings = $state(JSON.parse(JSON.stringify(settings.state)));
 	let saved = $derived(JSON.stringify(tempSettings) === JSON.stringify(settings.state));
@@ -215,7 +216,7 @@
 					<div class="flex gap-2 bg-primary-700/50 border border-primary-600 rounded-lg">
 						<input
 							bind:value={tempSettings.tuneinCrew!.dir}
-							use:customContext
+							use:contextmenu.action
 							class="size-full px-2 py-1 text-sm text-white"
 							type="text"
 							id="tuneincrew-path"
@@ -283,7 +284,7 @@
 					<div class="flex gap-2 bg-primary-700/50 border border-primary-600 rounded-lg">
 						<input
 							bind:value={tempSettings.fmodDir}
-							use:customContext
+							use:contextmenu.action
 							class="size-full px-2 py-1 text-sm text-white"
 							type="text"
 							id="fmod-path"

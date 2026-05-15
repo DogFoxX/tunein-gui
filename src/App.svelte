@@ -7,7 +7,7 @@
 	import { exists } from '@tauri-apps/plugin-fs';
 
 	// Components
-	import { Console, Titlebar } from '$lib/components/window';
+	import { Console, Contextmenu, Titlebar } from '$lib/components/window';
 	import { Modal, RadioConfigModal, SettingsModal } from '$lib/components/modal';
 	import { HomeTab, RadioTab } from '$lib/components/tabs';
 
@@ -92,6 +92,8 @@
 		/>
 	</main>
 {/if}
+
+<Contextmenu />
 
 <style>
 </style>
