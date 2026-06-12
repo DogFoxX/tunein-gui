@@ -79,12 +79,11 @@
 					xmlns="http://www.w3.org/2000/svg"
 					width="12"
 					height="12"
-					class="absolute bottom-0 -left-3"
-					transform="scale(-1, 1)"
+					class="absolute bottom-0 -left-3 scale-[-1,1]"
 					viewBox="0 0 12 12"
 					fill="none"
 				>
-					<path d="M0 0C0 6.62742 5.37258 12 12 12H0V0Z" fill="currentColor" />
+					<path d="M12 0C12 6.62742 6.62742 12 0 12H12V0Z" fill="currentColor" />
 				</svg>
 			{/if}
 		</div>

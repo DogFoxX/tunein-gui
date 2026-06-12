@@ -37,7 +37,7 @@
 	},
 	"bundle": {
 		"active": true,
-		"category": "Utility",
+		"category": "Utilities",
 		"homepage": "https://github.com/DogFoxX/tunein-gui",
 		"shortDescription": "An unofficial GUI for creating custom radio station mods for The Crew (2014)",
 		"license": "GPL-3.0",
@@ -68,7 +68,8 @@
 			"icons/128x128.png",
 			"icons/128x128@2x.png",
 			"icons/icon.png",
-			"icons/icon.ico"
+			"icons/icon.ico",
+			"icons/icon.icns"
 		],
 		"resources": [
 			"resources/FMOD_Designer_4.44.64_Minimal.zip",

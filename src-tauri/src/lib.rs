@@ -1,11 +1,10 @@
-use tauri::{AppHandle, Manager};
+use tauri::Manager;
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 
 mod dds_convert;
 mod measure_volume;
 mod watch_log;
-use std::path::PathBuf;
 
 use dds_convert::{convert_to_dds, dds_to_png_base64};
 use measure_volume::{get_volume};
